@@ -147,9 +147,9 @@ tokens :-
 <0,nondelim>               \" (@graphic_character | [\"]{2})* \"                 { (\alexIn -> makeStrLiteral alexIn)              `andBegin`  separator   }
 
 -- Allowed empty bitstrings??
---<0,nondelim>               [Bb] \" $binary @underline_binary* \"                 { (\alexIn -> makeBitStrLiteral BinBased alexIn)  `andBegin`  separator   }
---<0,nondelim>               [Oo] \" $octal @underline_octal* \"                   { (\alexIn -> makeBitStrLiteral OctBased alexIn)  `andBegin`  separator   }
---<0,nondelim>               [Xx] \" $hex @underline_hex* \"                       { (\alexIn -> makeBitStrLiteral HexBased alexIn)  `andBegin`  separator   }
+<0,nondelim>               [Bb] \" $binary @underline_binary* \"                 { (\alexIn -> makeBitStrLiteral BinBased alexIn)  `andBegin`  separator   }
+<0,nondelim>               [Oo] \" $octal @underline_octal* \"                   { (\alexIn -> makeBitStrLiteral OctBased alexIn)  `andBegin`  separator   }
+<0,nondelim>               [Xx] \" $hex @underline_hex* \"                       { (\alexIn -> makeBitStrLiteral HexBased alexIn)  `andBegin`  separator   }
 
 <0,separator,identifier>   "--".*                                                ;
 <0,separator,identifier>   $white+                                               {                                         begin       0           }
@@ -227,23 +227,15 @@ makeStrLiteral (position, _, _, str) length =
    & Literal
    & \component -> return $ Token component position
 
---makeBitStrLiteral :: LiteralBase -> AlexInput -> Int -> Alex Token
---makeBitStrLiteral base (position, _, _, str) length =
---   take length str
---   & init
---   & \strNoLstChar -> case strNoLstChar of
---      'B':'"':bitString -> 
---      'O':'"':bitString -> 
---      'X':'"':bitString -> 
---      _:'"':_ ->
---      'B':_:_ ->
---      'O':_:_ ->
---      'X':_:_ ->
---   where successParse =
---      filter (\c -> c /= '_')
---      & BitStr base
---      & Literal
---      & \component -> return $ Token component position
+makeBitStrLiteral :: LiteralBase -> AlexInput -> Int -> Alex Token
+makeBitStrLiteral base (position, _, _, str) length =
+   take length str
+   & init
+   & \(_:'"':bitString) ->
+      filter (\c -> c /= '_') bitString
+      & BitStr base
+      & Literal
+      & \component -> return $ Token component position
 
 makeOperator :: OperatorType -> AlexInput -> Int -> Alex Token
 makeOperator op (position, _, _, _) _ =
