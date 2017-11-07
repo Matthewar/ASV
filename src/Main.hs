@@ -1,6 +1,6 @@
 module Main where
 
-import qualified Tokens
+import qualified Parser.Tokens as Tokens
 
 --main :: IO ()
 main = Tokens.main

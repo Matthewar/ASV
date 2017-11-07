@@ -1,11 +1,13 @@
 {
-module Tokens (main) where
+module Parser.Tokens (main) where
 import Data.List.Split (splitOn)
-import TokenTypes
+import Parser.TokenTypes
 import Data.Function ((&))
+import Parser.Alex.Types
+import Parser.Alex.Functions
 }
 
-%wrapper "monad"
+-- %wrapper "monad"
 
 $upper_case_letter = [A-Z]
 $lower_case_letter = [a-z]
@@ -141,15 +143,12 @@ tokens :-
 
 <0,nondelim>               @integer (\. @integer)? @exponent?                    { (\alexIn -> makeDecimalLiteral alexIn)          `andBegin`  separator   }
 
---<0,nondelim>               ([2-9] | 1[0-6]) "#" @hex_value (\. @hex_value)? "#" @exponent?   { \str -> makeBasedLiteral str   `andBegin`  seperator   }
+<0,nondelim>               [0-9]+ "#" @hex_value (\. @hex_value)? "#" @exponent?   { (\alexIn -> makeBasedLiteral '#' alexIn)   `andBegin`  separator   }
+<0,nondelim>               [0-9]+ ":" @hex_value (\. @hex_value)? ":" @exponent?   { (\alexIn -> makeBasedLiteral ':' alexIn)   `andBegin`  separator   }
 
 <0,nondelim>               \' @graphic_character \'                              { (\alexIn -> makeCharLiteral alexIn)             `andBegin`  separator   }
 <0,nondelim>               \" (@graphic_character | [\"]{2})* \"                 { (\alexIn -> makeStrLiteral alexIn)              `andBegin`  separator   }
-
--- Allowed empty bitstrings??
-<0,nondelim>               [Bb] \" $binary @underline_binary* \"                 { (\alexIn -> makeBitStrLiteral BinBased alexIn)  `andBegin`  separator   }
-<0,nondelim>               [Oo] \" $octal @underline_octal* \"                   { (\alexIn -> makeBitStrLiteral OctBased alexIn)  `andBegin`  separator   }
-<0,nondelim>               [Xx] \" $hex @underline_hex* \"                       { (\alexIn -> makeBitStrLiteral HexBased alexIn)  `andBegin`  separator   }
+--<0,nondelim>               \% (@graphic_character | [\%]{2})* \%                 { (\alexIn -> makeStrLiteral alexIn)              `andBegin`  separator   }
 
 <0,separator,identifier>   "--".*                                                ;
 <0,separator,identifier>   $white+                                               {                                         begin       0           }
@@ -206,14 +205,37 @@ makeDecimalLiteral (position, _, _, str) length =
        number = read numberStr
    in return $ Token (Literal $ Decimal number) position
 
--- makeBasedLiteral :: LiteralBase -> AlexInput -> Int -> Alex Token
--- makeBasedLiteral (position, _, _, str) length =
---    let (base,value,exponent) =
---       take length str $ \basedLit ->
---          case splitOn "#" basedLit of
---             (base:value:exponent:[]) -> base,value,Just exponent
---             (base:value:[]) -> base,value,Nothing
---    in 
+makeBasedLiteral :: Char -> AlexInput -> Int -> Alex Token
+makeBasedLiteral separator (position, _, _, str) length = do
+   let basedStr = take length str
+   (base,value,exponent) <- case splitOn [separator] basedStr of
+      (base:value:('E':exponent):[]) -> return (base,value,exponent)
+      (base:value:"":[]) -> return (base,value,"0")
+      _ -> alexError $ GenericBasedLiteralError basedStr position
+   baseInt <- return $ read base
+   exponentInt <- return $ read exponent
+   let convertBasedUnits ans iter (unit:units) =
+         (read [unit]) * (baseInt ** iter)
+         & \currentDigitWeight -> currentDigitWeight + ans
+         & \newAns -> convertBasedUnits newAns (iter+1) units
+       convertBasedUnits ans _ [] = ans
+       convertBasedDecimals ans iter (decimal:decimals) =
+         (read [decimal]) * (baseInt ** iter)
+         & \currentDigitWeight -> currentDigitWeight + ans
+         & \newAns -> convertBasedDecimals newAns (iter-1) decimals
+       convertBasedDecimals ans _ [] = ans
+       convertBasedFloat number =
+         case splitOn "." number of
+            (units:decimals:[]) -> (convertBasedUnits 0 0 $ reverse units) + (convertBasedDecimals 0 (-1) decimals)
+            (units:[]) -> convertBasedUnits 0 0 $ reverse units
+   if elem baseInt [2..16] then
+      convertBasedFloat value
+      & \numericValue -> numericValue * (baseInt ^ exponentInt)
+      & Decimal
+      & Literal
+      & \comp -> Token comp position
+      & return
+   else alexError $ InvalidBaseBasedLiteralError baseInt basedStr position
 
 makeCharLiteral :: AlexInput -> Int -> Alex Token
 makeCharLiteral (position, _, _, str) _ =
@@ -242,29 +264,45 @@ makeOperator op (position, _, _, _) _ =
    Operator op
    & \wrappedOp -> return $ Token wrappedOp position
 
-alexEOF :: Alex Token
-alexEOF =
-   AlexPn 0 0 0
-   & Token EOF
-   & return
-
-scanner str = runAlex str $ do
-   let loop tknLst = do token <- alexMonadScan
-                        case token of
-                           Token EOF _ -> return $ reverse tknLst
-                           token -> loop (token:tknLst)
-   loop []
+lexer :: (Token -> Alex a) -> Alex a
+lexer cont = do
+   token <- alexMonadScan
+   cont token
 
 main :: IO ()
 main = do
    s <- getContents
-   --s <- readFile filename
-   print $ scanner s
+   print $ runAlex s alexMonadScan
 
-         --case token of
-         --   AlexEOF -> []
-         --   AlexError ((AlexPn _ line column), prevChar, restBytes, inStr) ->
-         --      fail $ "Lex error at line " ++ (show line) ++ " column " ++ (show column) ++ " previous character " ++ (show prevChar) ++ " rest of bytes " ++ (show restBytes) ++ " input string " ++ inStr
-         --   AlexSkip _ _ -> loop tokens
-         --   AlexToken -> 
+-- | Lexer scan
+alexMonadScan = do
+  inp__ <- alexGetInput
+  sc <- alexGetStartCode
+  case alexScan inp__ sc of
+    AlexEOF -> return $ Token EOF $ AlexPn 0 0 0
+    AlexError (pos,_,_,_) -> alexError $ GenericLexError pos
+    AlexSkip  inp__' _len -> do
+        alexSetInput inp__'
+        alexMonadScan
+    AlexToken inp__' len action -> do
+        alexSetInput inp__'
+        action (ignorePendingBytes inp__) len
+
+-- | Ignore this token and scan another one
+--skip :: AlexAction result
+skip _input _len = alexMonadScan
+
+-- | Ignore this token, but set the start code to a new value
+--begin :: Int -> AlexAction result
+begin code _input _len = do alexSetStartCode code; alexMonadScan
+
+-- | Perform an action for this token, and set the start code to a new value
+andBegin :: AlexAction result -> Int -> AlexAction result
+(action `andBegin` code) input__ len = do
+  alexSetStartCode code
+  action input__ len
+
+-- | Return token
+token :: (AlexInput -> Int -> token) -> AlexAction token
+token t input__ len = return (t input__ len)
 }

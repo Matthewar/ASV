@@ -26,8 +26,10 @@ cabal-version:       >=1.10
 executable VHDL-Sim-exe
   hs-source-dirs:      src
   main-is:             Main.hs
-  other-modules:       Tokens
-                     , TokenTypes
+  other-modules:       Parser.Tokens
+                     , Parser.TokenTypes
+                     , Parser.Alex.Types
+                     , Parser.Alex.Functions
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      --, VHDL-Sim

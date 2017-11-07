@@ -1,4 +1,4 @@
-module TokenTypes where
+module Parser.TokenTypes where
 
 import Data.Char as Char
 
