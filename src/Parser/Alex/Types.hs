@@ -4,6 +4,8 @@ module Parser.Alex.Types where
 import Data.Word (Word8)
 import Control.Applicative as App (Applicative (..))
 
+import Parser.TokenTypes
+
 type Byte = Word8
 
 -- | Input type
@@ -53,6 +55,7 @@ type AlexAction result = AlexInput -> Int -> Alex result
 data ParserError = GenericLexError AlexPosn
                  | GenericBasedLiteralError String AlexPosn
                  | InvalidBaseBasedLiteralError Double String AlexPosn
+                 | NonMatchingIdentifierError ReservedWord String String AlexPosn
 
 instance (Show ParserError) where
    show (GenericLexError pos) =

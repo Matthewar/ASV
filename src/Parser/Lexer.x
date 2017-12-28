@@ -189,18 +189,18 @@ data Token = Keyword ReservedWord
 makeReserved :: ReservedWord -> AlexInput -> Int -> Alex Token
 makeReserved keyword (position, _, _, _) _ =
    let keyType = Keyword keyword
-   in return $ Token keyType
+   in return $ keyType
 
 makeIdentifier :: AlexInput -> Int -> Alex Token
 makeIdentifier (position, _, _, str) length =
    let identifier = take length str
-   in return $ Token Identifier identifier
+   in return $ Identifier identifier
 
 makeDecimalLiteral :: AlexInput -> Int -> Alex Token
 makeDecimalLiteral (position, _, _, str) length =
    let numberStr = take length str
        number = read numberStr
-   in return $ Token $ Literal $ Decimal number
+   in return $ Literal $ Decimal number
 
 makeBasedLiteral :: Char -> AlexInput -> Int -> Alex Token
 makeBasedLiteral separator (position, _, _, str) length = do
@@ -230,21 +230,20 @@ makeBasedLiteral separator (position, _, _, str) length = do
       & \numericValue -> numericValue * (baseInt ^ exponentInt)
       & Decimal
       & Literal
-      & \comp -> Token comp
       & return
    else alexError $ InvalidBaseBasedLiteralError baseInt basedStr position
 
 makeCharLiteral :: AlexInput -> Int -> Alex Token
 makeCharLiteral (position, _, _, str) _ =
    let char = head str
-   in  return $ Token $ Literal $ Character char
+   in  return $ Literal $ Character char
 
 makeStrLiteral :: AlexInput -> Int -> Alex Token
 makeStrLiteral (position, _, _, str) length =
    take length str
    & Str
    & Literal
-   & \component -> return $ Token component
+   & return
 
 makeBitStrLiteral :: LiteralBase -> AlexInput -> Int -> Alex Token
 makeBitStrLiteral base (position, _, _, str) length =
@@ -254,12 +253,11 @@ makeBitStrLiteral base (position, _, _, str) length =
       filter (\c -> c /= '_') bitString
       & BitStr base
       & Literal
-      & \component -> return $ Token component
+      & return
 
 makeOperator :: OperatorType -> AlexInput -> Int -> Alex Token
 makeOperator op (position, _, _, _) _ =
-   Operator op
-   & \wrappedOp -> return $ Token wrappedOp
+   return $ Operator op
 
 lexer :: (Token -> Alex a) -> Alex a
 lexer cont = do
@@ -276,7 +274,7 @@ alexMonadScan = do
   inp__ <- alexGetInput
   sc <- alexGetStartCode
   case alexScan inp__ sc of
-    AlexEOF -> return $ Token EOF
+    AlexEOF -> return EOF
     AlexError (pos,_,_,_) -> alexError $ GenericLexError pos
     AlexSkip  inp__' _len -> do
         alexSetInput inp__'
@@ -300,6 +298,6 @@ andBegin :: AlexAction result -> Int -> AlexAction result
   action input__ len
 
 -- | Return token
-token :: (AlexInput -> Int -> token) -> AlexAction token
+token :: (AlexInput -> Int -> Token) -> AlexAction Token
 token t input__ len = return (t input__ len)
 }
