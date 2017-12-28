@@ -1,5 +1,5 @@
 {
-module Parser.Tokens (main) where
+module Parser.Lexer where
 import Data.List.Split (splitOn)
 import Parser.TokenTypes
 import Data.Function ((&))
@@ -179,10 +179,7 @@ tokens :-
 
 {
 -- The token type:
-data Token = Token TokenContents AlexPosn
-           deriving (Eq,Show)
-
-data TokenContents = Keyword ReservedWord
+data Token = Keyword ReservedWord
                    | Operator OperatorType
                    | Identifier String
                    | Literal LitType
@@ -192,18 +189,18 @@ data TokenContents = Keyword ReservedWord
 makeReserved :: ReservedWord -> AlexInput -> Int -> Alex Token
 makeReserved keyword (position, _, _, _) _ =
    let keyType = Keyword keyword
-   in return $ Token keyType position
+   in return $ Token keyType
 
 makeIdentifier :: AlexInput -> Int -> Alex Token
 makeIdentifier (position, _, _, str) length =
    let identifier = take length str
-   in return $ Token (Identifier identifier) position
+   in return $ Token Identifier identifier
 
 makeDecimalLiteral :: AlexInput -> Int -> Alex Token
 makeDecimalLiteral (position, _, _, str) length =
    let numberStr = take length str
        number = read numberStr
-   in return $ Token (Literal $ Decimal number) position
+   in return $ Token $ Literal $ Decimal number
 
 makeBasedLiteral :: Char -> AlexInput -> Int -> Alex Token
 makeBasedLiteral separator (position, _, _, str) length = do
@@ -233,21 +230,21 @@ makeBasedLiteral separator (position, _, _, str) length = do
       & \numericValue -> numericValue * (baseInt ^ exponentInt)
       & Decimal
       & Literal
-      & \comp -> Token comp position
+      & \comp -> Token comp
       & return
    else alexError $ InvalidBaseBasedLiteralError baseInt basedStr position
 
 makeCharLiteral :: AlexInput -> Int -> Alex Token
 makeCharLiteral (position, _, _, str) _ =
    let char = head str
-   in  return $ Token (Literal $ Character char) position
+   in  return $ Token $ Literal $ Character char
 
 makeStrLiteral :: AlexInput -> Int -> Alex Token
 makeStrLiteral (position, _, _, str) length =
    take length str
    & Str
    & Literal
-   & \component -> return $ Token component position
+   & \component -> return $ Token component
 
 makeBitStrLiteral :: LiteralBase -> AlexInput -> Int -> Alex Token
 makeBitStrLiteral base (position, _, _, str) length =
@@ -257,12 +254,12 @@ makeBitStrLiteral base (position, _, _, str) length =
       filter (\c -> c /= '_') bitString
       & BitStr base
       & Literal
-      & \component -> return $ Token component position
+      & \component -> return $ Token component
 
 makeOperator :: OperatorType -> AlexInput -> Int -> Alex Token
 makeOperator op (position, _, _, _) _ =
    Operator op
-   & \wrappedOp -> return $ Token wrappedOp position
+   & \wrappedOp -> return $ Token wrappedOp
 
 lexer :: (Token -> Alex a) -> Alex a
 lexer cont = do
@@ -279,7 +276,7 @@ alexMonadScan = do
   inp__ <- alexGetInput
   sc <- alexGetStartCode
   case alexScan inp__ sc of
-    AlexEOF -> return $ Token EOF $ AlexPn 0 0 0
+    AlexEOF -> return $ Token EOF
     AlexError (pos,_,_,_) -> alexError $ GenericLexError pos
     AlexSkip  inp__' _len -> do
         alexSetInput inp__'
