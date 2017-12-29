@@ -234,9 +234,8 @@ makeBasedLiteral separator (position, _, _, str) length = do
    else alexError $ InvalidBaseBasedLiteralError baseInt basedStr position
 
 makeCharLiteral :: AlexInput -> Int -> Alex Token
-makeCharLiteral (position, _, _, str) _ =
-   let char = head str
-   in  return $ Literal $ Character char
+makeCharLiteral (position, _, _, ('\'':char:'\'':[])) _ =
+   return $ Literal $ Character char
 
 makeStrLiteral :: AlexInput -> Int -> Alex Token
 makeStrLiteral (position, _, _, str) length =

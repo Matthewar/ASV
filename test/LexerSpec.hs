@@ -2,9 +2,10 @@ module LexerSpec (tests) where
 
 import Parser.Lexer (Token(..), lexerList)
 import Parser.Alex.Types (AlexPosn(..))
-import Parser.TokenTypes (ReservedWord(..), OperatorType(..))
+import Parser.TokenTypes
 import Test.Tasty
 import Test.Tasty.HUnit
+import qualified Test.Tasty.QuickCheck as QC
 
 tests :: TestTree
 tests = testGroup "Lexer Tests"
@@ -13,9 +14,9 @@ tests = testGroup "Lexer Tests"
 singleWords :: TestTree
 singleWords = testGroup "Single word tests for lexer"
    [ singleKeywords
-   , singleOperators ]
-   --, singleIdentifiers
-   --, singleLiterals ]
+   , singleOperators
+   , singleLiterals ]
+   --, singleIdentifiers ]
 
 singleKeywords :: TestTree
 singleKeywords = testGroup "Single keyword tests for lexer"
@@ -403,5 +404,24 @@ singleOperators = testGroup "Single operators"
    , testCase "\"|\" == Bar" $
          lexerList "|" @?= Right [Operator Bar]
    ]
+
+singleLiterals :: TestTree
+singleLiterals = testGroup "Single literals"
+   [ singleCharLiterals]
+--   [ singleBasedLiterals
+--   , singleDecimalLiterals
+--   , singleBitStrLiterals
+--   , singleStrLiterals
+--   , singleCharLiterals
+--   ]
+
+validTestCharacters = ['A'..'Z'] ++ ['0'..'9'] ++ ['a'..'z'] ++
+   "\"#&'()*+,.-/:;<=>_!$%@?[\\]^`{}~"
+singleCharLiterals :: TestTree
+singleCharLiterals = QC.testProperty "Single random character" $
+   QC.forAll (QC.elements validTestCharacters) $ \selectedChar ->
+      let lexRun = lexerList $ "'" ++ [selectedChar] ++ "'"
+          expectedAnswer = Right [Literal $ Character selectedChar]
+      in lexRun == expectedAnswer
+   
 --singleIdentifiers :: TestTree
---singleLiterals :: TestTree
