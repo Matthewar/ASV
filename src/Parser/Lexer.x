@@ -146,7 +146,7 @@ tokens :-
 <0,nondelim>               [0-9]+ "#" @hex_value (\. @hex_value)? "#" @exponent?   { (\alexIn -> makeBasedLiteral '#' alexIn)   `andBegin`  separator   }
 <0,nondelim>               [0-9]+ ":" @hex_value (\. @hex_value)? ":" @exponent?   { (\alexIn -> makeBasedLiteral ':' alexIn)   `andBegin`  separator   }
 
-<0,nondelim>               \' @graphic_character \'                              { (\alexIn -> makeCharLiteral alexIn)             `andBegin`  separator   }
+<0,nondelim>               \' (@graphic_character | \") \'                              { (\alexIn -> makeCharLiteral alexIn)             `andBegin`  separator   }
 <0,nondelim>               \" (@graphic_character | [\"]{2})* \"                 { (\alexIn -> makeStrLiteral alexIn)              `andBegin`  separator   }
 <0,nondelim>               \% (@graphic_character | \" | [\%]{2})* \%                 { (\alexIn -> makeStrLiteral alexIn)              `andBegin`  separator   }
 
@@ -239,11 +239,24 @@ makeCharLiteral (position, _, _, ('\'':char:'\'':[])) _ =
 
 makeStrLiteral :: AlexInput -> Int -> Alex Token
 makeStrLiteral (position, _, _, str) length =
-   take length str
-   & tail & init -- Remove first and last elements
-   & Str
-   & Literal
-   & return
+   let completeStr = take length str
+       container :: Char
+       container = head completeStr
+       strContents :: String
+       strContents = -- Remove first and last elements
+         completeStr & tail & init
+       filterContainer :: String -> String -> String
+       filterContainer (item1:item2:rest) outputStr =
+         if item1 == item2 && item1 == container then
+            filterContainer rest (item1:outputStr)
+         else filterContainer (item2:rest) (item1:outputStr)
+       filterContainer (item:rest) outputStr =
+         filterContainer rest (item:outputStr)
+       filterContainer [] outputStr = reverse outputStr
+   in filterContainer strContents []
+      & Str
+      & Literal
+      & return
 
 makeBitStrLiteral :: LiteralBase -> AlexInput -> Int -> Alex Token
 makeBitStrLiteral base (position, _, _, str) length =
