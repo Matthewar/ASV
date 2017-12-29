@@ -6,6 +6,7 @@ import Parser.TokenTypes
 import Test.Tasty
 import Test.Tasty.HUnit
 import qualified Test.Tasty.QuickCheck as QC
+import Control.Monad
 
 tests :: TestTree
 tests = testGroup "Lexer Tests"
@@ -407,14 +408,65 @@ singleOperators = testGroup "Single operators"
 
 singleLiterals :: TestTree
 singleLiterals = testGroup "Single literals"
-   [ singleCharLiterals]
 --   [ singleBasedLiterals
 --   , singleDecimalLiterals
 --   , singleBitStrLiterals
---   , singleStrLiterals
---   , singleCharLiterals
---   ]
+   [ singleStrLiterals
+   , singleCharLiterals
+   ]
 
+validTestStringCharacters :: [Char]
+validTestStringCharacters = ['A'..'Z'] ++ ['0'..'9'] ++ ['a'..'z'] ++
+   "#&'()*+,.-/:;<=>_!$%@?[\\]^`{}~"
+singleStrLiterals :: TestTree
+singleStrLiterals = testGroup "Singular strings"
+   [ singleEmptyString
+   , singleEmptyString_diffCont
+   , singleRandomString
+   , singleRandomString_diffCont
+   ]
+
+singleEmptyString :: TestTree
+singleEmptyString = testCase "\"\" == Literal Str \"\"" $
+         lexerList "\"\"" @?= Right [Literal $ Str ""]
+
+singleEmptyString_diffCont :: TestTree
+singleEmptyString_diffCont = testCase "%% == Literal Str \"\"" $
+         lexerList "%%" @?= Right [Literal $ Str ""]
+
+singleRandomString :: TestTree
+singleRandomString = QC.testProperty "Single random string with \" containers" $
+   QC.forAll generateRandomString $ \stringContents ->
+      let lexRun = lexerList $ "\"" ++ stringContents ++ "\""
+          expectedAnswer = Right [Literal $ Str stringContents]
+      in lexRun == expectedAnswer
+   where generateRandomString = do
+            stringLength <- QC.elements [1..200]
+            let charGenerator = QC.elements validTestCharacters
+            allCharacters <- replicateM stringLength charGenerator
+            return $ replicateConts allCharacters []
+         replicateConts (head:tail) output =
+            if head == '"' then replicateConts tail ("\"\"" ++ output)
+            else replicateConts tail (head:output)
+         replicateConts [] output = output
+
+singleRandomString_diffCont :: TestTree
+singleRandomString_diffCont = QC.testProperty "Single random string with % containers" $
+   QC.forAll generateRandomString $ \stringContents ->
+      let lexRun = lexerList $ "%" ++ stringContents ++ "%"
+          expectedAnswer = Right [Literal $ Str stringContents]
+      in lexRun == expectedAnswer
+   where generateRandomString = do
+            stringLength <- QC.elements [1..200]
+            let charGenerator = QC.elements validTestStringCharacters
+            allCharacters <- replicateM stringLength charGenerator
+            return $ replicateConts allCharacters []
+         replicateConts (head:tail) output =
+            if head == '%' then replicateConts tail ("%%" ++ output)
+            else replicateConts tail (head:output)
+         replicateConts [] output = output
+
+validTestCharacters :: [Char]
 validTestCharacters = ['A'..'Z'] ++ ['0'..'9'] ++ ['a'..'z'] ++
    "\"#&'()*+,.-/:;<=>_!$%@?[\\]^`{}~"
 singleCharLiterals :: TestTree

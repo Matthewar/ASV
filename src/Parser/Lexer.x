@@ -27,7 +27,7 @@ $octal = [0-7]
 $hex = [0-9a-fA-F]
 @underline_hex = "_" | $hex
 @hex_value = $hex @underline_hex*
-$special_character = [\# \& \  \' \( \) \* \, \- \. \/ \: \; \< \= \> \_ \|]
+$special_character = [\# \& \  \' \( \) \* \, \- \. \/ \: \; \< \= \> \_ \| \+]
 @special_character_w_quote = \" | $special_character
 $other_special_character = [ \! \$ \% \@ \? \[ \] \\ \^ \` \{ \} \~]
 $space_character = \ 
@@ -148,7 +148,7 @@ tokens :-
 
 <0,nondelim>               \' @graphic_character \'                              { (\alexIn -> makeCharLiteral alexIn)             `andBegin`  separator   }
 <0,nondelim>               \" (@graphic_character | [\"]{2})* \"                 { (\alexIn -> makeStrLiteral alexIn)              `andBegin`  separator   }
---<0,nondelim>               \% (@graphic_character | [\%]{2})* \%                 { (\alexIn -> makeStrLiteral alexIn)              `andBegin`  separator   }
+<0,nondelim>               \% (@graphic_character | \" | [\%]{2})* \%                 { (\alexIn -> makeStrLiteral alexIn)              `andBegin`  separator   }
 
 <0,separator,identifier>   "--".*                                                ;
 <0,separator,identifier>   $white+                                               {                                         begin       0           }
@@ -240,6 +240,7 @@ makeCharLiteral (position, _, _, ('\'':char:'\'':[])) _ =
 makeStrLiteral :: AlexInput -> Int -> Alex Token
 makeStrLiteral (position, _, _, str) length =
    take length str
+   & tail & init -- Remove first and last elements
    & Str
    & Literal
    & return
