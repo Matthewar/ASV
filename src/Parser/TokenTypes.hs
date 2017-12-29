@@ -88,7 +88,7 @@ data ReservedWord = Abs
 data LiteralBase = BinBased -- B
                  | OctBased -- O
                  | HexBased -- X
-                 deriving (Eq,Show)
+                 deriving (Eq,Show,Ord)
 
 data LitType = BasedLiteral LiteralBase Integer (Maybe Integer)
              | Decimal Double

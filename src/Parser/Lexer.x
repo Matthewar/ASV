@@ -139,16 +139,23 @@ tokens :-
 
 <0,nondelim>               [Xx][Oo][Rr]                                          { makeReserved Xor                        `andBegin`  separator   }
 
-<0,nondelim>               @letter @underline_letter_or_digit *                  { (\alexIn -> makeIdentifier alexIn)              `andBegin`  separator   }
+<0,nondelim>               @letter @underline_letter_or_digit *                  { (\alexIn -> makeIdentifier alexIn)      `andBegin`  separator   }
 
-<0,nondelim>               @integer (\. @integer)? @exponent?                    { (\alexIn -> makeDecimalLiteral alexIn)          `andBegin`  separator   }
+<0,nondelim>               @integer (\. @integer)? @exponent?                    { (\alexIn -> makeDecimalLiteral alexIn)  `andBegin`  separator   }
 
 <0,nondelim>               [0-9]+ "#" @hex_value (\. @hex_value)? "#" @exponent?   { (\alexIn -> makeBasedLiteral '#' alexIn)   `andBegin`  separator   }
 <0,nondelim>               [0-9]+ ":" @hex_value (\. @hex_value)? ":" @exponent?   { (\alexIn -> makeBasedLiteral ':' alexIn)   `andBegin`  separator   }
 
-<0,nondelim>               \' (@graphic_character | \") \'                              { (\alexIn -> makeCharLiteral alexIn)             `andBegin`  separator   }
-<0,nondelim>               \" (@graphic_character | [\"]{2})* \"                 { (\alexIn -> makeStrLiteral alexIn)              `andBegin`  separator   }
-<0,nondelim>               \% (@graphic_character | \" | [\%]{2})* \%                 { (\alexIn -> makeStrLiteral alexIn)              `andBegin`  separator   }
+<0,nondelim>               \' (@graphic_character | \") \'                       { (\alexIn -> makeCharLiteral alexIn)     `andBegin`  separator   }
+<0,nondelim>               \" (@graphic_character | [\"]{2})* \"                 { (\alexIn -> makeStrLiteral alexIn)      `andBegin`  separator   }
+<0,nondelim>               \% (@graphic_character | \" | [\%]{2})* \%            { (\alexIn -> makeStrLiteral alexIn)      `andBegin`  separator   }
+
+<0,nondelim>               [Bb] \" @binary_value \"                              { (\alexIn -> makeBitStrLiteral BinBased alexIn)   `andBegin`  separator   }
+<0,nondelim>               [Bb] "%" @binary_value "%"                            { (\alexIn -> makeBitStrLiteral BinBased alexIn)   `andBegin`  separator   }
+<0,nondelim>               [Oo] \" @octal_value \"                               { (\alexIn -> makeBitStrLiteral OctBased alexIn)   `andBegin`  separator   }
+<0,nondelim>               [Oo] "%" @octal_value "%"                             { (\alexIn -> makeBitStrLiteral OctBased alexIn)   `andBegin`  separator   }
+<0,nondelim>               [Xx] \" @hex_value \"                                 { (\alexIn -> makeBitStrLiteral HexBased alexIn)   `andBegin`  separator   }
+<0,nondelim>               [Xx] "%" @hex_value "%"                               { (\alexIn -> makeBitStrLiteral HexBased alexIn)   `andBegin`  separator   }
 
 <0,separator,identifier>   "--".*                                                ;
 <0,separator,identifier>   $white+                                               {                                         begin       0           }
@@ -262,7 +269,7 @@ makeBitStrLiteral :: LiteralBase -> AlexInput -> Int -> Alex Token
 makeBitStrLiteral base (position, _, _, str) length =
    take length str
    & init
-   & \(_:'"':bitString) ->
+   & \(_:_:bitString) ->
       filter (\c -> c /= '_') bitString
       & BitStr base
       & Literal

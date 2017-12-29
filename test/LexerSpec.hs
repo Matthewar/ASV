@@ -8,6 +8,7 @@ import Test.Tasty.HUnit
 import qualified Test.Tasty.QuickCheck as QC
 import Control.Monad
 import Data.Function ((&))
+import qualified Data.Map.Strict as MapS
 
 tests :: TestTree
 tests = testGroup "Lexer Tests"
@@ -411,10 +412,51 @@ singleLiterals :: TestTree
 singleLiterals = testGroup "Single literals"
 --   [ singleBasedLiterals
 --   , singleDecimalLiterals
---   , singleBitStrLiterals
-   [ singleStrLiterals
+   [ singleBitStrLiterals
+   , singleStrLiterals
    , singleCharLiterals
    ]
+
+singleBitStrLiterals :: TestTree
+singleBitStrLiterals = testGroup "Single bit strings"
+   [ QC.testProperty "with \" containers" $ singleBitStrLiterals_cont '"'
+   , QC.testProperty "with % containers" $ singleBitStrLiterals_cont '%'
+   ]
+
+singleBitStrLiterals_cont :: Char -> QC.Property
+singleBitStrLiterals_cont container =
+   QC.forAll generateBitStr $ \(base,str) ->
+      let lexInput =
+            [base,container] ++ str ++ [container]
+          lexRun = lexerList lexInput
+          unformattedString =
+            filter (\char -> char /= '_') str -- Remove underscores
+          expectedOutput = Right [Literal $ BitStr (convertBase MapS.! base) unformattedString]
+      in lexRun == expectedOutput
+   where generateBitStr = do
+            baseChar <- QC.elements "BbOoXx"
+            let allowedChars =
+                  [ (BinBased,"01")
+                  , (OctBased,['0'..'7'])
+                  , (HexBased,['0'..'9']++['A'..'F']++['a'..'f'])
+                  ]
+                  & MapS.fromList
+                extendedDigit =
+                  convertBase MapS.! baseChar
+                  & (allowedChars MapS.!)
+            firstChar <- QC.elements extendedDigit
+            strLength <- QC.elements [0..200]
+            remainingChars <- replicateM strLength $ QC.elements $ extendedDigit ++ "_"
+            return $ (baseChar, firstChar:remainingChars)
+         convertBase =
+            [ ('B', BinBased)
+            , ('b', BinBased)
+            , ('O', OctBased)
+            , ('o', OctBased)
+            , ('X', HexBased)
+            , ('x', HexBased)
+            ]
+            & MapS.fromList
 
 validTestStringCharacters :: [Char]
 validTestStringCharacters = ['A'..'Z'] ++ ['0'..'9'] ++ ['a'..'z'] ++
