@@ -1,6 +1,9 @@
 module Main where
 
-import qualified Parser.Tokens as Tokens
+import qualified Parser.Lexer as Lexer
 
 --main :: IO ()
-main = Tokens.main
+main :: IO ()
+main = do
+   s <- getContents
+   print $ Lexer.lexerList s

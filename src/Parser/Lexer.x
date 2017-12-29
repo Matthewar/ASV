@@ -259,15 +259,23 @@ makeOperator :: OperatorType -> AlexInput -> Int -> Alex Token
 makeOperator op (position, _, _, _) _ =
    return $ Operator op
 
+-- | Monadic call to lexer (requires continuation monad)
+-- Used by happy to call the alex lexer
 lexer :: (Token -> Alex a) -> Alex a
 lexer cont = do
    token <- alexMonadScan
    cont token
 
-main :: IO ()
-main = do
-   s <- getContents
-   print $ runAlex s alexMonadScan
+-- | Basic call to lexer
+-- Can be used for debug
+-- Returns either error or list of tokens
+lexerList :: String -> Either ParserError [Token]
+lexerList str = runAlex str $ do
+   let loop tknLst = do token <- alexMonadScan
+                        case token of
+                           EOF -> return $ reverse tknLst
+                           token -> loop (token:tknLst)
+   loop []
 
 -- | Lexer scan
 alexMonadScan = do
