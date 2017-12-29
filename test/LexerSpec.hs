@@ -17,8 +17,8 @@ singleWords :: TestTree
 singleWords = testGroup "Single word tests for lexer"
    [ singleKeywords
    , singleOperators
-   , singleLiterals ]
-   --, singleIdentifiers ]
+   , singleLiterals
+   , singleIdentifiers ]
 
 singleKeywords :: TestTree
 singleKeywords = testGroup "Single keyword tests for lexer"
@@ -481,4 +481,18 @@ singleCharLiterals = QC.testProperty "Single random character" $
           expectedAnswer = Right [Literal $ Character selectedChar]
       in lexRun == expectedAnswer
 
---singleIdentifiers :: TestTree
+-- ?? What happens if it randomly generates a valid keyword
+singleIdentifiers :: TestTree
+singleIdentifiers = QC.testProperty "Single identifier" $
+   QC.forAll generateIdentifier $ \identifierStr ->
+      let lexRun = lexerList identifierStr
+          expectedAnswer = Right [Identifier identifierStr]
+      in lexRun == expectedAnswer
+   where generateIdentifier = do
+            stringLength <- QC.elements [0..200]
+            fstChar <- QC.elements validStartChar
+            let genOtherChars = QC.elements validOtherChar
+            otherChars <- replicateM stringLength genOtherChars
+            return $ fstChar:otherChars
+         validStartChar = ['a'..'z'] ++ ['A'..'Z']
+         validOtherChar = validStartChar ++ ['0'..'9'] ++ ['_']
