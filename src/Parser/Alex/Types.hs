@@ -56,6 +56,7 @@ data ParserError = GenericLexError AlexPosn
                  | GenericBasedLiteralError String AlexPosn
                  | InvalidBaseBasedLiteralError Double String AlexPosn
                  | NonMatchingIdentifierError ReservedWord String String AlexPosn
+                 deriving (Eq)
 
 instance (Show ParserError) where
    show (GenericLexError pos) =
