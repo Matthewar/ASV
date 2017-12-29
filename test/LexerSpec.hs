@@ -2,7 +2,7 @@ module LexerSpec (tests) where
 
 import Parser.Lexer (Token(..), lexerList)
 import Parser.Alex.Types (AlexPosn(..))
-import Parser.TokenTypes (ReservedWord(..))
+import Parser.TokenTypes (ReservedWord(..), OperatorType(..))
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -12,8 +12,8 @@ tests = testGroup "Lexer Tests"
 
 singleWords :: TestTree
 singleWords = testGroup "Single word tests for lexer"
-   [ singleKeywords ]
-   --, singleOperators
+   [ singleKeywords
+   , singleOperators ]
    --, singleIdentifiers
    --, singleLiterals ]
 
@@ -354,6 +354,54 @@ singleKeywordsLower = testGroup "Single lower case keywords"
          lexerList "xor" @?= Right [Keyword Xor]
    ]
 
---singleOperators :: TestTree
+singleOperators :: TestTree
+singleOperators = testGroup "Single operators"
+   [ testCase "\"=>\" == Arrow" $
+         lexerList "=>" @?= Right [Operator Arrow]
+   , testCase "\"**\" == DoubleStar" $
+         lexerList "**" @?= Right [Operator DoubleStar]
+   , testCase "\":=\" == VarAssign" $
+         lexerList ":=" @?= Right [Operator VarAssign]
+   , testCase "\"/=\" == Inequality" $
+         lexerList "/=" @?= Right [Operator Inequality]
+   , testCase "\">=\" == GreaterThanOrEqual" $
+         lexerList ">=" @?= Right [Operator GreaterThanOrEqual]
+   , testCase "\"<=\" == SignAssign" $
+         lexerList "<=" @?= Right [Operator SignAssign]
+   , testCase "\"<>\" == Box" $
+         lexerList "<>" @?= Right [Operator Box]
+   , testCase "\"&\" == Ampersand" $
+         lexerList "&" @?= Right [Operator Ampersand]
+   , testCase "\"'\" == Apostrophe" $
+         lexerList "'" @?= Right [Operator Apostrophe]
+   , testCase "\"(\" == LeftParen" $
+         lexerList "(" @?= Right [Operator LeftParen]
+   , testCase "\")\" == RightParen" $
+         lexerList ")" @?= Right [Operator RightParen]
+   , testCase "\"*\" == Star" $
+         lexerList "*" @?= Right [Operator Star]
+   , testCase "\"+\" == Plus" $
+         lexerList "+" @?= Right [Operator Plus]
+   , testCase "\",\" == Comma" $
+         lexerList "," @?= Right [Operator Comma]
+   , testCase "\"-\" == Hyphen" $
+         lexerList "-" @?= Right [Operator Hyphen]
+   , testCase "\".\" == Period" $
+         lexerList "." @?= Right [Operator Period]
+   , testCase "\"/\" == Slash" $
+         lexerList "/" @?= Right [Operator Slash]
+   , testCase "\":\" == Colon" $
+         lexerList ":" @?= Right [Operator Colon]
+   , testCase "\";\" == Semicolon" $
+         lexerList ";" @?= Right [Operator Semicolon]
+   , testCase "\"<\" == LessThan" $
+         lexerList "<" @?= Right [Operator LessThan]
+   , testCase "\"=\" == Equal" $
+         lexerList "=" @?= Right [Operator Equal]
+   , testCase "\">\" == GreaterThan" $
+         lexerList ">" @?= Right [Operator GreaterThan]
+   , testCase "\"|\" == Bar" $
+         lexerList "|" @?= Right [Operator Bar]
+   ]
 --singleIdentifiers :: TestTree
 --singleLiterals :: TestTree
