@@ -19,174 +19,341 @@ singleWords = testGroup "Single word tests for lexer"
 
 singleKeywords :: TestTree
 singleKeywords = testGroup "Single keyword tests for lexer"
-   [ singleKeywordsUpper ]
-   --, singleKeywordsLower ]
+   [ singleKeywordsUpper
+   , singleKeywordsLower ]
 
 singleKeywordsUpper :: TestTree
 singleKeywordsUpper = testGroup "Single upper case keywords"
-   [ testCase "Single upper case keyword Abs" $
+   [ testCase "\"ABS\" == Keyword Abs" $
          lexerList "ABS" @?= Right [Keyword Abs]
-   , testCase "Single upper case keyword Access" $
+   , testCase "\"ACCESS\" == Keyword Access" $
          lexerList "ACCESS" @?= Right [Keyword Access]
-   , testCase "Single upper case keyword After" $
+   , testCase "\"AFTER\" == Keyword After" $
          lexerList "AFTER" @?= Right [Keyword After]
-   , testCase "Single upper case keyword Alias" $
+   , testCase "\"ALIAS\" == Keyword Alias" $
          lexerList "ALIAS" @?= Right [Keyword Alias]
-   , testCase "Single upper case keyword All" $
+   , testCase "\"ALL\" == Keyword All" $
          lexerList "ALL" @?= Right [Keyword All]
-   , testCase "Single upper case keyword And" $
+   , testCase "\"AND\" == Keyword And" $
          lexerList "AND" @?= Right [Keyword And]
-   , testCase "Single upper case keyword Architecture" $
+   , testCase "\"ARCHITECTURE\" == Keyword Architecture" $
          lexerList "ARCHITECTURE" @?= Right [Keyword Architecture]
-   , testCase "Single upper case keyword Array" $
+   , testCase "\"ARRAY\" == Keyword Array" $
          lexerList "ARRAY" @?= Right [Keyword Array]
-   , testCase "Single upper case keyword Assert" $
+   , testCase "\"ASSERT\" == Keyword Assert" $
          lexerList "ASSERT" @?= Right [Keyword Assert]
-   , testCase "Single upper case keyword Attribute" $
+   , testCase "\"ATTRIBUTE\" == Keyword Attribute" $
          lexerList "ATTRIBUTE" @?= Right [Keyword Attribute]
-   , testCase "Single upper case keyword Begin" $
+   , testCase "\"BEGIN\" == Keyword Begin" $
          lexerList "BEGIN" @?= Right [Keyword Begin]
-   , testCase "Single upper case keyword Block" $
+   , testCase "\"BLOCK\" == Keyword Block" $
          lexerList "BLOCK" @?= Right [Keyword Block]
-   , testCase "Single upper case keyword Body" $
+   , testCase "\"BODY\" == Keyword Body" $
          lexerList "BODY" @?= Right [Keyword Body]
-   , testCase "Single upper case keyword Buffer" $
+   , testCase "\"BUFFER\" == Keyword Buffer" $
          lexerList "BUFFER" @?= Right [Keyword Buffer]
-   , testCase "Single upper case keyword Bus" $
+   , testCase "\"BUS\" == Keyword Bus" $
          lexerList "BUS" @?= Right [Keyword Bus]
-   , testCase "Single upper case keyword Case" $
+   , testCase "\"CASE\" == Keyword Case" $
          lexerList "CASE" @?= Right [Keyword Case]
-   , testCase "Single upper case keyword Component" $
+   , testCase "\"COMPONENT\" == Keyword Component" $
          lexerList "COMPONENT" @?= Right [Keyword Component]
-   , testCase "Single upper case keyword Configuration" $
+   , testCase "\"CONFIGURATION\" == Keyword Configuration" $
          lexerList "CONFIGURATION" @?= Right [Keyword Configuration]
-   , testCase "Single upper case keyword Constant" $
+   , testCase "\"CONSTANT\" == Keyword Constant" $
          lexerList "CONSTANT" @?= Right [Keyword Constant]
-   , testCase "Single upper case keyword Disconnect" $
+   , testCase "\"DISCONNECT\" == Keyword Disconnect" $
          lexerList "DISCONNECT" @?= Right [Keyword Disconnect]
-   , testCase "Single upper case keyword Downto" $
+   , testCase "\"DOWNTO\" == Keyword Downto" $
          lexerList "DOWNTO" @?= Right [Keyword Downto]
-   , testCase "Single upper case keyword Else" $
+   , testCase "\"ELSE\" == Keyword Else" $
          lexerList "ELSE" @?= Right [Keyword Else]
-   , testCase "Single upper case keyword Elsif" $
+   , testCase "\"ELSIF\" == Keyword Elsif" $
          lexerList "ELSIF" @?= Right [Keyword Elsif]
-   , testCase "Single upper case keyword End" $
+   , testCase "\"END\" == Keyword End" $
          lexerList "END" @?= Right [Keyword End]
-   , testCase "Single upper case keyword Entity" $
+   , testCase "\"ENTITY\" == Keyword Entity" $
          lexerList "ENTITY" @?= Right [Keyword Entity]
-   , testCase "Single upper case keyword Exit" $
+   , testCase "\"EXIT\" == Keyword Exit" $
          lexerList "EXIT" @?= Right [Keyword Exit]
-   , testCase "Single upper case keyword File" $
+   , testCase "\"FILE\" == Keyword File" $
          lexerList "FILE" @?= Right [Keyword File]
-   , testCase "Single upper case keyword For" $
+   , testCase "\"FOR\" == Keyword For" $
          lexerList "FOR" @?= Right [Keyword For]
-   , testCase "Single upper case keyword Function" $
+   , testCase "\"FUNCTION\" == Keyword Function" $
          lexerList "FUNCTION" @?= Right [Keyword Function]
-   , testCase "Single upper case keyword Generate" $
+   , testCase "\"GENERATE\" == Keyword Generate" $
          lexerList "GENERATE" @?= Right [Keyword Generate]
-   , testCase "Single upper case keyword Generic" $
+   , testCase "\"GENERIC\" == Keyword Generic" $
          lexerList "GENERIC" @?= Right [Keyword Generic]
-   , testCase "Single upper case keyword Guarded" $
+   , testCase "\"GUARDED\" == Keyword Guarded" $
          lexerList "GUARDED" @?= Right [Keyword Guarded]
-   , testCase "Single upper case keyword If" $
+   , testCase "\"IF\" == Keyword If" $
          lexerList "IF" @?= Right [Keyword If]
-   , testCase "Single upper case keyword In" $
+   , testCase "\"IN\" == Keyword In" $
          lexerList "IN" @?= Right [Keyword In]
-   , testCase "Single upper case keyword Inout" $
+   , testCase "\"INOUT\" == Keyword Inout" $
          lexerList "INOUT" @?= Right [Keyword Inout]
-   , testCase "Single upper case keyword Is" $
+   , testCase "\"IS\" == Keyword Is" $
          lexerList "IS" @?= Right [Keyword Is]
-   , testCase "Single upper case keyword Label" $
+   , testCase "\"LABEL\" == Keyword Label" $
          lexerList "LABEL" @?= Right [Keyword Label]
-   , testCase "Single upper case keyword Library" $
+   , testCase "\"LIBRARY\" == Keyword Library" $
          lexerList "LIBRARY" @?= Right [Keyword Library]
-   , testCase "Single upper case keyword Linkage" $
+   , testCase "\"LINKAGE\" == Keyword Linkage" $
          lexerList "LINKAGE" @?= Right [Keyword Linkage]
-   , testCase "Single upper case keyword Loop" $
+   , testCase "\"LOOP\" == Keyword Loop" $
          lexerList "LOOP" @?= Right [Keyword Loop]
-   , testCase "Single upper case keyword Map" $
+   , testCase "\"MAP\" == Keyword Map" $
          lexerList "MAP" @?= Right [Keyword Map]
-   , testCase "Single upper case keyword Mod" $
+   , testCase "\"MOD\" == Keyword Mod" $
          lexerList "MOD" @?= Right [Keyword Mod]
-   , testCase "Single upper case keyword Nand" $
+   , testCase "\"NAND\" == Keyword Nand" $
          lexerList "NAND" @?= Right [Keyword Nand]
-   , testCase "Single upper case keyword New" $
+   , testCase "\"NEW\" == Keyword New" $
          lexerList "NEW" @?= Right [Keyword New]
-   , testCase "Single upper case keyword Next" $
+   , testCase "\"NEXT\" == Keyword Next" $
          lexerList "NEXT" @?= Right [Keyword Next]
-   , testCase "Single upper case keyword Nor" $
+   , testCase "\"NOR\" == Keyword Nor" $
          lexerList "NOR" @?= Right [Keyword Nor]
-   , testCase "Single upper case keyword Not" $
+   , testCase "\"NOT\" == Keyword Not" $
          lexerList "NOT" @?= Right [Keyword Not]
-   , testCase "Single upper case keyword Null" $
+   , testCase "\"NULL\" == Keyword Null" $
          lexerList "NULL" @?= Right [Keyword Null]
-   , testCase "Single upper case keyword Of" $
+   , testCase "\"OF\" == Keyword Of" $
          lexerList "OF" @?= Right [Keyword Of]
-   , testCase "Single upper case keyword On" $
+   , testCase "\"ON\" == Keyword On" $
          lexerList "ON" @?= Right [Keyword On]
-   , testCase "Single upper case keyword Open" $
+   , testCase "\"OPEN\" == Keyword Open" $
          lexerList "OPEN" @?= Right [Keyword Open]
-   , testCase "Single upper case keyword Or" $
+   , testCase "\"OR\" == Keyword Or" $
          lexerList "OR" @?= Right [Keyword Or]
-   , testCase "Single upper case keyword Others" $
+   , testCase "\"OTHERS\" == Keyword Others" $
          lexerList "OTHERS" @?= Right [Keyword Others]
-   , testCase "Single upper case keyword Out" $
+   , testCase "\"OUT\" == Keyword Out" $
          lexerList "OUT" @?= Right [Keyword Out]
-   , testCase "Single upper case keyword Package" $
+   , testCase "\"PACKAGE\" == Keyword Package" $
          lexerList "PACKAGE" @?= Right [Keyword Package]
-   , testCase "Single upper case keyword Port" $
+   , testCase "\"PORT\" == Keyword Port" $
          lexerList "PORT" @?= Right [Keyword Port]
-   , testCase "Single upper case keyword Procedure" $
+   , testCase "\"PROCEDURE\" == Keyword Procedure" $
          lexerList "PROCEDURE" @?= Right [Keyword Procedure]
-   , testCase "Single upper case keyword Process" $
+   , testCase "\"PROCESS\" == Keyword Process" $
          lexerList "PROCESS" @?= Right [Keyword Process]
-   , testCase "Single upper case keyword Range" $
+   , testCase "\"RANGE\" == Keyword Range" $
          lexerList "RANGE" @?= Right [Keyword Range]
-   , testCase "Single upper case keyword Record" $
+   , testCase "\"RECORD\" == Keyword Record" $
          lexerList "RECORD" @?= Right [Keyword Record]
-   , testCase "Single upper case keyword Register" $
+   , testCase "\"REGISTER\" == Keyword Register" $
          lexerList "REGISTER" @?= Right [Keyword Register]
-   , testCase "Single upper case keyword Rem" $
+   , testCase "\"REM\" == Keyword Rem" $
          lexerList "REM" @?= Right [Keyword Rem]
-   , testCase "Single upper case keyword Report" $
+   , testCase "\"REPORT\" == Keyword Report" $
          lexerList "REPORT" @?= Right [Keyword Report]
-   , testCase "Single upper case keyword Return" $
+   , testCase "\"RETURN\" == Keyword Return" $
          lexerList "RETURN" @?= Right [Keyword Return]
-   , testCase "Single upper case keyword Select" $
+   , testCase "\"SELECT\" == Keyword Select" $
          lexerList "SELECT" @?= Right [Keyword Select]
-   , testCase "Single upper case keyword Severity" $
+   , testCase "\"SEVERITY\" == Keyword Severity" $
          lexerList "SEVERITY" @?= Right [Keyword Severity]
-   , testCase "Single upper case keyword Signal" $
+   , testCase "\"SIGNAL\" == Keyword Signal" $
          lexerList "SIGNAL" @?= Right [Keyword Signal]
-   , testCase "Single upper case keyword Subtype" $
+   , testCase "\"SUBTYPE\" == Keyword Subtype" $
          lexerList "SUBTYPE" @?= Right [Keyword Subtype]
-   , testCase "Single upper case keyword Then" $
+   , testCase "\"THEN\" == Keyword Then" $
          lexerList "THEN" @?= Right [Keyword Then]
-   , testCase "Single upper case keyword To" $
+   , testCase "\"TO\" == Keyword To" $
          lexerList "TO" @?= Right [Keyword To]
-   , testCase "Single upper case keyword Transport" $
+   , testCase "\"TRANSPORT\" == Keyword Transport" $
          lexerList "TRANSPORT" @?= Right [Keyword Transport]
-   , testCase "Single upper case keyword Type" $
+   , testCase "\"TYPE\" == Keyword Type" $
          lexerList "TYPE" @?= Right [Keyword Type]
-   , testCase "Single upper case keyword Units" $
+   , testCase "\"UNITS\" == Keyword Units" $
          lexerList "UNITS" @?= Right [Keyword Units]
-   , testCase "Single upper case keyword Until" $
+   , testCase "\"UNTIL\" == Keyword Until" $
          lexerList "UNTIL" @?= Right [Keyword Until]
-   , testCase "Single upper case keyword Use" $
+   , testCase "\"USE\" == Keyword Use" $
          lexerList "USE" @?= Right [Keyword Use]
-   , testCase "Single upper case keyword Variable" $
+   , testCase "\"VARIABLE\" == Keyword Variable" $
          lexerList "VARIABLE" @?= Right [Keyword Variable]
-   , testCase "Single upper case keyword Wait" $
+   , testCase "\"WAIT\" == Keyword Wait" $
          lexerList "WAIT" @?= Right [Keyword Wait]
-   , testCase "Single upper case keyword When" $
+   , testCase "\"WHEN\" == Keyword When" $
          lexerList "WHEN" @?= Right [Keyword When]
-   , testCase "Single upper case keyword While" $
+   , testCase "\"WHILE\" == Keyword While" $
          lexerList "WHILE" @?= Right [Keyword While]
-   , testCase "Single upper case keyword With" $
+   , testCase "\"WITH\" == Keyword With" $
          lexerList "WITH" @?= Right [Keyword With]
-   , testCase "Single upper case keyword Xor" $
+   , testCase "\"XOR\" == Keyword Xor" $
          lexerList "XOR" @?= Right [Keyword Xor]
    ]
+
+singleKeywordsLower :: TestTree
+singleKeywordsLower = testGroup "Single lower case keywords"
+   [ testCase "\"abs\" == Keyword Abs" $
+         lexerList "abs" @?= Right [Keyword Abs]
+   , testCase "\"access\" == Keyword Access" $
+         lexerList "access" @?= Right [Keyword Access]
+   , testCase "\"after\" == Keyword After" $
+         lexerList "after" @?= Right [Keyword After]
+   , testCase "\"alias\" == Keyword Alias" $
+         lexerList "alias" @?= Right [Keyword Alias]
+   , testCase "\"all\" == Keyword All" $
+         lexerList "all" @?= Right [Keyword All]
+   , testCase "\"and\" == Keyword And" $
+         lexerList "and" @?= Right [Keyword And]
+   , testCase "\"architecture\" == Keyword Architecture" $
+         lexerList "architecture" @?= Right [Keyword Architecture]
+   , testCase "\"array\" == Keyword Array" $
+         lexerList "array" @?= Right [Keyword Array]
+   , testCase "\"assert\" == Keyword Assert" $
+         lexerList "assert" @?= Right [Keyword Assert]
+   , testCase "\"attribute\" == Keyword Attribute" $
+         lexerList "attribute" @?= Right [Keyword Attribute]
+   , testCase "\"begin\" == Keyword Begin" $
+         lexerList "begin" @?= Right [Keyword Begin]
+   , testCase "\"block\" == Keyword Block" $
+         lexerList "block" @?= Right [Keyword Block]
+   , testCase "\"body\" == Keyword Body" $
+         lexerList "body" @?= Right [Keyword Body]
+   , testCase "\"buffer\" == Keyword Buffer" $
+         lexerList "buffer" @?= Right [Keyword Buffer]
+   , testCase "\"bus\" == Keyword Bus" $
+         lexerList "bus" @?= Right [Keyword Bus]
+   , testCase "\"case\" == Keyword Case" $
+         lexerList "case" @?= Right [Keyword Case]
+   , testCase "\"component\" == Keyword Component" $
+         lexerList "component" @?= Right [Keyword Component]
+   , testCase "\"configuration\" == Keyword Configuration" $
+         lexerList "configuration" @?= Right [Keyword Configuration]
+   , testCase "\"constant\" == Keyword Constant" $
+         lexerList "constant" @?= Right [Keyword Constant]
+   , testCase "\"disconnect\" == Keyword Disconnect" $
+         lexerList "disconnect" @?= Right [Keyword Disconnect]
+   , testCase "\"downto\" == Keyword Downto" $
+         lexerList "downto" @?= Right [Keyword Downto]
+   , testCase "\"else\" == Keyword Else" $
+         lexerList "else" @?= Right [Keyword Else]
+   , testCase "\"elsif\" == Keyword Elsif" $
+         lexerList "elsif" @?= Right [Keyword Elsif]
+   , testCase "\"end\" == Keyword End" $
+         lexerList "end" @?= Right [Keyword End]
+   , testCase "\"entity\" == Keyword Entity" $
+         lexerList "entity" @?= Right [Keyword Entity]
+   , testCase "\"exit\" == Keyword Exit" $
+         lexerList "exit" @?= Right [Keyword Exit]
+   , testCase "\"file\" == Keyword File" $
+         lexerList "file" @?= Right [Keyword File]
+   , testCase "\"for\" == Keyword For" $
+         lexerList "for" @?= Right [Keyword For]
+   , testCase "\"function\" == Keyword Function" $
+         lexerList "function" @?= Right [Keyword Function]
+   , testCase "\"generate\" == Keyword Generate" $
+         lexerList "generate" @?= Right [Keyword Generate]
+   , testCase "\"generic\" == Keyword Generic" $
+         lexerList "generic" @?= Right [Keyword Generic]
+   , testCase "\"guarded\" == Keyword Guarded" $
+         lexerList "guarded" @?= Right [Keyword Guarded]
+   , testCase "\"if\" == Keyword If" $
+         lexerList "if" @?= Right [Keyword If]
+   , testCase "\"in\" == Keyword In" $
+         lexerList "in" @?= Right [Keyword In]
+   , testCase "\"inout\" == Keyword Inout" $
+         lexerList "inout" @?= Right [Keyword Inout]
+   , testCase "\"is\" == Keyword Is" $
+         lexerList "is" @?= Right [Keyword Is]
+   , testCase "\"label\" == Keyword Label" $
+         lexerList "label" @?= Right [Keyword Label]
+   , testCase "\"library\" == Keyword Library" $
+         lexerList "library" @?= Right [Keyword Library]
+   , testCase "\"linkage\" == Keyword Linkage" $
+         lexerList "linkage" @?= Right [Keyword Linkage]
+   , testCase "\"loop\" == Keyword Loop" $
+         lexerList "loop" @?= Right [Keyword Loop]
+   , testCase "\"map\" == Keyword Map" $
+         lexerList "map" @?= Right [Keyword Map]
+   , testCase "\"mod\" == Keyword Mod" $
+         lexerList "mod" @?= Right [Keyword Mod]
+   , testCase "\"nand\" == Keyword Nand" $
+         lexerList "nand" @?= Right [Keyword Nand]
+   , testCase "\"new\" == Keyword New" $
+         lexerList "new" @?= Right [Keyword New]
+   , testCase "\"next\" == Keyword Next" $
+         lexerList "next" @?= Right [Keyword Next]
+   , testCase "\"nor\" == Keyword Nor" $
+         lexerList "nor" @?= Right [Keyword Nor]
+   , testCase "\"not\" == Keyword Not" $
+         lexerList "not" @?= Right [Keyword Not]
+   , testCase "\"null\" == Keyword Null" $
+         lexerList "null" @?= Right [Keyword Null]
+   , testCase "\"of\" == Keyword Of" $
+         lexerList "of" @?= Right [Keyword Of]
+   , testCase "\"on\" == Keyword On" $
+         lexerList "on" @?= Right [Keyword On]
+   , testCase "\"open\" == Keyword Open" $
+         lexerList "open" @?= Right [Keyword Open]
+   , testCase "\"or\" == Keyword Or" $
+         lexerList "or" @?= Right [Keyword Or]
+   , testCase "\"others\" == Keyword Others" $
+         lexerList "others" @?= Right [Keyword Others]
+   , testCase "\"out\" == Keyword Out" $
+         lexerList "out" @?= Right [Keyword Out]
+   , testCase "\"package\" == Keyword Package" $
+         lexerList "package" @?= Right [Keyword Package]
+   , testCase "\"port\" == Keyword Port" $
+         lexerList "port" @?= Right [Keyword Port]
+   , testCase "\"procedure\" == Keyword Procedure" $
+         lexerList "procedure" @?= Right [Keyword Procedure]
+   , testCase "\"process\" == Keyword Process" $
+         lexerList "process" @?= Right [Keyword Process]
+   , testCase "\"range\" == Keyword Range" $
+         lexerList "range" @?= Right [Keyword Range]
+   , testCase "\"record\" == Keyword Record" $
+         lexerList "record" @?= Right [Keyword Record]
+   , testCase "\"register\" == Keyword Register" $
+         lexerList "register" @?= Right [Keyword Register]
+   , testCase "\"rem\" == Keyword Rem" $
+         lexerList "rem" @?= Right [Keyword Rem]
+   , testCase "\"report\" == Keyword Report" $
+         lexerList "report" @?= Right [Keyword Report]
+   , testCase "\"return\" == Keyword Return" $
+         lexerList "return" @?= Right [Keyword Return]
+   , testCase "\"select\" == Keyword Select" $
+         lexerList "select" @?= Right [Keyword Select]
+   , testCase "\"severity\" == Keyword Severity" $
+         lexerList "severity" @?= Right [Keyword Severity]
+   , testCase "\"signal\" == Keyword Signal" $
+         lexerList "signal" @?= Right [Keyword Signal]
+   , testCase "\"subtype\" == Keyword Subtype" $
+         lexerList "subtype" @?= Right [Keyword Subtype]
+   , testCase "\"then\" == Keyword Then" $
+         lexerList "then" @?= Right [Keyword Then]
+   , testCase "\"to\" == Keyword To" $
+         lexerList "to" @?= Right [Keyword To]
+   , testCase "\"transport\" == Keyword Transport" $
+         lexerList "transport" @?= Right [Keyword Transport]
+   , testCase "\"type\" == Keyword Type" $
+         lexerList "type" @?= Right [Keyword Type]
+   , testCase "\"units\" == Keyword Units" $
+         lexerList "units" @?= Right [Keyword Units]
+   , testCase "\"until\" == Keyword Until" $
+         lexerList "until" @?= Right [Keyword Until]
+   , testCase "\"use\" == Keyword Use" $
+         lexerList "use" @?= Right [Keyword Use]
+   , testCase "\"variable\" == Keyword Variable" $
+         lexerList "variable" @?= Right [Keyword Variable]
+   , testCase "\"wait\" == Keyword Wait" $
+         lexerList "wait" @?= Right [Keyword Wait]
+   , testCase "\"when\" == Keyword When" $
+         lexerList "when" @?= Right [Keyword When]
+   , testCase "\"while\" == Keyword While" $
+         lexerList "while" @?= Right [Keyword While]
+   , testCase "\"with\" == Keyword With" $
+         lexerList "with" @?= Right [Keyword With]
+   , testCase "\"xor\" == Keyword Xor" $
+         lexerList "xor" @?= Right [Keyword Xor]
+   ]
+
 --singleOperators :: TestTree
 --singleIdentifiers :: TestTree
 --singleLiterals :: TestTree
