@@ -205,9 +205,12 @@ makeIdentifier (position, _, _, str) length =
 
 makeDecimalLiteral :: AlexInput -> Int -> Alex Token
 makeDecimalLiteral (position, _, _, str) length =
-   let numberStr = take length str
-       number = read numberStr
-   in return $ Literal $ Decimal number
+   take length str
+   & filter (\char -> char /= '_')
+   & read
+   & Decimal
+   & Literal
+   & return
 
 makeBasedLiteral :: Char -> AlexInput -> Int -> Alex Token
 makeBasedLiteral separator (position, _, _, str) length = do

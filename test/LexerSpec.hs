@@ -411,11 +411,93 @@ singleOperators = testGroup "Single operators"
 singleLiterals :: TestTree
 singleLiterals = testGroup "Single literals"
 --   [ singleBasedLiterals
---   , singleDecimalLiterals
-   [ singleBitStrLiterals
+   [ singleDecimalLiterals
+   , singleBitStrLiterals
    , singleStrLiterals
    , singleCharLiterals
    ]
+
+singleDecimalLiterals :: TestTree
+singleDecimalLiterals = testGroup "Single decimal values"
+   [ singleDecLit_int
+   , singleDecLit_float
+   , singleDecLit_int_exp
+   , singleDecLit_float_exp
+   , singleDecLit_zeroes
+   ]
+
+singleDecLit_int :: TestTree
+singleDecLit_int = QC.testProperty "Integer value without exponent" $
+   let expression :: Int -> Bool
+       expression value =
+         let lexRun = lexerList $ show value
+             expectedOutput = Right [Literal $ Decimal $ fromIntegral value]
+         in lexRun == expectedOutput
+   in expression . abs
+
+singleDecLit_float :: TestTree
+singleDecLit_float = QC.testProperty "Decimal value without exponent" $
+   let expression :: Double -> Bool
+       expression value =
+         let lexRun = lexerList $ show value
+             expectedOutput = Right [Literal $ Decimal value]
+         in lexRun == expectedOutput
+   in expression . abs
+
+singleDecLit_int_exp :: TestTree
+singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
+   QC.forAll genVal $ \value ->
+      let expectedValue = Right [Literal $ Decimal $ read $ filter (\char -> char /= '_') value]
+          lexRun = lexerList value
+      in lexRun == expectedValue
+   where genVal = do
+            intStr <- genInteger 1 20
+            exponentChar <- QC.elements "Ee"
+            exponentSign <- QC.elements ["+","-",""]
+            exponentVal <- genInteger 0 1
+            let exponentStr = [exponentChar] ++ exponentSign ++ exponentVal
+            return $ intStr ++ exponentStr
+
+genInteger fromLength toLength = do
+   firstInt <- QC.elements digit
+   lengthStr <- QC.elements [fromLength..toLength]
+   otherInts <- replicateM lengthStr $ QC.elements integer
+   return $ [firstInt] ++ otherInts
+   where digit = ['0'..'9']
+         integer = digit ++ "_"
+
+singleDecLit_float_exp :: TestTree
+singleDecLit_float_exp = QC.testProperty "Decimal value with exponent" $
+   QC.forAll genVal $ \value ->
+      let expectedValue = Right [Literal $ Decimal $ read $ filter (\char -> char /= '_') value]
+          lexRun = lexerList value
+      in lexRun == expectedValue
+   where genVal = do
+            intStr <- genInteger 1 20
+            exponentChar <- QC.elements "Ee"
+            exponentSign <- QC.elements ["+","-",""]
+            exponentVal <- genInteger 0 1
+            let exponentStr = [exponentChar] ++ exponentSign ++ exponentVal
+            return $ intStr ++ "." ++ intStr ++ exponentStr
+
+singleDecLit_zeroes :: TestTree
+singleDecLit_zeroes = testGroup "Zero values"
+   [ testCase "0" $ lexerList "0" @?= Right [Literal $ Decimal 0.0]
+   , testCase "0.0" $ lexerList "0.0" @?= Right [Literal $ Decimal 0.0]
+   , QC.testProperty "0[Ee][+-]?[0-9]+" $
+         QC.forAll (genExp "0") $ \input -> compareFunc input
+   , QC.testProperty "0.0[Ee][+-]?[0-9]+" $
+         QC.forAll (genExp "0.0") $ \input -> compareFunc input
+   ]
+   where genExp :: String -> QC.Gen String
+         genExp start = do
+            exponentChar <- QC.elements "Ee"
+            exponentVal <- genInteger 0 1
+            exponentSign <- QC.elements ["+","-",""]
+            return $ start ++ [exponentChar] ++ exponentSign ++ exponentVal
+         compareFunc :: String -> Bool
+         compareFunc input =
+            lexerList input == Right [Literal $ Decimal 0.0]
 
 singleBitStrLiterals :: TestTree
 singleBitStrLiterals = testGroup "Single bit strings"
