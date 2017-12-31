@@ -99,7 +99,6 @@ data LitType = Univ_Int Int64
              | Character Char
              deriving (Eq,Show)
 
-
 data OperatorType = Arrow              -- =>
                   | DoubleStar         -- **
                   | VarAssign          -- :=

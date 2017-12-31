@@ -215,8 +215,10 @@ makeDecimalLiteral (position, _, _, str) length =
          else Univ_Int . floor
        checkError Nothing =
          let errorType =
-               if isReal then OutOfBoundsReal
-               else OutOfBoundsInt
+               if isReal then \valStr ->
+                     LiteralLexError (UniversalLexError $ OutOfBoundsReal valStr)
+               else \valStr ->
+                     LiteralLexError (UniversalLexError $ OutOfBoundsInt valStr)
          in alexError $ errorType extractedStr position
        checkError (Just value) =
          value
@@ -233,7 +235,9 @@ makeBasedLiteral separator (position, _, _, str) length = do
    (base,value,exponent) <- case splitOn [separator] basedStr of
       (base:value:('E':exponent):[]) -> return (base,value,exponent)
       (base:value:"":[]) -> return (base,value,"0")
-      _ -> alexError $ GenericBasedLiteralError basedStr position
+      _ -> alexError $ LiteralLexError
+                        (BasedLexError $ GenericBasedLiteralError basedStr)
+                        position
    baseInt <- return $ read base
    exponentInt <- return $ read exponent
    let convertBasedUnits ans iter (unit:units) =
@@ -257,7 +261,9 @@ makeBasedLiteral separator (position, _, _, str) length = do
       & Univ_Real
       & Literal
       & return
-   else alexError $ InvalidBaseBasedLiteralError baseInt basedStr position
+   else alexError $ LiteralLexError
+                        (BasedLexError $ InvalidBase (floor baseInt) basedStr)
+                        position
 
 makeCharLiteral :: AlexInput -> Int -> Alex Token
 makeCharLiteral (position, _, _, ('\'':char:'\'':[])) _ =
@@ -309,7 +315,7 @@ lexer cont = do
 -- | Basic call to lexer
 -- Can be used for debug
 -- Returns either error or list of tokens
-lexerList :: String -> Either ParserError [Token]
+lexerList :: String -> Either LexerError [Token]
 lexerList str = runAlex str $ do
    let loop tknLst = do token <- alexMonadScan
                         case token of

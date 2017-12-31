@@ -1,7 +1,12 @@
 module LexerSpec (tests) where
 
 import Parser.Lexer (Token(..), lexerList)
-import Parser.Alex.Types (AlexPosn(..),ParserError(..))
+import Parser.Alex.Types (
+   AlexPosn(..),
+   LexerError(..),
+   LiteralLexErrorType(..),
+   UnivLexErrorType(..)
+   )
 import Parser.TokenTypes
 
 import Test.Tasty
@@ -457,7 +462,8 @@ singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
           doubleValue :: Double -- ?? Probably needs changing to deal with numbers too large for double
           doubleValue = base * 10 ** exp
           expectedValue =
-            if isInfinite doubleValue then Left $ OutOfBoundsInt value $ AlexPn 0 1 0
+            if isInfinite doubleValue then
+                  Left $ LiteralLexError (UniversalLexError $ OutOfBoundsInt value) $ AlexPn 0 1 0
             else Right [Literal $ Univ_Int $ floor doubleValue]
           lexRun = lexerList value
       in lexRun == expectedValue

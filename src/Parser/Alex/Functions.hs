@@ -64,7 +64,7 @@ alexMove (AlexPn a l c) _    = AlexPn (a+1)  l     (c+1)
 -- ?? Compile with -funbox-strict-fields for best results!
 
 -- | Take in input a string and run the lexer on it
-runAlex :: String -> Alex a -> Either ParserError a
+runAlex :: String -> Alex a -> Either LexerError a
 runAlex input__ (Alex f)
    = case f (AlexState {alex_pos = alexStartPos,
                         alex_inp = input__,
@@ -86,7 +86,7 @@ alexSetInput (pos,c,bs,inp__)
                   state__@(AlexState{}) -> Right (state__, ())
 
 -- | Return lexer error
-alexError :: ParserError -> Alex a
+alexError :: LexerError -> Alex a
 alexError err = Alex $ const $ Left err
 
 -- | Get lexer current startcode

@@ -30,7 +30,7 @@ data AlexState = AlexState {
         alex_scd :: !Int        -- the current startcode
     }
 
-newtype Alex a = Alex { unAlex :: AlexState -> Either ParserError (AlexState, a) }
+newtype Alex a = Alex { unAlex :: AlexState -> Either LexerError (AlexState, a) }
 
 instance Functor Alex where
   fmap f a = Alex $ \s -> case unAlex a s of
@@ -54,29 +54,48 @@ instance Monad Alex where
 -- | Type for alex actions
 type AlexAction result = AlexInput -> Int -> Alex result
 
-data ParserError = GenericLexError AlexPosn
-                 | GenericBasedLiteralError String AlexPosn
-                 | InvalidBaseBasedLiteralError Double String AlexPosn
-                 | OutOfBoundsInt String AlexPosn
-                 | OutOfBoundsReal String AlexPosn
+-- | Errors associated with literal lexer
+data LiteralLexErrorType = BasedLexError BasedLexErrorType
+                         | DecimalLexError DecimalLexErrorType
+                         | UniversalLexError UnivLexErrorType
+                         deriving (Eq)
+
+-- | Errors associated with based literals in the lexer
+data BasedLexErrorType = InvalidBase Int String
+--                       | InvalidValue
+                       | GenericBasedLiteralError String
+                       deriving (Eq)
+
+-- | Errors associated with decimal literals in the lexer
+data DecimalLexErrorType = InvalidDecimalFormat String
+                         deriving (Eq)
+
+-- | Errors associated with literals interpreted as universal type in the lexer
+data UnivLexErrorType = OutOfBoundsInt String
+                      | OutOfBoundsReal String
+                      deriving (Eq)
+
+-- | Errors that the lexer can output
+data LexerError = GenericLexError AlexPosn
+                 | LiteralLexError LiteralLexErrorType AlexPosn
 --                 | NonMatchingIdentifierError ReservedWord String String AlexPosn
                  deriving (Eq)
 
-instance (Show ParserError) where
+instance (Show LexerError) where
    show (GenericLexError pos) =
       "Some lexer error occurred "
       ++ getLineAndColErrStr pos
-   show (GenericBasedLiteralError str pos) =
+   show (LiteralLexError (BasedLexError (GenericBasedLiteralError str)) pos) =
       "Some lexer error occurred lexing bit string "
       ++ str
       ++ (getLineAndColErrStr pos)
-   show (InvalidBaseBasedLiteralError base str pos) =
+   show (LiteralLexError (BasedLexError (InvalidBase base str)) pos) =
       "Lexer found invalid base "
       ++ (show base)
       ++ " in literal "
       ++ str
       ++ (getLineAndColErrStr pos)
-   show (OutOfBoundsInt valStr pos) =
+   show (LiteralLexError (UniversalLexError (OutOfBoundsInt valStr)) pos) =
       "Lexer found out of bounds integer value "
       ++ valStr
       ++ (getLineAndColErrStr pos)
@@ -84,7 +103,7 @@ instance (Show ParserError) where
       ++ (show $ (minBound :: Int64))
       ++ " to "
       ++ (show $ (maxBound :: Int64))
-   show (OutOfBoundsReal valStr pos) =
+   show (LiteralLexError (UniversalLexError (OutOfBoundsReal valStr)) pos) =
       let maxVal = getFloatBound (0.0 :: Double)
       in "Lexer found out of bounds real value "
          ++ valStr
