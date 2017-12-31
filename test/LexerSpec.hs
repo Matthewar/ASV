@@ -11,6 +11,7 @@ import Control.Monad
 import Data.Function ((&))
 import qualified Data.Map.Strict as MapS
 import Data.List.Split (splitOneOf)
+import qualified Data.ByteString.Char8 as ByteString (pack)
 
 tests :: TestTree
 tests = testGroup "Lexer Tests"
@@ -523,6 +524,7 @@ singleBitStrLiterals_cont container =
           lexRun = lexerList lexInput
           unformattedString =
             filter (\char -> char /= '_') str -- Remove underscores
+            & ByteString.pack
           expectedOutput = Right [Literal $ BitStr (convertBase MapS.! base) unformattedString]
       in lexRun == expectedOutput
    where generateBitStr = do

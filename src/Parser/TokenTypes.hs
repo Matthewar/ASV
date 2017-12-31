@@ -2,6 +2,7 @@ module Parser.TokenTypes where
 
 import Data.Char as Char
 import Data.Int (Int64)
+import Data.ByteString.Char8 as ByteString
 
 data ReservedWord = Abs
                   | Access
@@ -93,7 +94,7 @@ data LiteralBase = BinBased -- B
 
 data LitType = Univ_Int Int64
              | Univ_Real Double
-             | BitStr LiteralBase String
+             | BitStr LiteralBase ByteString
              | Str String
              | Character Char
              deriving (Eq,Show)

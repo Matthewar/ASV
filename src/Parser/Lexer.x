@@ -6,6 +6,7 @@ import Data.Function ((&))
 import Parser.Alex.Types
 import Parser.Alex.Functions
 import Text.Read (readMaybe)
+import qualified Data.ByteString.Char8 as ByteString (pack)
 }
 
 -- %wrapper "monad"
@@ -289,6 +290,7 @@ makeBitStrLiteral base (position, _, _, str) length =
    & init
    & \(_:_:bitString) ->
       filter (\c -> c /= '_') bitString
+      & ByteString.pack
       & BitStr base
       & Literal
       & return
