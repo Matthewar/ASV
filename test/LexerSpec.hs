@@ -1,14 +1,16 @@
 module LexerSpec (tests) where
 
 import Parser.Lexer (Token(..), lexerList)
-import Parser.Alex.Types (AlexPosn(..))
+import Parser.Alex.Types (AlexPosn(..),ParserError(..))
 import Parser.TokenTypes
+
 import Test.Tasty
 import Test.Tasty.HUnit
 import qualified Test.Tasty.QuickCheck as QC
 import Control.Monad
 import Data.Function ((&))
 import qualified Data.Map.Strict as MapS
+import Data.List.Split (splitOneOf)
 
 tests :: TestTree
 tests = testGroup "Lexer Tests"
@@ -420,9 +422,9 @@ singleLiterals = testGroup "Single literals"
 singleDecimalLiterals :: TestTree
 singleDecimalLiterals = testGroup "Single decimal values"
    [ singleDecLit_int
-   , singleDecLit_float
+   , singleDecLit_real
    , singleDecLit_int_exp
-   , singleDecLit_float_exp
+   , singleDecLit_real_exp
    , singleDecLit_zeroes
    ]
 
@@ -431,27 +433,35 @@ singleDecLit_int = QC.testProperty "Integer value without exponent" $
    let expression :: Int -> Bool
        expression value =
          let lexRun = lexerList $ show value
-             expectedOutput = Right [Literal $ Decimal $ fromIntegral value]
+             expectedOutput = Right [Literal $ Univ_Int $ fromIntegral value]
          in lexRun == expectedOutput
    in expression . abs
 
-singleDecLit_float :: TestTree
-singleDecLit_float = QC.testProperty "Decimal value without exponent" $
+singleDecLit_real :: TestTree
+singleDecLit_real = QC.testProperty "Real value without exponent" $
    let expression :: Double -> Bool
        expression value =
          let lexRun = lexerList $ show value
-             expectedOutput = Right [Literal $ Decimal value]
+             expectedOutput = Right [Literal $ Univ_Real value]
          in lexRun == expectedOutput
    in expression . abs
 
 singleDecLit_int_exp :: TestTree
 singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
    QC.forAll genVal $ \value ->
-      let expectedValue = Right [Literal $ Decimal $ read $ filter (\char -> char /= '_') value]
+      let [base,exp] =
+            filter (\char -> not $ elem char "+_") value
+            & splitOneOf "Ee"
+            & fmap read
+          doubleValue :: Double -- ?? Probably needs changing to deal with numbers too large for double
+          doubleValue = base * 10 ** exp
+          expectedValue =
+            if isInfinite doubleValue then Left $ OutOfBoundsInt value $ AlexPn 0 1 0
+            else Right [Literal $ Univ_Int $ floor doubleValue]
           lexRun = lexerList value
       in lexRun == expectedValue
    where genVal = do
-            intStr <- genInteger 1 20
+            intStr <- genInteger 1 10
             exponentChar <- QC.elements "Ee"
             exponentSign <- QC.elements ["+","-",""]
             exponentVal <- genInteger 0 1
@@ -466,10 +476,10 @@ genInteger fromLength toLength = do
    where digit = ['0'..'9']
          integer = digit ++ "_"
 
-singleDecLit_float_exp :: TestTree
-singleDecLit_float_exp = QC.testProperty "Decimal value with exponent" $
+singleDecLit_real_exp :: TestTree
+singleDecLit_real_exp = QC.testProperty "Real value with exponent" $
    QC.forAll genVal $ \value ->
-      let expectedValue = Right [Literal $ Decimal $ read $ filter (\char -> char /= '_') value]
+      let expectedValue = Right [Literal $ Univ_Real $ read $ filter (/= '_') value]
           lexRun = lexerList value
       in lexRun == expectedValue
    where genVal = do
@@ -482,12 +492,12 @@ singleDecLit_float_exp = QC.testProperty "Decimal value with exponent" $
 
 singleDecLit_zeroes :: TestTree
 singleDecLit_zeroes = testGroup "Zero values"
-   [ testCase "0" $ lexerList "0" @?= Right [Literal $ Decimal 0.0]
-   , testCase "0.0" $ lexerList "0.0" @?= Right [Literal $ Decimal 0.0]
+   [ testCase "0" $ lexerList "0" @?= Right [Literal $ Univ_Int 0]
+   , testCase "0.0" $ lexerList "0.0" @?= Right [Literal $ Univ_Real 0.0]
    , QC.testProperty "0[Ee][+-]?[0-9]+" $
-         QC.forAll (genExp "0") $ \input -> compareFunc input
+         QC.forAll (genExp "0") $ \input -> compareFunc input $ Univ_Int 0
    , QC.testProperty "0.0[Ee][+-]?[0-9]+" $
-         QC.forAll (genExp "0.0") $ \input -> compareFunc input
+         QC.forAll (genExp "0.0") $ \input -> compareFunc input $ Univ_Real 0.0
    ]
    where genExp :: String -> QC.Gen String
          genExp start = do
@@ -495,9 +505,9 @@ singleDecLit_zeroes = testGroup "Zero values"
             exponentVal <- genInteger 0 1
             exponentSign <- QC.elements ["+","-",""]
             return $ start ++ [exponentChar] ++ exponentSign ++ exponentVal
-         compareFunc :: String -> Bool
-         compareFunc input =
-            lexerList input == Right [Literal $ Decimal 0.0]
+         compareFunc :: String -> LitType -> Bool
+         compareFunc input value =
+            lexerList input == Right [Literal $ value]
 
 singleBitStrLiterals :: TestTree
 singleBitStrLiterals = testGroup "Single bit strings"

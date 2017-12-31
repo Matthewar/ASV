@@ -5,6 +5,7 @@ import Parser.TokenTypes
 import Data.Function ((&))
 import Parser.Alex.Types
 import Parser.Alex.Functions
+import Text.Read (readMaybe)
 }
 
 -- %wrapper "monad"
@@ -15,7 +16,7 @@ $lower_case_letter = [a-z]
 $digit = [0-9]
 @letter_or_digit = $digit | @letter
 @underline_letter_or_digit = "_" | @letter_or_digit
-@underline_digit = "_" | $digit
+@underline_digit = "_"? $digit
 @integer = $digit @underline_digit*
 @exponent = [Ee] [\+\-]? @integer
 $binary = [01]
@@ -205,12 +206,25 @@ makeIdentifier (position, _, _, str) length =
 
 makeDecimalLiteral :: AlexInput -> Int -> Alex Token
 makeDecimalLiteral (position, _, _, str) length =
-   take length str
-   & filter (\char -> char /= '_')
-   & read
-   & Decimal
-   & Literal
-   & return
+   let extractedStr = take length str
+       formattedStr = filter (\char -> char /= '_') extractedStr
+       isReal = elem '.' formattedStr
+       convertToLiteralType =
+         if isReal then Univ_Real
+         else Univ_Int . floor
+       checkError Nothing =
+         let errorType =
+               if isReal then OutOfBoundsReal
+               else OutOfBoundsInt
+         in alexError $ errorType extractedStr position
+       checkError (Just value) =
+         value
+         & convertToLiteralType
+         & Literal
+         & return
+   in formattedStr
+      & readMaybe
+      & checkError
 
 makeBasedLiteral :: Char -> AlexInput -> Int -> Alex Token
 makeBasedLiteral separator (position, _, _, str) length = do
@@ -238,7 +252,8 @@ makeBasedLiteral separator (position, _, _, str) length = do
    if elem baseInt [2..16] then
       convertBasedFloat value
       & \numericValue -> numericValue * (baseInt ^ exponentInt)
-      & Decimal
+--      & Decimal
+      & Univ_Real
       & Literal
       & return
    else alexError $ InvalidBaseBasedLiteralError baseInt basedStr position

@@ -1,6 +1,7 @@
 module Parser.TokenTypes where
 
 import Data.Char as Char
+import Data.Int (Int64)
 
 data ReservedWord = Abs
                   | Access
@@ -90,8 +91,8 @@ data LiteralBase = BinBased -- B
                  | HexBased -- X
                  deriving (Eq,Show,Ord)
 
-data LitType = BasedLiteral LiteralBase Integer (Maybe Integer)
-             | Decimal Double
+data LitType = Univ_Int Int64
+             | Univ_Real Double
              | BitStr LiteralBase String
              | Str String
              | Character Char

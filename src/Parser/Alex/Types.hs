@@ -3,6 +3,8 @@ module Parser.Alex.Types where
 
 import Data.Word (Word8)
 import Control.Applicative as App (Applicative (..))
+import Data.Int (Int64)
+import Data.Function ((&))
 
 import Parser.TokenTypes
 
@@ -55,12 +57,14 @@ type AlexAction result = AlexInput -> Int -> Alex result
 data ParserError = GenericLexError AlexPosn
                  | GenericBasedLiteralError String AlexPosn
                  | InvalidBaseBasedLiteralError Double String AlexPosn
-                 | NonMatchingIdentifierError ReservedWord String String AlexPosn
+                 | OutOfBoundsInt String AlexPosn
+                 | OutOfBoundsReal String AlexPosn
+--                 | NonMatchingIdentifierError ReservedWord String String AlexPosn
                  deriving (Eq)
 
 instance (Show ParserError) where
    show (GenericLexError pos) =
-      "Some lexer error occurred at line "
+      "Some lexer error occurred "
       ++ getLineAndColErrStr pos
    show (GenericBasedLiteralError str pos) =
       "Some lexer error occurred lexing bit string "
@@ -72,6 +76,23 @@ instance (Show ParserError) where
       ++ " in literal "
       ++ str
       ++ (getLineAndColErrStr pos)
+   show (OutOfBoundsInt valStr pos) =
+      "Lexer found out of bounds integer value "
+      ++ valStr
+      ++ (getLineAndColErrStr pos)
+      ++ " note that integer range is "
+      ++ (show $ (minBound :: Int64))
+      ++ " to "
+      ++ (show $ (maxBound :: Int64))
+   show (OutOfBoundsReal valStr pos) =
+      let maxVal = getFloatBound (0.0 :: Double)
+      in "Lexer found out of bounds real value "
+         ++ valStr
+         ++ (getLineAndColErrStr pos)
+         ++ " note that integer range is "
+         ++ maxVal
+         ++ " to -"
+         ++ maxVal
 
 -- | Get the string containing the line and column string
 getLineAndColErrStr :: AlexPosn -> String
@@ -80,3 +101,14 @@ getLineAndColErrStr (AlexPn _ line column) =
    ++ (show line)
    ++ ", column "
    ++ (show column)
+
+-- | Find largest (and by extension smallest) possible value of double
+getFloatBound :: RealFloat a => a -> String
+getFloatBound val =
+   let radix = floatRadix val
+       maxExp = snd $ floatRange val
+       numBitsSig = floatDigits val
+       mantissa = (radix ^ numBitsSig) - 1
+       exp = maxExp - numBitsSig
+   in encodeFloat mantissa exp
+      & show
