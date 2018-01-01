@@ -4,8 +4,6 @@ import Parser.Lexer (Token(..), lexerList)
 import Parser.Alex.Types (
    AlexPosn(..),
    LexerError(..),
-   LiteralLexErrorType(..),
-   UnivLexErrorType(..)
    )
 import Parser.TokenTypes
 
@@ -463,25 +461,68 @@ singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
           doubleValue = base * 10 ** exp
           expectedValue =
             if isInfinite doubleValue then
-                  Left $ LiteralLexError (UniversalLexError $ OutOfBoundsInt value) $ AlexPn 0 1 0
+                  Left $ LexErr_UniversalInt_OutOfBounds value $ AlexPn 0 1 0
             else Right [Literal $ Univ_Int $ floor doubleValue]
           lexRun = lexerList value
       in lexRun == expectedValue
    where genVal = do
             intStr <- genInteger 1 10
-            exponentChar <- QC.elements "Ee"
-            exponentSign <- QC.elements ["+","-",""]
-            exponentVal <- genInteger 0 1
-            let exponentStr = [exponentChar] ++ exponentSign ++ exponentVal
-            return $ intStr ++ exponentStr
+            expStr <- genExponent
+            return $ intStr ++ expStr
 
 genInteger fromLength toLength = do
-   firstInt <- QC.elements digit
+   firstInt <- QC.elements ['0'..'9']
    lengthStr <- QC.elements [fromLength..toLength]
-   otherInts <- replicateM lengthStr $ QC.elements integer
-   return $ [firstInt] ++ otherInts
-   where digit = ['0'..'9']
-         integer = digit ++ "_"
+   otherInts <- replicateM lengthStr genUnderscoreDigit
+   return $ [firstInt] ++ (concat otherInts)
+
+genUnderscoreDigit = do
+   optionalUnderscore <- QC.elements [True,False]
+   otherDigit <- QC.elements ['0'..'9']
+   return $
+      if optionalUnderscore then ['_',otherDigit]
+      else [otherDigit]
+
+genExponent = do
+   expChar <- QC.elements "Ee"
+   expSign <- QC.elements ["+","-",""]
+   expVal <- genInteger 0 1
+   return $ (expChar:expSign) ++ expVal
+
+generateBitStr :: Char -> QC.Gen String
+generateBitStr container = do
+   base <- QC.elements [BinBased,OctBased,HexBased]
+   baseChar <- QC.elements $ baseCharMap MapS.! base
+   bitStr <- generateExtendedStr base
+   return $ [baseChar,container] ++ bitStr ++ [container]
+   where baseCharMap =
+            [ (BinBased,"Bb")
+            , (OctBased,"Oo")
+            , (HexBased,"Xx")
+            ]
+            & MapS.fromList
+
+generateExtendedStr :: LiteralBase -> QC.Gen String
+generateExtendedStr base = do
+   let allowedChars = charMap MapS.! base
+   firstChar <- QC.elements allowedChars
+   lengthStr <- QC.elements [0..100]
+   otherChars <- replicateM lengthStr $ generateUnderscoreExtendedChar allowedChars
+   return $ [firstChar] ++ (concat otherChars)
+   where charMap =
+            [ (BinBased,"01")
+            , (OctBased,['0'..'7'])
+            , (HexBased,['0'..'9']++['A'..'F']++['a'..'f'])
+            ]
+            & MapS.fromList
+
+generateUnderscoreExtendedChar :: [Char] -> QC.Gen String
+generateUnderscoreExtendedChar allowedChars = do
+   optionalUnderscore <- QC.elements [True,False]
+   otherChar <- QC.elements allowedChars
+   return $
+      if optionalUnderscore then ['_',otherChar]
+      else [otherChar]
 
 singleDecLit_real_exp :: TestTree
 singleDecLit_real_exp = QC.testProperty "Real value with exponent" $
@@ -490,12 +531,9 @@ singleDecLit_real_exp = QC.testProperty "Real value with exponent" $
           lexRun = lexerList value
       in lexRun == expectedValue
    where genVal = do
-            intStr <- genInteger 1 20
-            exponentChar <- QC.elements "Ee"
-            exponentSign <- QC.elements ["+","-",""]
-            exponentVal <- genInteger 0 1
-            let exponentStr = [exponentChar] ++ exponentSign ++ exponentVal
-            return $ intStr ++ "." ++ intStr ++ exponentStr
+            intStr <- genInteger 1 10
+            expStr <- genExponent
+            return $ intStr ++ "." ++ intStr ++ expStr
 
 singleDecLit_zeroes :: TestTree
 singleDecLit_zeroes = testGroup "Zero values"
@@ -508,10 +546,8 @@ singleDecLit_zeroes = testGroup "Zero values"
    ]
    where genExp :: String -> QC.Gen String
          genExp start = do
-            exponentChar <- QC.elements "Ee"
-            exponentVal <- genInteger 0 1
-            exponentSign <- QC.elements ["+","-",""]
-            return $ start ++ [exponentChar] ++ exponentSign ++ exponentVal
+            expStr <- genExponent
+            return $ start ++ expStr
          compareFunc :: String -> LitType -> Bool
          compareFunc input value =
             lexerList input == Right [Literal $ value]
@@ -524,31 +560,18 @@ singleBitStrLiterals = testGroup "Single bit strings"
 
 singleBitStrLiterals_cont :: Char -> QC.Property
 singleBitStrLiterals_cont container =
-   QC.forAll generateBitStr $ \(base,str) ->
-      let lexInput =
-            [base,container] ++ str ++ [container]
-          lexRun = lexerList lexInput
-          unformattedString =
-            filter (\char -> char /= '_') str -- Remove underscores
+   QC.forAll (generateBitStr container) $ \bitStr ->
+      let lexRun = lexerList bitStr
+          (baseChar:_:strNoBase) = bitStr
+          base = baseMap MapS.! baseChar
+          unformattedStr =
+            strNoBase
+            & init
+            & filter (\char -> char /= '_')
             & ByteString.pack
-          expectedOutput = Right [Literal $ BitStr (convertBase MapS.! base) unformattedString]
+          expectedOutput = Right [Literal $ BitStr base unformattedStr]
       in lexRun == expectedOutput
-   where generateBitStr = do
-            baseChar <- QC.elements "BbOoXx"
-            let allowedChars =
-                  [ (BinBased,"01")
-                  , (OctBased,['0'..'7'])
-                  , (HexBased,['0'..'9']++['A'..'F']++['a'..'f'])
-                  ]
-                  & MapS.fromList
-                extendedDigit =
-                  convertBase MapS.! baseChar
-                  & (allowedChars MapS.!)
-            firstChar <- QC.elements extendedDigit
-            strLength <- QC.elements [0..200]
-            remainingChars <- replicateM strLength $ QC.elements $ extendedDigit ++ "_"
-            return $ (baseChar, firstChar:remainingChars)
-         convertBase =
+   where baseMap =
             [ ('B', BinBased)
             , ('b', BinBased)
             , ('O', OctBased)

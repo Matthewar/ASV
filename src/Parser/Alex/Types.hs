@@ -54,64 +54,111 @@ instance Monad Alex where
 -- | Type for alex actions
 type AlexAction result = AlexInput -> Int -> Alex result
 
--- | Errors associated with literal lexer
-data LiteralLexErrorType = BasedLexError BasedLexErrorType
-                         | DecimalLexError DecimalLexErrorType
-                         | UniversalLexError UnivLexErrorType
-                         deriving (Eq)
-
--- | Errors associated with based literals in the lexer
-data BasedLexErrorType = InvalidBase Int String
---                       | InvalidValue
-                       | GenericBasedLiteralError String
-                       deriving (Eq)
-
--- | Errors associated with decimal literals in the lexer
-data DecimalLexErrorType = InvalidDecimalFormat String
-                         deriving (Eq)
-
--- | Errors associated with literals interpreted as universal type in the lexer
-data UnivLexErrorType = OutOfBoundsInt String
-                      | OutOfBoundsReal String
-                      deriving (Eq)
-
--- | Errors that the lexer can output
-data LexerError = GenericLexError AlexPosn
-                 | LiteralLexError LiteralLexErrorType AlexPosn
---                 | NonMatchingIdentifierError ReservedWord String String AlexPosn
-                 deriving (Eq)
+-- |Errors that the lexer can output
+-- All errors contain the position where the error occurred.
+data LexerError
+   -- |Used when an unknown error has occurred in the lexer
+   = GenericLexError AlexPosn
+   -- |Based literal lexer error, invalid base value
+   -- Contains base value, entire literal, position
+   | LexErr_BasedLiteral_InvalidBaseValue Int String AlexPosn
+   -- |Based literal lexer error, invalid base chararacter
+   -- Contains base character, entire literal, position
+   | LexErr_BasedLiteral_InvalidBaseChar Char String AlexPosn
+   -- |Based literal lexer error, invalid based value
+   -- This could be incorrect underscore formatting, or invalid characters found, or both
+   -- Contains entire literal, position
+   | LexErr_BasedLiteral_InvalidValue String AlexPosn
+-- ??   | LexErr_BasedLiteral_Generic String AlexPosn
+   -- |Decimal literal lexer error, incorrect formatting of decimal
+   -- This could be empty section e.g. ".3" instead of "0.3"
+   -- Also includes invalid underscore formatting
+   -- Contains entire literal, position
+-- ?? Should include incorrect characters and wrong exponent characters?
+   | LexErr_DecimalLiteral_InvalidFormat String AlexPosn
+   -- |Universal integer type lexer error, out of bounds value
+   -- This occurs when a number is larger than the Haskell Int64 type
+   -- Contains entire literal (based or decimal), position
+   | LexErr_UniversalInt_OutOfBounds String AlexPosn
+   -- |Universal real type lexer error, out of bounds value
+   -- This occurs when a number is larger than the Haskell Double type
+   -- Contains entire literal (based or decimal), position
+   | LexErr_UniversalReal_OutOfBounds String AlexPosn
+   -- |Bit string literal lexer error, invalid string
+   -- This could be incorrect underscore formatting, invalid characters found, or both
+   -- Contains entire literal, position
+   | LexErr_BitStrLiteral_InvalidStr String AlexPosn
+   -- |Bit string literal lexer error, invalid base character
+   -- Contains base character, entire literal, position
+   | LexErr_BitStrLiteral_InvalidBase Char String AlexPosn
+   -- |Bit string literal lexer error, empty string
+   -- Contains entire literal, position
+   | LexErr_BitStrLiteral_EmptyStr String AlexPosn
+   deriving (Eq)
+-- ?? NonMatchingIdentifierError ReservedWord String String AlexPosn
 
 instance (Show LexerError) where
    show (GenericLexError pos) =
       "Some lexer error occurred "
       ++ getLineAndColErrStr pos
-   show (LiteralLexError (BasedLexError (GenericBasedLiteralError str)) pos) =
-      "Some lexer error occurred lexing bit string "
-      ++ str
-      ++ (getLineAndColErrStr pos)
-   show (LiteralLexError (BasedLexError (InvalidBase base str)) pos) =
-      "Lexer found invalid base "
+   show (LexErr_BasedLiteral_InvalidBaseValue base str pos) =
+      "Lexer found invalid base value "
       ++ (show base)
-      ++ " in literal "
+      ++ " in based literal "
       ++ str
       ++ (getLineAndColErrStr pos)
-   show (LiteralLexError (UniversalLexError (OutOfBoundsInt valStr)) pos) =
+   show (LexErr_BasedLiteral_InvalidBaseChar base str pos) =
+      "Lexer found invalid base character "
+      ++ [base]
+      ++ " in based literal "
+      ++ str
+      ++ (getLineAndColErrStr pos)
+   show (LexErr_BasedLiteral_InvalidValue str pos) = -- ?? Replace with analysis and then print from this
+      "Some lexer error occurred lexing based literal \""
+      ++ str
+      ++ "\""
+      ++ (getLineAndColErrStr pos)
+--   show (LexErr_BasedLiteral_Generic str pos) =
+--      "Some lexer error occurred lexing bit string "
+--      ++ str
+--      ++ (getLineAndColErrStr pos)
+   show (LexErr_DecimalLiteral_InvalidFormat str pos) = -- ?? Replace with analysis and then print from this
+      "Some lexer error occurred lexing decimal literal \""
+      ++ str
+      ++ "\""
+      ++ (getLineAndColErrStr pos)
+   show (LexErr_UniversalInt_OutOfBounds str pos) =
       "Lexer found out of bounds integer value "
-      ++ valStr
+      ++ str
       ++ (getLineAndColErrStr pos)
       ++ " note that integer range is "
       ++ (show $ (minBound :: Int64))
       ++ " to "
       ++ (show $ (maxBound :: Int64))
-   show (LiteralLexError (UniversalLexError (OutOfBoundsReal valStr)) pos) =
+   show (LexErr_UniversalReal_OutOfBounds str pos) =
       let maxVal = getFloatBound (0.0 :: Double)
       in "Lexer found out of bounds real value "
-         ++ valStr
+         ++ str
          ++ (getLineAndColErrStr pos)
          ++ " note that integer range is "
          ++ maxVal
          ++ " to -"
          ++ maxVal
+   show (LexErr_BitStrLiteral_InvalidStr str pos) = -- ?? Replace with analysis and then print from this
+      "Some lexer error occurred lexing bit string literal \""
+      ++ str
+      ++ "\""
+      ++ (getLineAndColErrStr pos)
+   show (LexErr_BitStrLiteral_InvalidBase base str pos) =
+      "Lexer found invalid base character "
+      ++ [base]
+      ++ " in bit string literal "
+      ++ str
+      ++ (getLineAndColErrStr pos)
+   show (LexErr_BitStrLiteral_EmptyStr str pos) =
+      "Lexer found empty bit string "
+      ++ str
+      ++ (getLineAndColErrStr pos)
 
 -- | Get the string containing the line and column string
 getLineAndColErrStr :: AlexPosn -> String
