@@ -156,16 +156,16 @@ newtype ElementDeclaration = ElementDeclaration [String] SubtypeIndication
 
 data Declaration = Declaration_Type TypeDeclaration
                  | Declaration_Subtype SubtypeDeclaration
-                 | Declaration_Object
-                 | Declaration_File
-                 | Declaration_Interface
-                 | Declaration_Alias
-                 | Declaration_Attribute
-                 | Declaration_Component
-                 | Declaration_Entity
-                 | Declaration_Configuration
-                 | Declaration_Subprogram
-                 | Declaration_Package
+                 | Declaration_Object ObjectDeclaration
+                 | Declaration_File FileDeclaration
+                 | Declaration_Interface InterfaceDeclaration
+                 | Declaration_Alias AliasDeclaration
+                 | Declaration_Attribute AttributeDeclaration
+                 | Declaration_Component ComponentDeclaration
+                 | Declaration_Entity EntityDeclaration
+                 | Declaration_Configuration ConfigurationDeclaration
+                 | Declaration_Subprogram SubprogramDeclaration
+                 | Declaration_Package PackageDeclaration
 
 data TypeDeclaration = FullTypeDeclaration String TypeDefinition
                      | IncompleteTypeDefinition String

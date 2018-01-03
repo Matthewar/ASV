@@ -317,12 +317,11 @@ scalar_type_definition : enumeration_type_definition  {$1}
                        | floating_type_definition     {$1}
                        | physical_type_definition     {$1}
 
-range_constraint : range range_definition
+range_constraint : range range_definition {$2}
 
--- ?? range_attribute_name
-range_definition : attribute_name
-                 | simple_expression to simple_expression
-                 | simple_expression downto simple_expression
+range_definition : attribute_name                              {RangeAttributeName $1}
+                 | simple_expression to simple_expression      {RangeExpression $1 To $3}
+                 | simple_expression downto simple_expression  {RangeExpression $1 Downto $3}
 
 enumeration_type_definition : '(' enumeration_list ')' {EnumerationTypeDefinition $2}
 
@@ -340,3 +339,133 @@ secondary_unit_declaration_list : {- empty -}                                   
                                 | secondary_unit_declaration_list secondary_unit_declaration {$2 : $1}
 
 secondary_unit_declaration : identifier '=' physical_literal ';' {SecondaryUnitDeclaration $1 $3}
+
+physical_literal : abstract_literal identifier  {PhysicalLiteral (Just $1) $2}
+                 | identifier                   {PhysicalLiteral Nothing $1}
+
+floating_type_definition : range_constraint {FloatingTypeDefinition $1}
+
+composite_type_definition : array_type_definition  {Composite_ArrayTypeDefinition $1}
+                          | record element_declaration_list end record
+
+array_type_definition : array '(' index_subtype_definition_list ')' of subtype_indication {UnconstrainedArrayTypeDefinition $3 $6}
+                      | array '(' discrete_range_list ')' of subtype_indication           {ConstrainedArrayTypeDefinition $3 $6}
+
+index_subtype_definition_list : index_subtype_definition                               {[$1]}
+                              | index_subtype_definition_list index_subtype_definition {$2 : $1}
+
+index_subtype_definition : identifier range '<>' {$1}
+
+discrete_range_list : discrete_range                     {[$1]}
+                    | discrete_range_list discrete_range {$2 : $1}
+
+discrete_range : subtype_indication {DiscreteRange_SubtypeIndication $1}
+               | range_definition   {DiscreteRange_Range $1}
+
+element_declaration_list : element_declaration                          {[$1]}
+                         | element_declaration_list element_declaration {$2 : $1}
+
+element_declaration : identifier_list ':' subtype_indication {ElementDeclaration $1 $3}
+
+identifier_list : identifier                       {[$1]}
+                | identifier_list ',' identifier   {$2 : $1}
+
+access_type_definition : access subtype_indication {TypeDefinition_Access $2}
+
+incomplete_type_declaration : type identifier ';' {IncompleteTypeDefinition $2}
+
+file_type_definition : file of type_mark {TypeDefinition_File $3}
+
+type_mark : name {$1}
+
+declaration : type_declaration            {Declaration_Type $1}
+            | subtype_declaration         {Declaration_Subtype $1}
+            | object_declaration          {Declaration_Object $1}
+            | file_declaration            {Declaration_File $1}
+            | interface_declaration       {Declaration_Interface $1}
+            | alias_declaration           {Declaration_Alias $1}
+            | attribute_declaration       {Declaration_Attribute $1}
+            | component_declaration       {Declaration_Component $1}
+            | entity_declaration          {Declaration_Entity $1}
+            | configuration_declaration   {Declaration_Configuration $1}
+            | subprogram_declaration      {Declaration_Subprogram $1}
+            | package_declaration         {Declaration_Package $1}
+
+type_declaration : full_type_declaration        {$1}
+                 | incomplete_type_declaration  {$1}
+
+full_type_declaration : type identifier is type_definition {FullTypeDeclaration $2 $4}
+
+type_definition : scalar_type_definition     {TypeDefinition_Scalar $1}
+                | composite_type_definition  {TypeDefinition_Composite $1}
+                | access_type_definition     {TypeDefinition_Access $1}
+                | file_type_definition       {TypeDefinition_File $1}
+
+subtype_declaration : subtype identifier is subtype_indication ';' {SubtypeDeclaration $2 $4}
+
+subtype_indication : name type_mark constraint  {SubtypeIndication (Just $1) $2 (Just $3)}
+                   | name type_mark             {SubtypeIndication (Just $1) $2 Nothing}
+                   | type_mark constraint       {SubtypeIndication Nothing $1 (Just $2)}
+                   | type_mark                  {SubtypeIndication Nothing $1 Nothing}
+
+constraint : range_constraint {Constraint_Range $1}
+           | index_constraint {Constraint_Index $1}
+
+object_declaration : constant_declaration {ObjectDeclaration_Constant $1}
+                   | signal_declaration   {ObjectDeclaration_Signal $1}
+                   | variable_declaration {ObjectDeclaration_Variable $1}
+
+constant_declaration : constant identifier_list ':' subtype_indication ':=' expression ';'   {ConstantDeclaration $2 $4 (Just $6)}
+                     | constant identifier_list ':' subtype_indication ';'                   {ConstantDeclaration $2 $4 Nothing}
+
+signal_declaration : signal identifier_list ':' subtype_indication signal_kind ':=' expression ';' {SignalDeclaration $2 $4 (Just $5) (Just $7)}
+                   | signal identifier_list ':' subtype_indication signal_kind ';'                 {SignalDeclaration $2 $4 (Just $5) Nothing}
+                   | signal identifier_list ':' subtype_indication ':=' expression ';'             {SignalDeclaration $2 $4 Nothing (Just $6)}
+                   | signal identifier_list ':' subtype_indication ';'                             {SignalDeclaration $2 $4 Nothing Nothing}
+
+signal_kind : register {Register}
+            | bus {Bus}
+
+variable_declaration : variable identifier_list ':' subtype_indication ':=' expression ';'   {VariableDeclaration $2 $4 (Just $6)}
+                     | variable identifier_list ':' subtype_indication ';'                   {VariableDeclaration $2 $4 Nothing}
+
+file_declaration : file identifier ':' subtype_indication is mode file_logical_name ';'   {FileDeclaration $2 $4 (Just $6) $7}
+                 | file identifier ':' subtype_indication is file_logical_name ';'        {FileDeclaration $2 $4 Nothing $6}
+
+--?? file_logical_name : string_expression {$1}
+
+interface_declaration : constant identifier_list ':' in     subtype_indication      ':=' expression   {InterfaceDeclaration (Just Constant)        $2 (Just In)   $5 (Just $7)}
+                      | constant identifier_list ':' in     subtype_indication                        {InterfaceDeclaration (Just Constant)        $2 (Just In)   $5 Nothing}
+                      | constant identifier_list ':'        subtype_indication      ':=' expression   {InterfaceDeclaration (Just Constant)        $2 Nothing     $4 (Just $6)}
+                      | constant identifier_list ':'        subtype_indication                        {InterfaceDeclaration (Just Constant)        $2 Nothing     $4 Nothing}
+                      | signal   identifier_list ':' mode   subtype_indication bus  ':=' expression   {InterfaceDeclaration (Just GuardedSignal)   $2 (Just $4)   $5 (Just $8)}
+                      | signal   identifier_list ':' mode   subtype_indication bus                    {InterfaceDeclaration (Just GuardedSignal)   $2 (Just $4)   $5 Nothing}
+                      | signal   identifier_list ':' mode   subtype_indication      ':=' expression   {InterfaceDeclaration (Just Signal)          $2 (Just $4)   $5 (Just $6)}
+                      | signal   identifier_list ':' mode   subtype_indication                        {InterfaceDeclaration (Just Signal)          $2 (Just $4)   $5 Nothing}
+                      | signal   identifier_list ':'        subtype_indication bus  ':=' expression   {InterfaceDeclaration (Just GuardedSignal)   $2 Nothing     $4 (Just $7)}
+                      | signal   identifier_list ':'        subtype_indication bus                    {InterfaceDeclaration (Just GuardedSignal)   $2 Nothing     $4 Nothing}
+                      | signal   identifier_list ':'        subtype_indication      ':=' expression   {InterfaceDeclaration (Just Signal)          $2 Nothing     $4 (Just $6)}
+                      | signal   identifier_list ':'        subtype_indication                        {InterfaceDeclaration (Just Signal)          $2 Nothing     $4 Nothing}
+                      |          identifier_list ':' mode   subtype_indication bus  ':=' expression   {InterfaceDeclaration (Just GuardedSignal)   $1 (Just $3)   $4 (Just $7)}
+                      |          identifier_list ':' mode   subtype_indication bus                    {InterfaceDeclaration (Just GuardedSignal)   $1 (Just $3)   $4 Nothing}
+                      |          identifier_list ':'        subtype_indication bus  ':=' expression   {InterfaceDeclaration (Just GuardedSignal)   $1 Nothing     $3 (Just $6)}
+                      |          identifier_list ':'        subtype_indication bus                    {InterfaceDeclaration (Just GuardedSignal)   $1 Nothing     $3 Nothing}
+                      | variable identifier_list ':' mode   subtype_indication      ':=' expression   {InterfaceDeclaration (Just Variable)        $2 (Just $4)   $5 (Just $7)}
+                      | variable identifier_list ':' mode   subtype_indication                        {InterfaceDeclaration (Just Variable)        $2 (Just $4)   $5 Nothing}
+                      | variable identifier_list ':'        subtype_indication      ':=' expression   {InterfaceDeclaration (Just Variable)        $2 Nothing     $4 (Just $6)}
+                      | variable identifier_list ':'        subtype_indication                        {InterfaceDeclaration (Just Variable)        $2 Nothing     $4 Nothing}
+                      |          identifier_list ':' mode   subtype_indication      ':=' expression   {InterfaceDeclaration Nothing                $1 (Just $3)   $4 (Just $6)}
+                      |          identifier_list ':' mode   subtype_indication                        {InterfaceDeclaration Nothing                $1 (Just $3)   $4 Nothing}
+                      |          identifier_list ':'        subtype_indication      ':=' expression   {InterfaceDeclaration Nothing                $1 Nothing     $3 (Just $5)}
+                      |          identifier_list ':'        subtype_indication                        {InterfaceDeclaration Nothing                $1 Nothing     $3 Nothing}
+
+mode : in      {In}
+     | out     {Out}
+     | inout   {Inout}
+     | buffer  {Buffer}
+     | linkage {Linkage}
+
+interface_list : interface_element                    {[$1]}
+               | interface_list ';' interface_element {$2 : $1}
+
+interface_element : interface_declaration {$1}
