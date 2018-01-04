@@ -216,13 +216,15 @@ newtype AssociationList = [AssociationElement]
 
 newtype AssociationElement = AssociationElement (Maybe FormatPart) ActualPart
 
-data FormalPart = FormalPart_Designator String
-                | FormalPart_Function String String
+data FormalPart = FormalPart_Designator Name
+                | FormalPart_Function Name Name
 
-data ActualPart = ActualPart_Expression Expression
-                | ActualPart_Name String
-                | ActualPart_Open
-                | ActualPart_Function String String
+data ActualPart = ActualPart_Designator ActualDesignator
+                | ActualPart_Function Name ActualDesignator
+
+data ActualDesignator = ActualDesignator_Expression Expression
+                      | ActualDesignator_Name Name
+                      | ActualDesignator_Open
 
 newtype AliasDeclaration = AliasDeclaration String SubtypeIndication Name
 
@@ -231,6 +233,20 @@ newtype AttributeDeclaration = AttributeDeclaration String String
 newtype ComponentDeclaration = ComponentDeclaration String (Maybe GenericClause) (Maybe PortClause)
 
 newtype AttributeSpecification = AttributeSpecification String AttributeSpecificationEntityNameList EntityClass Expression
+
+data EntityClass = EntityClass_Entity
+                 | EntityClass_Architecture
+                 | EntityClass_Configuration
+                 | EntityClass_Procedure
+                 | EntityClass_Function
+                 | EntityClass_Package
+                 | EntityClass_Type
+                 | EntityClass_Subtype
+                 | EntityClass_Constant
+                 | EntityClass_Signal
+                 | EntityClass_Variable
+                 | EntityClass_Component
+                 | EntityClass_Label
 
 data AttributeSpecificationEntityNameList = AttributeSpecificationEntityName_List [EntityDesignator]
                                           | AttributeSpecificationEntityName_Others
@@ -257,14 +273,22 @@ data GuardedSignalList = GuardedSignal_List [Name]
                        | GuardedSignal_Others
                        | GuardedSignal_All
 
-data Name = Name_Simple String
-          | Name_Operator OperatorType
+data Name = Name_Simple SimpleName
+          | Name_Operator OperatorName
           | Name_Selected SelectedName
-          | Name_Indexed Prefix [Expression]
-          | Name_Slice Prefix DiscreteRange
+          | Name_Indexed IndexedName
+          | Name_Slice SliceName
           | Name_Attribute AttributeName
 
+newtype SimpleName = String
+
+newtype NameOperator = OperatorType
+
 newtype SelectedName = SelectedName Prefix Suffix
+
+newtype IndexedName = IndexedName Prefix [Expression]
+
+newtype SliceName = SliceName Prefix DiscreteRange
 
 data Prefix = Prefix_Name Name
             | Prefix_Function FunctionCall
@@ -276,38 +300,55 @@ data Suffix = Suffix_Name String
 
 newtype AttributeName = AttributeName Prefix String (Maybe Expression)
 
-data Expression = Expression_And Relation [Relation]
-                | Expression_Or Relation [Relation]
-                | Expression_Xor Relation [Relation]
-                | Expresion_Nand Relation (Maybe Relation)
-                | Expression_Nor Relation (Maybe Relation)
+data Expression = Expression_And AndExpression
+                | Expression_Or OrExpression
+                | Expression_Xor XorExpression
+                | Expresion_Nand NandExpression
+                | Expression_Nor NorExpression
+                | Expression_Relation Relation
 
-newtype Relation = Relation SimpleExpression (Maybe (RelationalOperator, SimpleExpression))
+data AndExpression = AndExpression Relation AndExpression
+                   | AndRelation Relation Relation
 
-newtype SimpleExpression = SimpleExpression (Maybe Sign) Term [AddingOperation]
+data OrExpression = OrExpression Relation OrExpression
+                   | OrRelation Relation Relation
+
+data XorExpression = XorExpression Relation XorExpression
+                   | XorRelation Relation Relation
+
+newtype NandExpression = NandExpression Relation Relation
+
+newtype NorExpression = NorExpression Relation Relation
+
+data Relation = Relation_Compare SimpleExpression RelationalOperator SimpleExpression
+              | Relation_Term SimpleExpression
+
+newtype SimpleExpression = SimpleExpression Sign Term [AddingOperation]
 
 data Sign = Positive
           | Negative
 
+newtype AddingOperation = AddingOperation AddingOperator Term
+
 newtype Term = Term Factor [MultiplyingOperation]
 
 newtype MultiplyingOperation = MultiplyingOperation MultiplyingOperator Factor
-
-newtype AddingOperation = AddingOperation AddingOperator Factor
 
 data Factor = Factor_Value Primary
             | Factor_Pow Primary Primary
             | Factor_Abs Primary
             | Factor_Not Primary
 
-data Primary = Primary_Name String
-             | Primary_Literal (Maybe LiteralType)
+data Primary = Primary_Name Name
+             | Primary_Literal Literal
              | Primary_Aggregate Aggregate
              | Primary_FunctionCall FunctionCall
              | Primary_QualifiedExpression QualifiedExpression
-             | Primary_TypeConversion String Expression
+             | Primary_TypeConversion TypeConversion
              | Primary_Allocator Allocator
              | Primary_Expression Expression
+
+newtype TypeConversion = TypeConversion String Expression
 
 data RelationalOperator = Relation_Equals
                         | Relation_NotEquals
@@ -325,6 +366,22 @@ data MultiplyingOperator = Multiply
                          | Mod
                          | Rem
 
+data Literal = Literal_Numeric NumericLiteral
+             | Literal_Enumeration EnumerationLiteral
+             | Literal_String StringLiteral
+             | Literal_BitStr BitStrLiteral
+             | Literal_Null
+
+data NumericLiteral = NumericLiteral_Abstract AbstractLiteral
+                    | NumericLiteral_Physical PhysicalLiteral
+
+data AbstractLiteral = UniversalInteger Int64
+                     | UniversalReal Double
+
+type StringLiteral = String
+
+newtype BitStrLiteral = BitStrLiteral LiteralBase ByteString
+
 newtype ElementAssociation = ElementAssociation (Maybe [Choice]) Expression
 
 newtype Aggregate = [ElementAssociation]
@@ -334,7 +391,7 @@ newtype Choice = Choice_Expression SimpleExpression
                | Choice_ElementName String
                | Choice_Others
 
-newtype FunctionCall = FunctionCall String (Maybe AssociationList)
+newtype FunctionCall = FunctionCall String (Maybe ActualParameterPart)
 
 data QualifiedExpression = QualifiedExpression_Expression String Expression
                          | QualifiedExpression_Aggregate Aggregate
@@ -342,51 +399,93 @@ data QualifiedExpression = QualifiedExpression_Expression String Expression
 data Allocator = Allocator_Subtype SubtypeIndication
                | Allocator_Expression QualifiedExpression
 
-data SequentialStatement = Sequential_WaitStatement (Maybe [Name]) (Maybe Expression) (Maybe Expression)
-                         | Sequential_AssertionStatement Expression (Maybe Expression) (Maybe Expression)
-                         | Sequential_SignalAssignmentStatement AssertionStatement
-                         | Sequential_VariableAssignmentStatement Target Expression
+data SequentialStatement = Sequential_WaitStatement WaitStatement
+                         | Sequential_AssertionStatement AssertionStatement
+                         | Sequential_SignalAssignmentStatement SignalAssignmentStatement
+                         | Sequential_VariableAssignmentStatement VariableAssignmentStatement
                          | Sequential_ProcedureCallStatement ProcedureCallStatement
-                         | Sequential_IfStatement Expression [SequentialStatement] [ElsifStatement] (Maybe [SequentialStatement])
-                         | Sequential_CaseStatement Expression [CaseStatementAlternative]
-                         | Sequential_LoopStatement (Maybe String) (Maybe IterationScheme) [SequentialStatement]
-                         | Sequential_NextStatement (Maybe String) (Maybe Expression)
-                         | Sequential_ExitStatement (Maybe String) (Maybe Expression)
-                         | Sequential_ReturnStatement (Maybe Expression)
+                         | Sequential_IfStatement IfStatement
+                         | Sequential_CaseStatement CaseStatement
+                         | Sequential_LoopStatement LoopStatement
+                         | Sequential_NextStatement NextStatement
+                         | Sequential_ExitStatement ExitStatement
+                         | Sequential_ReturnStatement ReturnStatement
                          | Sequential_NullStatement
 
-newtype AssertionStatement = AssertionStatement Target SignalAssignmentType [WaveformElement]
+newtype WaitStatement = WaitStatement (Maybe [Name]) (Maybe Expression) (Maybe Expression)
 
-data Target = Target_Name String
+newtype AssertionStatement = AssertionStatement Expression (Maybe Expression) (Maybe Expression)
+
+newtype SignalAssignmentStatement = SignalAssignmentStatement Target SignalAssignmentType Waveform
+
+newtype VariableAssignmentStatement = VariableAssignmentStatement Target Expression
+
+type Waveform = [WaveformElement]
+
+data Target = Target_Name Name
             | Target_Aggregate Aggregate
 
-data SignalAssignmentType = SignalAssignmentNormal | SignalAssignmentTarget
+data SignalAssignmentType = SignalAssignmentNormal | SignalAssignmentTransport
 
 newtype WaveformElement = Waveform_Expression Expression (Maybe Expression)
                         | Waveform_Null (Maybe Expression)
 
-newtype ProcedureCallStatement = ProcedureCallStatement String (Maybe ActualParameterPart)
+newtype ProcedureCallStatement = ProcedureCallStatement Name (Maybe ActualParameterPart)
+
+type ActualParameterPart = AssociationList
+
+newtype IfStatement = IfStatement Expression [SequentialStatement] [ElsifStatement] (Maybe [SequentialStatement])
 
 newtype ElsifStatement = ElsifStatement Expression [SequentialStatement]
 
+newtype CaseStatement = CaseStatement Expression [CaseStatementAlternative]
+
 newtype CaseStatementAlternative = CaseStatementAlternative [Choice] [SequentialStatement]
+
+newtype LoopStatement = LoopStatement (Maybe (String,String)) (Maybe IterationScheme) [SequentialStatement]
 
 data IterationScheme = IterationScheme_While Expression
                      | IterationScheme_For String DiscreteRange
 
-data ConcurrentStatement = Concurrent_BlockStatement String (Maybe Expression) BlockHeader [BlockDeclarativeItem] [ConcurrentStatement]
-                         | Concurrent_ProcessStatement (Maybe String) (Maybe SensitivityList) [ProcessDeclarativeItem] [SequentialStatement]
+newtype NextStatement = NextStatement (Maybe String) (Maybe Expression)
+
+newtype ExitStatement = ExitStatement (Maybe String) (Maybe Expression)
+
+newtype ReturnStatement = ReturnStatement (Maybe Expression)
+
+data ConcurrentStatement = Concurrent_BlockStatement BlockStatement
+                         | Concurrent_ProcessStatement ProcessStatement
                          | Concurrent_ProcedureCall ConcurrentProcedureCall
                          | Concurrent_AssertionStatement ConcurrentAssertionStatement
                          | Concurrent_SignalAssignmentStatement ConcurrentSignalAssignmentStatement
-                         | Concurrent_ComponentInstantiationStatement String Name (Maybe AssociationList) (Maybe AssociationList)
-                         | Concurrent_GenerateStatement String GenerationScheme [ConcurrentStatement]
+                         | Concurrent_ComponentInstantiationStatement ComponentInstantiationStatement
+                         | Concurrent_GenerateStatement GenerateStatement
+
+newtype BlockStatement = BlockStatement String (Maybe Expression) BlockHeader BlockDeclarativePart BlockStatementPart (Maybe String)
 
 newtype BlockHeader = BlockHeader (Maybe BlockHeader_Generic) (Maybe BlockHeader_Port)
 
-newtype BlockHeader_Generic = BlockHeader_Generic GenericClause (Maybe AssociationList)
+newtype BlockHeader_Generic = BlockHeader_Generic GenericClause (Maybe GenericMapAspect)
 
-newtype BlockHeader_Port = BlockHeader_Port PortClause (Maybe AssociationList)
+type GenericMapAspect = AssociationList
+
+newtype BlockHeader_Port = BlockHeader_Port PortClause (Maybe PortMapAspect)
+
+type PortMapAspect = AssociationList
+
+type BlockDeclarativePart = [BlockDeclarativeItem]
+
+type BlockStatementPart = [ConcurrentStatement]
+
+newtype ProcessStatement = ProcessStatement (Maybe (String,String)) (Maybe SensitivityList) ProcessDeclarativePart ProcessStatementPart
+
+type ProcessDeclarativePart = [ProcessDeclarativeItem]
+
+type ProcessStatementPart = [SequentialStatement]
+
+newtype ComponentInstantiationStatement = ComponentInstantiationStatement String Name (Maybe AssociationList) (Maybe AssociationList)
+
+newtype GenerateStatement = GenerateStatement String GenerationScheme [ConcurrentStatement] (Maybe String)
 
 data ProcessDeclarativeItem = ProcessDeclarative_SubprogramDeclaration     SubprogramDeclaration
                             | ProcessDeclarative_SubprogramBody            SubprogramBody
@@ -402,20 +501,22 @@ data ProcessDeclarativeItem = ProcessDeclarative_SubprogramDeclaration     Subpr
 
 newtype ConcurrentProcedureCall = ConcurrentProcedureCall (Maybe String) ProcedureCallStatement
 
-newtype ConcurrentAssertionStatement = (Maybe String) AssertionStatement
+newtype ConcurrentAssertionStatement = ConcurrentAssertionStatement (Maybe String) AssertionStatement
 
-data ConcurrentSignalAssignmentStatement = ConditionalSignalAssignment (Maybe String) Target SignalAssignment_Options ConditionalWaveforms
-                                         | SelectedSignalAssignment (Maybe String) Expression Target SignalAssignment_Options [WaveformExpressionPair]
+data ConcurrentSignalAssignmentStatement = ConditionalSignalAssignment (Maybe String) Target SignalAssignmentOptions ConditionalWaveforms
+                                         | SelectedSignalAssignment (Maybe String) Expression Target SignalAssignmentOptions [SelectedWaveformPair]
 
-newtype SignalAssignment_Options = (Maybe SignalAssignment_Guarded) (Maybe SignalAssignment_Transport)
+newtype SignalAssignmentOptions = SignalAssignmentOptions SignalAssignment_Guarded SignalAssignment_Transport
 
 data SignalAssignment_Guarded = SignalAssignment_Guarded | SignalAssignment_NonGuarded
 
 data SignalAssignment_Transport = SignalAssignment_Transport | SignalAssignment_NonTransport
 
-newtype ConditionalWaveforms = ConditionalWaveforms [WaveformExpressionPair] Waveform
+newtype ConditionalWaveforms = ConditionalWaveforms [ConditionalWaveformPair] Waveform
 
-newtype WaveformExpressionPair = WaveformExpressionPair Waveform Expression
+newtype ConditionalWaveformPair = ConditionalWaveformPair Waveform Expression
+
+newtype SelectedWaveformPair = SelectedWaveformPair Waveform [Choice]
 
 data GenerationScheme = GenerationScheme_For ParameterSpecification
                       | GenerationScheme_If Expression
@@ -424,9 +525,9 @@ newtype GenericClause = InterfaceList
 
 newtype PortClause = InterfaceList
 
-newtype UseClause = [SelectedName]
+newtype UseClause = UseClause [SelectedName]
 
-newtype DesignFile = [DesignUnit]
+newtype DesignFile = DesignFile [DesignUnit]
 
 newtype DesignUnit = DesignUnit ContextClause LibraryUnit
 
@@ -437,8 +538,8 @@ data PrimaryUnit = Primary_EntityDeclaration EntityDeclaration
                  | Primary_ConfigurationDeclaration ConfigurationDeclaration
                  | Primary_PackageDeclaration PackageDeclaration
 
-data SecondaryUnit = Primary_ArchitectureBody ArchitectureBody
-                   | Primary_PackageBody PackageBody
+data SecondaryUnit = Secondary_ArchitectureBody ArchitectureBody
+                   | Secondary_PackageBody PackageBody
 
 newtype LibraryClause = [String]
 

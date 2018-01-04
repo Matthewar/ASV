@@ -102,7 +102,7 @@ import qualified Parser.Lexer as Lex
    '<='           {Operator SignAssign}
    '<>'           {Operator Box}
    '&'            {Operator Ampersand}
-   '\'            {Operator Apostrophe}
+   '\''           {Operator Apostrophe}
    '('            {Operator LeftParen}
    ')'            {Operator RightParen}
    '*'            {Operator Star}
@@ -118,8 +118,9 @@ import qualified Parser.Lexer as Lex
    '>'            {Operator GreaterThan}
    '|'            {Operator Bar}
    identifier     {Identifier $$}
-   decimal        {Literal Decimal $$}
-   bitstr         {Literal BitStr $$ $$}
+   integer        {Literal Univ_Int $$}
+   real           {Literal Univ_Real $$}
+   bitstr         {Literal BitStr _ _}
    str            {Literal Str $$}
    char           {Literal Character $$}
 
@@ -368,7 +369,7 @@ element_declaration_list : element_declaration                          {[$1]}
 element_declaration : identifier_list ':' subtype_indication {ElementDeclaration $1 $3}
 
 identifier_list : identifier                       {[$1]}
-                | identifier_list ',' identifier   {$2 : $1}
+                | identifier_list ',' identifier   {$3 : $1}
 
 access_type_definition : access subtype_indication {TypeDefinition_Access $2}
 
@@ -466,6 +467,437 @@ mode : in      {In}
      | linkage {Linkage}
 
 interface_list : interface_element                    {[$1]}
-               | interface_list ';' interface_element {$2 : $1}
+               | interface_list ';' interface_element {$3 : $1}
 
 interface_element : interface_declaration {$1}
+
+association_list : association_element                      {[$1]}
+                 | association_list ',' association_element {$3 : $1}
+
+association_element : formal_part '=>' actual_part {AssociationElement (Just $1) $3}
+                    |                  actual_part {AssociationElement Nothing $1}
+
+formal_part : formal_designator              {FormalPart_Designator $1}
+            | name '(' formal_designator ')' {FormalPart_Function $1 $3}
+
+formal_designator : name {$1}
+
+actual_part : actual_designator              {ActualPart_Designator $1}
+            | name '(' actual_designator ')' {ActualPart_Function $1 $3}
+
+actual_designator : expression   {ActualDesignator_Expression $1}
+                  | name         {ActualDesignator_Name $1}
+                  | open         {ActualDesignator_Open}
+
+alias_declaration : alias identifier ':' subtype_indication is name ';' {AliasDeclaration $2 $4 $6}
+
+attribute_declaration : attribute identifier ':' type_mark ';' {AttributeDeclaration $2 $4}
+
+component_declaration : component identifier generic_clause port_clause end component ';' {ComponentDeclaration $2 (Just $3) (Just $4)}
+component_declaration : component identifier generic_clause             end component ';' {ComponentDeclaration $2 (Just $3) Nothing}
+component_declaration : component identifier                port_clause end component ';' {ComponentDeclaration $2 Nothing (Just $3)}
+component_declaration : component identifier                            end component ';' {ComponentDeclaration $2 Nothing Nothing}
+
+attribute_specification : attribute attribute_designator of entity_name_list ':' entity_class is expression ';' {AttributeSpecification $2 $4 $6 $8}
+
+entity_name_list : entity_designator_list {AttributeSpecificationEntityName_List $1}
+                 | others                 {AttributeSpecificationEntityName_Others}
+                 | all                    {AttributeSpecificationEntityName_All}
+
+entity_designator_list : entity_designator                              {[$1]}
+                       | entity_designator_list ',' entity_designator   {$3 : $1}
+
+entity_designator : simple_name     {EntityDesignator_Name $1}
+                  | operator_symbol {EntityDesignator_Operator $1}
+
+entity_class : entity         {EntityClass_Entity}
+             | architecture   {EntityClass_Architecture}
+             | configuration  {EntityClass_Configuration}
+             | procedure      {EntityClass_Procedure}
+             | function       {EntityClass_Function}
+             | package        {EntityClass_Package}
+             | type           {EntityClass_Type}
+             | subtype        {EntityClass_Subtype}
+             | constant       {EntityClass_Constant}
+             | signal         {EntityClass_Signal}
+             | variable       {EntityClass_Variable}
+             | component      {EntityClass_Component}
+             | label          {EntityClass_Label}
+
+configuration_specification : for instantiation_list ':' name use binding_indication ';' {ConfigurationSpecification $2 $4 $6}
+
+instantiation_list : label_list  {InstantiationList_Label $1}
+                   | others      {InstantiationList_Others}
+                   | all         {InstantiationList_All}
+
+binding_indication : entity_aspect generic_map_aspect port_map_aspect   {BindingIndication $1 (Just $2) (Just $3)}
+                   | entity_aspect generic_map_aspect                   {BindingIndication $1 (Just $2) Nothing}
+                   | entity_aspect                    port_map_aspect   {BindingIndication $1 Nothing (Just $2)}
+                   | entity_aspect                                      {BindingIndication $1 Nothing Nothing}
+
+entity_aspect : entity name '(' identifier ')'  {EntityAspect_Entity $2 (Just $4)}
+              | entity name                     {EntityAspect_Entity $2 Nothing}
+              | configuration name              {EntityAspect_Configuration $2}
+              | open                            {EntityAspect_Open}
+
+generic_map_aspect : generic map '(' association_list ')' {$3}
+
+port_map_aspect : port map '(' association_list ')' {$3}
+
+disconnection_specification : disconnection signal_list ':' type_mark after expression ';' {DisconnectionSpecification $2 $4 $6}
+
+signal_list : name_list {GuardedSignal_List $1}
+            | others    {GuardedSignal_Others}
+            | all       {GuardedSignal_All}
+
+name_list : name                 {[$1]}
+          | name_list ',' name   {$3 : $1}
+
+name : simple_name      {Name_Simple $1}
+     | operator_symbol  {Name_Operator $1}
+     | selected_name    {Name_Selected $1}
+     | indexed_name     {Name_Indexed $1}
+     | slice_name       {Name_Slice $1}
+     | attribute_name   {Name_Attribute $1}
+
+prefix : name           {Prefix_Name $1}
+       | function_call  {Prefix_Name $1}
+
+simple_name : identifier {$1}
+
+selected_name : prefix '.' suffix {SelectedName $1 $3}
+
+suffix : simple_name       {Suffix_Name $1}
+       | char              {Suffix_Char $1}
+       | operator_symbol   {Suffix_Operator $1}
+       | all               {Suffix_All}
+
+indexed_name : prefix '(' expression_list ')' {IndexedName $1 $3}
+
+expression_list : expression                       {[$1]}
+                | expression_list ',' expression   {$3 : $1}
+
+slice_name : prefix '(' discrete_range ')' {SliceName $1 $3}
+
+attribute_name : prefix '\'' attribute_designator '(' expression ')' {AttributeName $1 $3 (Just $5)}
+               | prefix '\'' attribute_designator                    {AttributeName $1 $3 Nothing}
+
+attribute_designator : simple_name {$1}
+
+expression : relation         {Expression_Relation $1}
+           | and_expression   {Expression_And $1}
+           | or_expression    {Expression_Or $1}
+           | xor_expression   {Expression_Xor $1}
+           | nand_expression  {Expression_Nand $1}
+           | nor_expression   {Expression_Nor $1}
+
+and_expression : relation and and_expression {AndExpression $1 $3}
+               | relation and relation       {AndRelation $1 $3}
+
+or_expression : relation or or_expresssion   {OrExpression $1 $3}
+              | realtion or relation         {OrRelation $1 $3}
+
+xor_expression : relation xor xor_expression {XorExpression $1 $3}
+               | relation xor relation       {XorRelation $1 $3}
+
+nand_expression : relation nand relation {NandExpression $1 $3}
+
+nor_expression : relation nor relation {NorExpression $1 $3}
+
+relation : simple_expression relational_operator simple_expression   {Relation_Compare $1 $2 $3}
+         | simple_expression                                         {Relation_Term $1}
+
+simple_expression : '+' term adding_operation_list {SimpleExpression Positive $2 $3}
+                  | '-' term adding_operation_list {SimpleExpression Negative $2 $3}
+                  |     term adding_operation_list {SimpleExpression Positive $1 $2}
+
+adding_operation_list : {- empty -}                            {[]}
+                      | adding_operation_list adding_operation {$2 : $1}
+
+adding_operation : adding_operator term {AddingOperation $1 $2}
+
+adding_operator : '+' {Add}
+                | '-' {Minus}
+                | '&' {Concat}
+
+term : factor multiplying_operation_list {Term $1 $2}
+
+multiplying_operation_list : {- empty -}                                      {[]}
+                           | multiplying_operation_list multiplying_operation {$2 : $1}
+
+multiplying_operation : multiplying_operator factor {MultiplyingOperation $1 $2}
+
+multiplying_operator : '*' {Multiply}
+                     | '/' {Divide}
+                     | mod {Mod}
+                     | rem {Rem}
+
+factor : primary '**' primary {Factor_Pow $1 $3}
+       | primary              {Factor_Value $1}
+       | abs primary          {Factor_Abs $1}
+       | not primary          {Factor_Not $1}
+
+primary : name                   {Primary_Name $1}
+        | literal                {Primary_Literal $1}
+        | aggregate              {Primary_Aggregate $1}
+        | function_call          {Primary_FunctionCall $1}
+        | qualified_expression   {Primary_QualifiedExpression $1}
+        | type_conversion        {Primary_TypeConversion $1}
+        | allocator              {Primary_Allocator $1}
+        | '(' expression ')'     {Primary_Expression $2}
+
+literal : numeric_literal     {Literal_Numeric $1}
+        | enumeration_literal {Literal_Enumeration $1}
+        | string_literal      {Literal_String $1}
+        | bit_string_literal  {Literal_BitStr $1}
+        | null                {Literal_Null}
+
+numeric_literal : abstract_literal {NumericLiteral_Abstract $1}
+                | physical_literal {NumericLiteral_Physical $1}
+
+abstract_literal : integer {UniversalInteger $1}
+                 | real    {UniversalReal $1}
+
+string_literal : str {$1}
+
+bit_string_literal : bitstr {$1 & \Literal (BitStr (base,value)) -> BitStrLiteral base value}
+
+aggregate : '(' element_association_list ')' {$2}
+
+element_association_list : element_association                                {[$1]}
+                         | element_association_list ',' element_association   {$3 : $1}
+
+element_association : choices '=>'  expression {ElementAssociation (Just $1) $3}
+                    |               expression {ElementAssociation Nothing $1}
+
+choices : choice              {[$1]}
+        | choices '|' choice  {$3 : $1}
+
+choice : simple_expression {Choice_Expression $1}
+       | discrete_range    {Choice_DiscreteRange $1}
+       | simple_name       {Choice_ElementName $1}
+       | others            {Choice_Others}
+
+-- Second part may never be triggered because higher level section has 'name' on its own
+function_call : name '(' actual_parameter_part ')' {FunctionCall $1 (Just $3)}
+              | name                               {FunctionCall $1 Nothing}
+
+actual_parameter_part : association_list {$1}
+
+qualified_expression : type_mark '\'' '(' expression ')' {QualifiedExpression_Expression $1 $4}
+                     | type_mark '\'' aggregate          {QualifiedExpression_Aggregate $1 $3}
+
+type_conversion : type_mark '(' expression ')' {TypeConversion $1 $3}
+
+allocator : new subtype_indication     {Allocator_Subtype $2}
+          | new qualified_expression   {Allocator_Expression $2}
+
+sequence_of_statements : {- empty -}                                 {[]}
+                       | sequence_of_statements sequential_statement {$2 : $1}
+
+sequential_statement : wait_statement                 {SequentialStatement_Wait $1}
+                     | assertion_statement            {SequentialStatement_Assertion $1}
+                     | signal_assignment_statement    {SequentialStatement_SignalAssignment $1}
+                     | variable_assignment_statement  {SequentialStatement_VariableAssignment $1}
+                     | procedure_call_statement       {SequentialStatement_ProcedureCall $1}
+                     | if_statement                   {SequentialStatement_If $1}
+                     | case_statement                 {SequentialStatement_Case $1}
+                     | loop_statement                 {SequentialStatement_Loop $1}
+                     | next_statement                 {SequentialStatement_Next $1}
+                     | exit_statement                 {SequentialStatement_Exit $1}
+                     | return_statement               {SequentialStatement_Return $1}
+                     | null                           {SequentialStatement_Null}
+
+wait_statement : wait   on sensitivity_list  until condition   for expression ';'   {WaitStatement (Just $3)   (Just $5)   (Just $7)}
+               | wait   on sensitivity_list  until condition                  ';'   {WaitStatement (Just $3)   (Just $5)   Nothing}
+               | wait   on sensitivity_list                    for expression ';'   {WaitStatement (Just $3)   Nothing     (Just $5)}
+               | wait   on sensitivity_list                                   ';'   {WaitStatement (Just $3)   Nothing     Nothing}
+               | wait                        until condition   for expression ';'   {WaitStatement Nothing     (Just $3)   (Just $5)}
+               | wait                        until condition                  ';'   {WaitStatement Nothing     (Just $3)   Nothing}
+               | wait                                          for expression ';'   {WaitStatement Nothing     Nothing     (Just $3)}
+               | wait                                                         ';'   {WaitStatement Nothing     Nothing     Nothing}
+
+assertion_statement : assert condition report expression severity expression  ';' {AssertionStatement $2 (Just $4)   (Just $6)}
+                    | assert condition report expression                      ';' {AssertionStatement $2 (Just $4)   Nothing}
+                    | assert condition                   severity expression  ';' {AssertionStatement $2 Nothing     (Just $4)}
+                    | assert condition                                        ';' {AssertionStatement $2 Nothing     Nothing}
+
+signal_assignment_statement : target '<=' transport   waveform ';' {SignalAssignmentStatement $1 SignalAssignmentTransport $4}
+                            | target '<='             waveform ';' {SignalAssignmentStatement $1 SignalAssignmentNormal $3}
+
+target : name        {Target_Name $1}
+       | aggregate   {Target_Aggregate $1}
+
+waveform : waveform_element               {[$1]}
+         | waveform ',' waveform_element  {$3 : $1}
+
+waveform_element : expression after expression  {Waveform_Expression $1 (Just $3)}
+                 | expression                   {Waveform_Expression $1 Nothing}
+                 | null       after expression  {Waveform_Null (Just $3)}
+                 | null                         {Waveform_Null Nothing}
+
+variable_assignment_statement : target ':=' expression ';' {VariableAssignmentStatement $1 $3}
+
+procedure_call_statement : name '(' actual_parameter_part ')'  ';' {ProcedureCallStatement $1 (Just $3)}
+                         | name                                ';' {ProcedureCallStatement $1 Nothing}
+
+if_statement : if condition then sequence_of_statements elsif_statement_list else sequence_of_statements end if ';' {IfStatement $2 $3 $4 (Just $6)}
+             | if condition then sequence_of_statements elsif_statement_list                             end if ';' {IfStatement $2 $3 $4 Nothing}
+
+elsif_statement_list : {- empty -}                          {[]}
+                     | elsif_statement_list elsif_statement {$2 : $1}
+
+elsif_statement : elsif condition then sequence_of_statements {ElsifStatement $2 $4}
+
+case_statement : case expression is case_statement_alternative_list end case ';' {CaseStatement $2 $4}
+
+case_statement_alternative_list : case_statement_alternative                                 {[$1]}
+                                | case_statement_alternative_list case_statement_alternative {$2 : $1}
+
+case_statement_alternative : when choices '=>' sequence_of_statements {CaseStatementAlternative $2 $4}
+
+loop_statement : identifier ':'  iteration_scheme  loop sequence_of_statements end loop identifier ';' {LoopStatement (Just ($1,$8)) (Just $3) $5}
+               |                 iteration_scheme  loop sequence_of_statements end loop            ';' {LoopStatement Nothing (Just $1) $3}
+               | identifier ':'                    loop sequence_of_statements end loop identifier ';' {LoopStatement (Just ($1,$7)) Nothing $4}
+               |                                   loop sequence_of_statements end loop            ';' {LoopStatement Nothing Nothing $2}
+
+iteration_scheme : while condition                    {IterationScheme_While $2}
+                 | for identifier in discrete_range   {IterationScheme_For $2 $4}
+
+next_statement : next identifier when condition ';' {NextStatement (Just $2) (Just $4)}
+               | next identifier                ';' {NextStatement (Just $2) Nothing}
+               | next            when condition ';' {NextStatement Nothing (Just $3)}
+               | next                           ';' {NextStatement Nothing Nothing}
+
+exit_statement : exit identifier when condition ';' {ExitStatement (Just $2) (Just $4)}
+               | exit identifier                ';' {ExitStatement (Just $2) Nothing}
+               | exit            when condition ';' {ExitStatement Nothing (Just $3)}
+               | exit                           ';' {ExitStatement Nothing Nothing}
+
+return_statement : return expression   ';' {ReturnStatement (Just $2)}
+                 | return              ';' {ReturnStatement Nothing}
+
+concurrent_statement : block_statement                         {Concurrent_BlockStatement $1}
+                     | process_statement                       {Concurrent_ProcessStatement $1}
+                     | concurrent_procedure_call               {Concurrent_ProcedureCall $1}
+                     | concurrent_assertion_statement          {Concurrent_AssertionStatement $1}
+                     | concurrent_signal_assignment_statement  {Concurrent_SignalAssignmentStatement $1}
+                     | component_instantiation_statement       {Concurrent_ComponentInstantiationStatement $1}
+                     | generate_statement                      {Concurrent_GenerateStatement $1}
+
+block_statement : identifier ':' block '(' expression ')'   block_header block_declarative_part begin block_statement_part end block identifier ';' {BlockStatement $1 (Just $5) $7 $8 $10 (Just $13)}
+                | identifier ':' block '(' expression ')'   block_header block_declarative_part begin block_statement_part end block            ';' {BlockStatement $1 (Just $5) $7 $8 $10 Nothing}
+                | identifier ':' block                      block_header block_declarative_part begin block_statement_part end block identifier ';' {BlockStatement $1 Nothing $4 $5 $7 (Just $10)}
+                | identifier ':' block                      block_header block_declarative_part begin block_statement_part end block            ';' {BlockStatement $1 Nothing $4 $5 $7 Nothing}
+
+block_header : block_header_generic block_header_port {BlockHeader (Just $1) (Just $2)}
+             | block_header_generic                   {BlockHeader (Just $1) Nothing}
+             |                      block_header_port {BlockHeader Nothing (Just $1)}
+             | {- empty -}                            {BlockHeader Nothing Nothing}
+
+block_header_generic : generic_clause generic_map_aspect ';' {BlockHeader_Generic $1 (Just $2)}
+                     | generic_clause                    ';' {BlockHeader_Generic $1 Nothing}
+
+block_header_port : port_clause port_map_aspect ';' {BlockHeader_Port $1 (Just $2)}
+                  | port_clause                 ';' {BlockHeader_Port $1 Nothing}
+
+block_declarative_part : {- empty -}                                    {[]}
+                       | block_declarative_part block_declarative_item  {$2 : $1}
+
+block_statement_part : {- empty -}                                {[]}
+                     | block_statement_part concurrent_statement  {$2 : $1}
+
+process_statement : identifier ':'  process '(' sensitivity_list ')' process_declarative_part begin process_statement_part end process identifier  ';'   {ProcessStatement (Just ($1,$12)) (Just $5) $7 $9}
+                  |                 process '(' sensitivity_list ')' process_declarative_part begin process_statement_part end process             ';'   {ProcessStatement Nothing (Just $3) $5 $7}
+                  | identifier ':'  process                          process_declarative_part begin process_statement_part end process identifier  ';'   {ProcessStatement (Just ($1,$9)) Nothing $4 $6}
+                  |                 process                          process_declarative_part begin process_statement_part end process             ';'   {ProcessStatement Nothing Nothing $2 $4}
+
+process_declarative_part : {- empty -}                                        {[]}
+                         | process_declarative_part process_declarative_item  {$2 : $1}
+
+process_statement_part : {- empty -}                                 {[]}
+                       | process_statement_part sequential_statement {$2 : $1}
+
+process_declarative_item : subprogram_declaration  {ProcessDeclarative_SubtypeDeclaration $1}
+                         | subprogram_body         {ProcessDeclarative_SubprogramBody $1}
+                         | type_declaration        {ProcessDeclarative_TypeDeclaration $1}
+                         | subtype_declaration     {ProcessDeclarative_SubtypeDeclaration $1}
+                         | constant_declaration    {ProcessDeclarative_ConstantDeclaration $1}
+                         | variable_declaration    {ProcessDeclarative_VariableDeclaration $1}
+                         | file_declaration        {ProcessDeclarative_FileDeclaration $1}
+                         | alias_declaration       {ProcessDeclarative_AliasDeclaration $1}
+                         | attribute_declaration   {ProcessDeclarative_AttributeDeclaration $1}
+                         | attribute_specification {ProcessDeclarative_AttributeSpecification $1}
+                         | use_clause              {ProcessDeclarative_UseClause $1}
+
+concurrent_procedure_call : identifier ':'   procedure_call_statement {ConcurrentProcedureCall (Just $1) $3}
+                          |                  procedure_call_statement {ConcurrentProcedureCall Nothing $1}
+
+concurrent_assertion_statement : identifier ':' assertion_statement {ConcurrentAssertionStatement (Just $1) $3}
+                               |                assertion_statement {ConcurrentAssertionStatement Nothing $1}
+
+concurrent_signal_assignment_statement : identifier ':'  target '<=' options conditional_waveforms ';'                     {ConditionalSignalAssignment (Just $1) $3 $5 $6}
+                                       |                 target '<=' options conditional_waveforms ';'                     {ConditionalSignalAssignment Nothing $1 $3 $4}
+                                       | identifier ':'  with expression select target '<=' options selected_waveforms ';' {SelectedSignalAssignment (Just $1) $4 $6 $8 $9}
+                                       |                 with expression select target '<=' options selected_waveforms ';' {SelectedSignalAssignment Nothing $2 $4 $6 $7}
+
+options : guarded transport   {SignalAssignmentOptions SignalAssignment_Guarded SignalAssignment_Transport}
+        | guarded             {SignalAssignmentOptions SignalAssignment_Guarded SignalAssignment_NonTransport}
+        |         transport   {SignalAssignmentOptions SignalAssignment_NonGuarded SignalAssignment_Transport}
+        | {- empty -}         {SignalAssignmentOptions SignalAssignment_NonGuarded SignalAssignment_NonTransport}
+
+conditional_waveforms : conditional_waveform_pairs waveform {ConditionalWaveforms $1 $2}
+
+conditional_waveform_pairs : conditional_waveform_pair                              {[$1]}
+                           | conditional_waveform_pairs conditional_waveform_pair   {$2 : $1}
+
+conditional_waveform_pair : waveform when condition else {ConditionalWaveformPair $1 $3}
+
+selected_waveforms : selected_waveform_pair                          {[$1]}
+                   | selected_waveforms ',' selected_waveform_pair   {$3 : $1}
+
+selected_waveform_pair : waveform when choices {SelectedWaveformPair $1 $3}
+
+component_instantiation_statement : identifier ':' name generic_map_aspect port_map_aspect   ';' {ComponentInstantiationStatement $1 $3 (Just $4) (Just $5)}
+                                  | identifier ':' name generic_map_aspect                   ';' {ComponentInstantiationStatement $1 $3 (Just $4) Nothing}
+                                  | identifier ':' name                    port_map_aspect   ';' {ComponentInstantiationStatement $1 $3 Nothing (Just $4)}
+                                  | identifier ':' name                                      ';' {ComponentInstantiationStatement $1 $3 Nothing Nothing}
+
+generate_statement : identifier ':' generation_scheme generate concurrent_statement_list end generate identifier  ';' {GenerateStatement $1 $3 $5 (Just $8)}
+                   | identifier ':' generation_scheme generate concurrent_statement_list end generate             ';' {GenerateStatement $1 $3 $5 Nothing}
+
+generation_scheme : for parameter_specification {GenerationScheme_For $2}
+                  | if condition                {GenerationScheme_If $2}
+
+concurrent_statement_list : {- empty -}                                    {[]}
+                          | concurrent_statement_list concurrent_statement {$2 : $1}
+
+use_clause : use selected_name_list ';' {UseClause $2}
+
+selected_name_list : selected_name                          {[$1]}
+                   | selected_name_list ',' selected_name   {$3 : $1}
+
+design_file : design_unit_list {DesignFile $1}
+
+design_unit_list : design_unit                  {[$1]}
+                 | design_unit_list design_unit {$2 : $1}
+
+design_unit : context_clause library_unit {DesignUnit $1 $2}
+
+library_unit : primary_unit   {Library_PrimaryUnit $1}
+             | secondary_unit {Library_SecondaryUnit $1}
+
+primary_unit : entity_declaration         {Primary_EntityDeclaration $1}
+             | configuration_declaration  {Primary_ConfigurationDeclaration $1}
+             | package_declaration        {Primary_PackageDeclaration $1}
+
+secondary_unit : architecture_body  {Secondary_ArchitectureBody $1}
+               | package_body       {Secondary_PackageBody $1}
+
+library_clause : library identifier_list ';' {$2}
+
+context_clause : {- empty -}                 {[]}
+               | context_clause context_item {$2 : $1}
+
+context_item : library_clause {Context_LibraryClause $1}
+             | use_clause {Context_UseClause $1}
