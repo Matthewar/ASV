@@ -402,7 +402,7 @@ lexer cont = do
 -- | Basic call to lexer
 -- Can be used for debug
 -- Returns either error or list of tokens
-lexerList :: String -> Either LexerError [Token]
+lexerList :: String -> Either ParserError [Token]
 lexerList str = runAlex str $ do
    let loop tknLst = do token <- alexMonadScan
                         case token of

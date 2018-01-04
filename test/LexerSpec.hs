@@ -3,7 +3,7 @@ module LexerSpec (tests) where
 import Parser.Lexer (Token(..), lexerList)
 import Parser.Alex.Types (
    AlexPosn(..),
-   LexerError(..),
+   ParserError(..),
    )
 import Parser.TokenTypes
 

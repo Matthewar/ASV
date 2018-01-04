@@ -1,12 +1,12 @@
 {
 module Parser.Parser where
 import Parser.Happy.Types
+import Parser.Happy.Functions
 import Parser.Alex.Types (Alex)
-import Parser.Alex.Functions (alexError)
 import qualified Parser.Lexer as Lex
 }
 
-%name 1987
+%name v1987
 %lexer{Lex.lexer}{Lex.EOF}
 %tokentype{Lex.Token}
 %monad{Alex}
@@ -139,11 +139,13 @@ entity_header : generic_clause port_clause   {EntityHeader (Just $1) (Just $2)}
 
 generic_clause : generic '(' generic_list ')' ';' {GenericClause $3}
 
-port_clause : port '(' post_list ')' ';' {PortClause $3}
+port_clause : port '(' port_list ')' ';' {PortClause $3}
 
-generic_list : -- ?? generic_interface_list
+-- ?? generic_interface_list
+generic_list : interface_list {$1}
 
-port_list : -- ?? port_interface_list
+-- ?? port_interface_list
+port_list : interface_list {$1}
 
 entity_declarative_part : {- empty -} {[]}
                         | entity_declarative_part entity_declarative_item {$2 : $1}
@@ -225,6 +227,8 @@ component_configuration : for component_specification use binding_indication ';'
                             | for component_specification block_configuration end for ';'                                {ComponentConfiguration $2 Nothing (Just $3)}
                             | for component_specification end for ';'                                {ComponentConfiguration $2 Nothing Nothing}
 
+component_specification : instantiation_list ':' name {ComponentSpecification $1 $3}
+
 subprogram_declaration : subprogram_specification ';' {SubprogramDeclaration $1}
 
 subprogram_specification : procedure designator '(' formal_parameter_list ')'                   {ProcedureDeclaration $2 (Just $4)}
@@ -256,7 +260,7 @@ designator : identifier {Designator_Identifier $1}
            | not        {Designator_Keyword Not}
 
 -- ?? parameter_interface_list
-formal_parameter_list : interface_list -- ?? Is this even needed
+formal_parameter_list : interface_list {$1} -- ?? Is this even needed
 
 subprogram_body : subprogram_specification is subprogram_declarative_part begin subprogram_statement_part end designator ';'  {SubprogramBody $1 $3 $5 (Just $7)}
                 | subprogram_specification is subprogram_declarative_part begin subprogram_statement_part end ';'             {SubprogramBody $1 $3 $5 Nothing}
@@ -301,7 +305,7 @@ package_declarative_item : subprogram_declaration        {PackageDeclarativeItem
 package_body : package body identifier is package_body_declarative_part end identifier ';'   {PackageBody $3 $5 (Just $7)}
              | package body identifier is package_body_declarative_part end ';'              {PackageBody $3 $5 Nothing}
 
-package_body_declarative_part : {- empty -} 
+package_body_declarative_part : {- empty -}                                                  {[]}
                               | package_body_declarative_part package_body_declarative_item  {$2 : $1}
 
 package_body_declarative_item : subprogram_declaration                           {PackageBodyDeclarativeItem_SubprogramDeclaration $1}
@@ -347,7 +351,7 @@ physical_literal : abstract_literal identifier  {PhysicalLiteral (Just $1) $2}
 floating_type_definition : range_constraint {FloatingTypeDefinition $1}
 
 composite_type_definition : array_type_definition  {Composite_ArrayTypeDefinition $1}
-                          | record element_declaration_list end record
+                          | record element_declaration_list end record {RecordTypeDefinition $2}
 
 array_type_definition : array '(' index_subtype_definition_list ')' of subtype_indication {UnconstrainedArrayTypeDefinition $3 $6}
                       | array '(' discrete_range_list ')' of subtype_indication           {ConstrainedArrayTypeDefinition $3 $6}
@@ -412,6 +416,11 @@ subtype_indication : name type_mark constraint  {SubtypeIndication (Just $1) $2 
 constraint : range_constraint {Constraint_Range $1}
            | index_constraint {Constraint_Index $1}
 
+index_constraint : '(' index_constraint_list ')' {$2}
+
+index_constraint_list : discrete_range                            {[$1]}
+                      | index_constraint_list ',' discrete_range  {$3 : $1}
+
 object_declaration : constant_declaration {ObjectDeclaration_Constant $1}
                    | signal_declaration   {ObjectDeclaration_Signal $1}
                    | variable_declaration {ObjectDeclaration_Variable $1}
@@ -433,7 +442,8 @@ variable_declaration : variable identifier_list ':' subtype_indication ':=' expr
 file_declaration : file identifier ':' subtype_indication is mode file_logical_name ';'   {FileDeclaration $2 $4 (Just $6) $7}
                  | file identifier ':' subtype_indication is file_logical_name ';'        {FileDeclaration $2 $4 Nothing $6}
 
---?? file_logical_name : string_expression {$1}
+-- ??  string_expression
+file_logical_name : expression {$1}
 
 interface_declaration : constant identifier_list ':' in     subtype_indication      ':=' expression   {InterfaceDeclaration (Just Constant)        $2 (Just In)   $5 (Just $7)}
                       | constant identifier_list ':' in     subtype_indication                        {InterfaceDeclaration (Just Constant)        $2 (Just In)   $5 Nothing}
@@ -524,7 +534,7 @@ entity_class : entity         {EntityClass_Entity}
              | component      {EntityClass_Component}
              | label          {EntityClass_Label}
 
-configuration_specification : for instantiation_list ':' name use binding_indication ';' {ConfigurationSpecification $2 $4 $6}
+configuration_specification : for component_specification use binding_indication ';' {ConfigurationSpecification $2 $4}
 
 instantiation_list : label_list  {InstantiationList_Label $1}
                    | others      {InstantiationList_Others}

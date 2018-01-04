@@ -30,7 +30,7 @@ data AlexState = AlexState {
         alex_scd :: !Int        -- the current startcode
     }
 
-newtype Alex a = Alex { unAlex :: AlexState -> Either LexerError (AlexState, a) }
+newtype Alex a = Alex { unAlex :: AlexState -> Either ParserError (AlexState, a) }
 
 instance Functor Alex where
   fmap f a = Alex $ \s -> case unAlex a s of
@@ -54,9 +54,9 @@ instance Monad Alex where
 -- | Type for alex actions
 type AlexAction result = AlexInput -> Int -> Alex result
 
--- |Errors that the lexer can output
+-- |Errors that the parser and lexer can output
 -- All errors contain the position where the error occurred.
-data LexerError
+data ParserError
    -- |Used when an unknown error has occurred in the lexer
    = GenericLexError AlexPosn
    -- |Based literal lexer error, invalid base value
@@ -94,10 +94,12 @@ data LexerError
    -- |Bit string literal lexer error, empty string
    -- Contains entire literal, position
    | LexErr_BitStrLiteral_EmptyStr String AlexPosn
+   -- |Used when an unknown error has occurred in the parser
+   | GenericParseError
    deriving (Eq)
 -- ?? NonMatchingIdentifierError ReservedWord String String AlexPosn
 
-instance (Show LexerError) where
+instance (Show ParserError) where
    show (GenericLexError pos) =
       "Some lexer error occurred "
       ++ getLineAndColErrStr pos

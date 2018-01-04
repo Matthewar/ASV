@@ -66,6 +66,8 @@ data ConfigurationItem = ConfigurationItem_BlockConfiguration BlockConfiguration
 
 newtype ComponentConfiguration = ComponentConfiguration ComponentSpecification (Maybe BindingIndication) (Maybe BlockConfiguration)
 
+newtype ComponentSpecification = ComponentSpecification InstantiationList Name
+
 newtype SubprogramDeclaration = SubprogramDeclaration SubprogramSpecification
 
 data SubprogramSpecification = ProcedureDeclaration Designator (Maybe FormalParameterList)
@@ -255,7 +257,7 @@ data AttributeSpecificationEntityNameList = AttributeSpecificationEntityName_Lis
 data EntityDesignator = EntityDesignator_Name String
                       | EntityDesignator_Operator OperatorType
 
-newtype ConfigurationSpecification = ConfigurationSpecification InstantiationList Name BindingIndication
+newtype ConfigurationSpecification = ConfigurationSpecification ComponentSpecification BindingIndication
 
 data InstantiationList = InstantiationList_Label [Label]
                        | InstantiationList_Others
