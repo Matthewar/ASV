@@ -1,10 +1,15 @@
 module Parser.Happy.Types where
 
-newtype EntityDeclaration = EntityDeclaration String EntityHeader EntityDeclarativePart EntityStatementPart (Maybe String)
+import Data.Int (Int64)
+import Data.ByteString.Char8 (ByteString)
 
-newtype EntityHeader = EntityHeader (Maybe GenericClause) (Maybe PortClause)
+import qualified Parser.TokenTypes as TokenTypes
 
-newtype EntityDeclarativePart = [EntityDeclarativeItem]
+data EntityDeclaration = EntityDeclaration String EntityHeader EntityDeclarativePart EntityStatementPart (Maybe String)
+
+data EntityHeader = EntityHeader (Maybe GenericClause) (Maybe PortClause)
+
+type EntityDeclarativePart = [EntityDeclarativeItem]
 
 data EntityDeclarativeItem = EntityDeclaration_SubprogramDeclaration       SubprogramDeclaration
                            | EntityDeclaration_SubprogramBody              SubprogramBody
@@ -19,15 +24,15 @@ data EntityDeclarativeItem = EntityDeclaration_SubprogramDeclaration       Subpr
                            | EntityDeclaration_DisconnectionSpecification  DisconnectionSpecification
                            | EntityDeclaration_UseClause                   UseClause
 
-newtype EntityStatementPart = [EntityStatement]
+type EntityStatementPart = [EntityStatement]
 
 data EntityStatement = EntityStatement_ConcurrentAssertionStatement  ConcurrentAssertionStatement
                      | EntityStatement_ConcurrentProcedureCall       ConcurrentProcedureCall
                      | EntityStatement_ProcessStatement              ProcessStatement
 
-newtype ArchitectureBody = ArchitectureBody String String ArchitectureDeclarativePart ArchitectureStatementPart (Maybe String)
+data ArchitectureBody = ArchitectureBody String String ArchitectureDeclarativePart ArchitectureStatementPart (Maybe String)
 
-newtype ArchitectureDeclarativePart = [BlockDeclarativeItem]
+type ArchitectureDeclarativePart = [BlockDeclarativeItem]
 
 data BlockDeclarativeItem = BlockDeclarativeItem_SubprogramDeclaration        SubprogramDeclaration
                           | BlockDeclarativeItem_SubprogramBody               SubprogramBody
@@ -44,16 +49,16 @@ data BlockDeclarativeItem = BlockDeclarativeItem_SubprogramDeclaration        Su
                           | BlockDeclarativeItem_DisconnectionSpecification   DisconnectionSpecification
                           | BlockDeclarativeItem_UseClause                    UseClause
 
-newtype ArchitectureStatementPart = [ConcurrentStatement]
+type ArchitectureStatementPart = [ConcurrentStatement]
 
-newtype ConfigurationDeclaration = ConfigurationDeclaration String String ConfigurationDeclarativePart BlockConfiguration (Maybe String)
+data ConfigurationDeclaration = ConfigurationDeclaration String String ConfigurationDeclarativePart BlockConfiguration (Maybe String)
 
-newtype ConfigurationDeclarativePart = [ConfigurationDeclarativeItem]
+type ConfigurationDeclarativePart = [ConfigurationDeclarativeItem]
 
 data ConfigurationDeclarativeItem = ConfigurationDeclarativeItem_UseClause                UseClause
                                   | ConfigurationDeclarativeItem_AttributeSpecification   AttributeSpecification
 
-newtype BlockConfiguration BlockSpecification [UseClause] [ConfigurationItem]
+data BlockConfiguration = BlockConfiguration BlockSpecification [UseClause] [ConfigurationItem]
 
 data BlockSpecification = BlockSpecificationIdentifier String -- architecture_name or block_statement_label or generate_statement_label
                         | BlockSpecificationGenerate String IndexSpecification -- generate_statement_label ( index_specification )
@@ -64,22 +69,24 @@ data IndexSpecification = IndexSpecification_DiscreteRange  DiscreteRange
 data ConfigurationItem = ConfigurationItem_BlockConfiguration BlockConfiguration
                        | ConfigurationItem_ComponentConfiguration ComponentConfiguration
 
-newtype ComponentConfiguration = ComponentConfiguration ComponentSpecification (Maybe BindingIndication) (Maybe BlockConfiguration)
+data ComponentConfiguration = ComponentConfiguration ComponentSpecification (Maybe BindingIndication) (Maybe BlockConfiguration)
 
-newtype ComponentSpecification = ComponentSpecification InstantiationList Name
+data ComponentSpecification = ComponentSpecification InstantiationList Name
 
 newtype SubprogramDeclaration = SubprogramDeclaration SubprogramSpecification
 
 data SubprogramSpecification = ProcedureDeclaration Designator (Maybe FormalParameterList)
                              | FunctionDeclaration Designator (Maybe FormalParameterList) String
 
+type FormalParameterList = InterfaceList
+
 data Designator = Designator_Identifier String
-                | Designator_Operator OperatorType
-                | Designator_Keyword ReservedWord
+                | Designator_Operator TokenTypes.OperatorType
+                | Designator_Keyword TokenTypes.ReservedWord
 
-newtype SubprogramBody = SubprogramBody SubprogramSpecification SubprogramDeclarativePart SubprogramStatementPart (Maybe Designator)
+data SubprogramBody = SubprogramBody SubprogramSpecification SubprogramDeclarativePart SubprogramStatementPart (Maybe Designator)
 
-newtype SubprogramDeclarativePart = [SubprogramDeclarativeItem]
+type SubprogramDeclarativePart = [SubprogramDeclarativeItem]
 
 data SubprogramDeclarativeItem = SubprogramDeclarativeItem_SubprogramDeclaration SubprogramDeclaration
                                | SubprogramDeclarativeItem_SubprogramBody SubprogramBody
@@ -93,11 +100,11 @@ data SubprogramDeclarativeItem = SubprogramDeclarativeItem_SubprogramDeclaration
                                | SubprogramDeclarativeItem_AttributeSpecification AttributeSpecification
                                | SubprogramDeclarativeItem_UseClause UseClause
 
-newtype SubprogramStatementPart = [SequentialStatement]
+type SubprogramStatementPart = [SequentialStatement]
 
-newtype PackageDeclaration = PackageDeclaration String PackageDeclarativePart (Maybe String)
+data PackageDeclaration = PackageDeclaration String PackageDeclarativePart (Maybe String)
 
-newtype PackageDeclarativePart = [PackageDeclarativeItem]
+type PackageDeclarativePart = [PackageDeclarativeItem]
 
 data PackageDeclarativeItem = PackageDeclarativeItem_SubprogramDeclaration       SubprogramDeclaration
                             | PackageDeclarativeItem_TypeDeclaration             TypeDeclaration
@@ -112,9 +119,9 @@ data PackageDeclarativeItem = PackageDeclarativeItem_SubprogramDeclaration      
                             | PackageDeclarativeItem_DisconnectionSpecification  DisconnectionSpecification
                             | PackageDeclarativeItem_UseClause                   UseClause
 
-newtype PackageBody = PackageBody String PackageBodyDeclarativePart (Maybe String)
+data PackageBody = PackageBody String PackageBodyDeclarativePart (Maybe String)
 
-newtype PackageBodyDeclarativePart = [PackageBodyDeclarativeItem]
+type PackageBodyDeclarativePart = [PackageBodyDeclarativeItem]
 
 data PackageBodyDeclarativeItem = PackageBodyDeclarativeItem_SubprogramDeclaration SubprogramDeclaration
                                 | PackageBodyDeclarativeItem_SubprogramBody        SubprogramBody
@@ -139,9 +146,9 @@ data Range = RangeAttributeName AttributeName
 data Direction = To
                | Downto
 
-newtype SecondaryUnitDeclaration = SecondaryUnitDeclaration String PhysicalLiteral
+data SecondaryUnitDeclaration = SecondaryUnitDeclaration String PhysicalLiteral
 
-newtype PhysicalLiteral = PhysicalLiteral (Maybe AbstractLiteral) String
+data PhysicalLiteral = PhysicalLiteral (Maybe AbstractLiteral) String
 
 data CompositeTypeDefinition = Composite_ArrayTypeDefinition ArrayTypeDefinition
                              | RecordTypeDefinition [ElementDeclaration]
@@ -149,12 +156,12 @@ data CompositeTypeDefinition = Composite_ArrayTypeDefinition ArrayTypeDefinition
 data ArrayTypeDefinition = UnconstrainedArrayTypeDefinition [String] SubtypeIndication
                          | ConstrainedArrayTypeDefinition IndexConstraint SubtypeIndication
 
-newtype IndexConstraint = [DiscreteRange]
+type IndexConstraint = [DiscreteRange]
 
 data DiscreteRange = DiscreteRange_SubtypeIndication SubtypeIndication
                    | DescreteRange_Range Range
 
-newtype ElementDeclaration = ElementDeclaration [String] SubtypeIndication
+data ElementDeclaration = ElementDeclaration [String] SubtypeIndication
 
 data Declaration = Declaration_Type TypeDeclaration
                  | Declaration_Subtype SubtypeDeclaration
@@ -177,9 +184,9 @@ data TypeDefinition = TypeDefinition_Scalar ScalarTypeDefinition
                     | TypeDefinition_Access SubtypeIndication
                     | TypeDefinition_File String
 
-newtype SubtypeDeclaration = SubtypeDeclaration String SubtypeIndication
+data SubtypeDeclaration = SubtypeDeclaration String SubtypeIndication
 
-newtype SubtypeIndication = SubtypeIndication (Maybe String) String (Maybe Constraint)
+data SubtypeIndication = SubtypeIndication (Maybe String) String (Maybe Constraint)
 
 data Constraint = Constraint_Range Range
                 | Constraint_Index IndexConstraint
@@ -188,18 +195,18 @@ data ObjectDeclaration = ObjectDeclaration_Constant ConstantDeclaration
                        | ObjectDeclaration_Signal SignalDeclaration
                        | ObjectDeclaration_Variable VariableDeclaration
 
-newtype ConstantDeclaration = ConstantDeclaration [String] SubtypeIndication (Maybe Expression)
+data ConstantDeclaration = ConstantDeclaration [String] SubtypeIndication (Maybe Expression)
 
-newtype SignalDeclaration = SignalDeclaration [String] SubtypeIndication (Maybe SignalKind) (Maybe Expression)
+data SignalDeclaration = SignalDeclaration [String] SubtypeIndication (Maybe SignalKind) (Maybe Expression)
 
 data SignalKind = Register
                 | Bus
 
-newtype VariableDeclaration = VariableDeclaration [String] SubtypeIndication (Maybe Expression)
+data VariableDeclaration = VariableDeclaration [String] SubtypeIndication (Maybe Expression)
 
-newtype FileDeclaration = FileDeclaration String SubtypeIndication (Maybe Mode) Expression
+data FileDeclaration = FileDeclaration String SubtypeIndication (Maybe Mode) Expression
 
-newtype InterfaceDeclaration = InterfaceDeclaration (Maybe InterfaceType) [String] (Maybe Mode) SubtypeIndication (Maybe Expression)
+data InterfaceDeclaration = InterfaceDeclaration (Maybe InterfaceType) [String] (Maybe Mode) SubtypeIndication (Maybe Expression)
 
 data InterfaceType = Constant
                    | Signal
@@ -212,11 +219,11 @@ data Mode = In
           | Buffer
           | Linkage
 
-newtype InterfaceList = [InterfaceDeclaration]
+type InterfaceList = [InterfaceDeclaration]
 
-newtype AssociationList = [AssociationElement]
+type AssociationList = [AssociationElement]
 
-newtype AssociationElement = AssociationElement (Maybe FormatPart) ActualPart
+data AssociationElement = AssociationElement (Maybe FormalPart) ActualPart
 
 data FormalPart = FormalPart_Designator Name
                 | FormalPart_Function Name Name
@@ -228,13 +235,13 @@ data ActualDesignator = ActualDesignator_Expression Expression
                       | ActualDesignator_Name Name
                       | ActualDesignator_Open
 
-newtype AliasDeclaration = AliasDeclaration String SubtypeIndication Name
+data AliasDeclaration = AliasDeclaration String SubtypeIndication Name
 
-newtype AttributeDeclaration = AttributeDeclaration String String
+data AttributeDeclaration = AttributeDeclaration String String
 
-newtype ComponentDeclaration = ComponentDeclaration String (Maybe GenericClause) (Maybe PortClause)
+data ComponentDeclaration = ComponentDeclaration String (Maybe GenericClause) (Maybe PortClause)
 
-newtype AttributeSpecification = AttributeSpecification String AttributeSpecificationEntityNameList EntityClass Expression
+data AttributeSpecification = AttributeSpecification String AttributeSpecificationEntityNameList EntityClass Expression
 
 data EntityClass = EntityClass_Entity
                  | EntityClass_Architecture
@@ -255,52 +262,50 @@ data AttributeSpecificationEntityNameList = AttributeSpecificationEntityName_Lis
                                           | AttributeSpecificationEntityName_All
 
 data EntityDesignator = EntityDesignator_Name String
-                      | EntityDesignator_Operator OperatorType
+                      | EntityDesignator_Operator TokenTypes.OperatorType
 
-newtype ConfigurationSpecification = ConfigurationSpecification ComponentSpecification BindingIndication
+data ConfigurationSpecification = ConfigurationSpecification ComponentSpecification BindingIndication
 
-data InstantiationList = InstantiationList_Label [Label]
+data InstantiationList = InstantiationList_Label [String]
                        | InstantiationList_Others
                        | InstantiationList_All
 
-newtype BindingIndication = BindingIndication EntityAspect (Maybe AssociationList) (Maybe AssociationList)
+data BindingIndication = BindingIndication EntityAspect (Maybe AssociationList) (Maybe AssociationList)
 
 data EntityAspect = EntityAspect_Entity Name (Maybe String)
                   | EntityAspect_Configuration Name
                   | EntityAspect_Open
 
-newtype DisconnectionSpecification = DisconnectionSpecification GuardedSignalList String Expression
+data DisconnectionSpecification = DisconnectionSpecification GuardedSignalList String Expression
 
 data GuardedSignalList = GuardedSignal_List [Name]
                        | GuardedSignal_Others
                        | GuardedSignal_All
 
 data Name = Name_Simple SimpleName
-          | Name_Operator OperatorName
+          | Name_Operator TokenTypes.OperatorType
           | Name_Selected SelectedName
           | Name_Indexed IndexedName
           | Name_Slice SliceName
           | Name_Attribute AttributeName
 
-newtype SimpleName = String
+type SimpleName = String
 
-newtype NameOperator = OperatorType
+data SelectedName = SelectedName Prefix Suffix
 
-newtype SelectedName = SelectedName Prefix Suffix
+data IndexedName = IndexedName Prefix [Expression]
 
-newtype IndexedName = IndexedName Prefix [Expression]
-
-newtype SliceName = SliceName Prefix DiscreteRange
+data SliceName = SliceName Prefix DiscreteRange
 
 data Prefix = Prefix_Name Name
             | Prefix_Function FunctionCall
 
 data Suffix = Suffix_Name String
             | Suffix_Char Char
-            | Suffix_Operator OperatorType
+            | Suffix_Operator TokenTypes.OperatorType
             | Suffix_All
 
-newtype AttributeName = AttributeName Prefix String (Maybe Expression)
+data AttributeName = AttributeName Prefix String (Maybe Expression)
 
 data Expression = Expression_And AndExpression
                 | Expression_Or OrExpression
@@ -318,23 +323,23 @@ data OrExpression = OrExpression Relation OrExpression
 data XorExpression = XorExpression Relation XorExpression
                    | XorRelation Relation Relation
 
-newtype NandExpression = NandExpression Relation Relation
+data NandExpression = NandExpression Relation Relation
 
-newtype NorExpression = NorExpression Relation Relation
+data NorExpression = NorExpression Relation Relation
 
 data Relation = Relation_Compare SimpleExpression RelationalOperator SimpleExpression
               | Relation_Term SimpleExpression
 
-newtype SimpleExpression = SimpleExpression Sign Term [AddingOperation]
+data SimpleExpression = SimpleExpression Sign Term [AddingOperation]
 
 data Sign = Positive
           | Negative
 
-newtype AddingOperation = AddingOperation AddingOperator Term
+data AddingOperation = AddingOperation AddingOperator Term
 
-newtype Term = Term Factor [MultiplyingOperation]
+data Term = Term Factor [MultiplyingOperation]
 
-newtype MultiplyingOperation = MultiplyingOperation MultiplyingOperator Factor
+data MultiplyingOperation = MultiplyingOperation MultiplyingOperator Factor
 
 data Factor = Factor_Value Primary
             | Factor_Pow Primary Primary
@@ -350,7 +355,7 @@ data Primary = Primary_Name Name
              | Primary_Allocator Allocator
              | Primary_Expression Expression
 
-newtype TypeConversion = TypeConversion String Expression
+data TypeConversion = TypeConversion String Expression
 
 data RelationalOperator = Relation_Equals
                         | Relation_NotEquals
@@ -382,18 +387,18 @@ data AbstractLiteral = UniversalInteger Int64
 
 type StringLiteral = String
 
-newtype BitStrLiteral = BitStrLiteral LiteralBase ByteString
+data BitStrLiteral = BitStrLiteral TokenTypes.LiteralBase ByteString
 
-newtype ElementAssociation = ElementAssociation (Maybe [Choice]) Expression
+data ElementAssociation = ElementAssociation (Maybe [Choice]) Expression
 
-newtype Aggregate = [ElementAssociation]
+type Aggregate = [ElementAssociation]
 
-newtype Choice = Choice_Expression SimpleExpression
-               | Choice_DiscreteRange DiscreteRange
-               | Choice_ElementName String
-               | Choice_Others
+data Choice = Choice_Expression SimpleExpression
+            | Choice_DiscreteRange DiscreteRange
+            | Choice_ElementName String
+            | Choice_Others
 
-newtype FunctionCall = FunctionCall String (Maybe ActualParameterPart)
+data FunctionCall = FunctionCall String (Maybe ActualParameterPart)
 
 data QualifiedExpression = QualifiedExpression_Expression String Expression
                          | QualifiedExpression_Aggregate Aggregate
@@ -414,44 +419,45 @@ data SequentialStatement = Sequential_WaitStatement WaitStatement
                          | Sequential_ReturnStatement ReturnStatement
                          | Sequential_NullStatement
 
-newtype WaitStatement = WaitStatement (Maybe [Name]) (Maybe Expression) (Maybe Expression)
+data WaitStatement = WaitStatement (Maybe [Name]) (Maybe Expression) (Maybe Expression)
 
-newtype AssertionStatement = AssertionStatement Expression (Maybe Expression) (Maybe Expression)
+data AssertionStatement = AssertionStatement Expression (Maybe Expression) (Maybe Expression)
 
-newtype SignalAssignmentStatement = SignalAssignmentStatement Target SignalAssignmentType Waveform
+data SignalAssignmentStatement = SignalAssignmentStatement Target SignalAssignmentType Waveform
 
-newtype VariableAssignmentStatement = VariableAssignmentStatement Target Expression
+data VariableAssignmentStatement = VariableAssignmentStatement Target Expression
 
 type Waveform = [WaveformElement]
 
 data Target = Target_Name Name
             | Target_Aggregate Aggregate
 
-data SignalAssignmentType = SignalAssignmentNormal | SignalAssignmentTransport
+data SignalAssignmentType = SignalAssignmentNormal
+                          | SignalAssignmentTransport
 
-newtype WaveformElement = Waveform_Expression Expression (Maybe Expression)
-                        | Waveform_Null (Maybe Expression)
+data WaveformElement = Waveform_Expression Expression (Maybe Expression)
+                     | Waveform_Null (Maybe Expression)
 
-newtype ProcedureCallStatement = ProcedureCallStatement Name (Maybe ActualParameterPart)
+data ProcedureCallStatement = ProcedureCallStatement Name (Maybe ActualParameterPart)
 
 type ActualParameterPart = AssociationList
 
-newtype IfStatement = IfStatement Expression [SequentialStatement] [ElsifStatement] (Maybe [SequentialStatement])
+data IfStatement = IfStatement Expression [SequentialStatement] [ElsifStatement] (Maybe [SequentialStatement])
 
-newtype ElsifStatement = ElsifStatement Expression [SequentialStatement]
+data ElsifStatement = ElsifStatement Expression [SequentialStatement]
 
-newtype CaseStatement = CaseStatement Expression [CaseStatementAlternative]
+data CaseStatement = CaseStatement Expression [CaseStatementAlternative]
 
-newtype CaseStatementAlternative = CaseStatementAlternative [Choice] [SequentialStatement]
+data CaseStatementAlternative = CaseStatementAlternative [Choice] [SequentialStatement]
 
-newtype LoopStatement = LoopStatement (Maybe (String,String)) (Maybe IterationScheme) [SequentialStatement]
+data LoopStatement = LoopStatement (Maybe (String,String)) (Maybe IterationScheme) [SequentialStatement]
 
 data IterationScheme = IterationScheme_While Expression
                      | IterationScheme_For String DiscreteRange
 
-newtype NextStatement = NextStatement (Maybe String) (Maybe Expression)
+data NextStatement = NextStatement (Maybe String) (Maybe Expression)
 
-newtype ExitStatement = ExitStatement (Maybe String) (Maybe Expression)
+data ExitStatement = ExitStatement (Maybe String) (Maybe Expression)
 
 newtype ReturnStatement = ReturnStatement (Maybe Expression)
 
@@ -463,15 +469,15 @@ data ConcurrentStatement = Concurrent_BlockStatement BlockStatement
                          | Concurrent_ComponentInstantiationStatement ComponentInstantiationStatement
                          | Concurrent_GenerateStatement GenerateStatement
 
-newtype BlockStatement = BlockStatement String (Maybe Expression) BlockHeader BlockDeclarativePart BlockStatementPart (Maybe String)
+data BlockStatement = BlockStatement String (Maybe Expression) BlockHeader BlockDeclarativePart BlockStatementPart (Maybe String)
 
-newtype BlockHeader = BlockHeader (Maybe BlockHeader_Generic) (Maybe BlockHeader_Port)
+data BlockHeader = BlockHeader (Maybe BlockHeader_Generic) (Maybe BlockHeader_Port)
 
-newtype BlockHeader_Generic = BlockHeader_Generic GenericClause (Maybe GenericMapAspect)
+data BlockHeader_Generic = BlockHeader_Generic GenericClause (Maybe GenericMapAspect)
 
 type GenericMapAspect = AssociationList
 
-newtype BlockHeader_Port = BlockHeader_Port PortClause (Maybe PortMapAspect)
+data BlockHeader_Port = BlockHeader_Port PortClause (Maybe PortMapAspect)
 
 type PortMapAspect = AssociationList
 
@@ -479,15 +485,17 @@ type BlockDeclarativePart = [BlockDeclarativeItem]
 
 type BlockStatementPart = [ConcurrentStatement]
 
-newtype ProcessStatement = ProcessStatement (Maybe (String,String)) (Maybe SensitivityList) ProcessDeclarativePart ProcessStatementPart
+data ProcessStatement = ProcessStatement (Maybe (String,String)) (Maybe SensitivityList) ProcessDeclarativePart ProcessStatementPart
 
 type ProcessDeclarativePart = [ProcessDeclarativeItem]
 
 type ProcessStatementPart = [SequentialStatement]
 
-newtype ComponentInstantiationStatement = ComponentInstantiationStatement String Name (Maybe AssociationList) (Maybe AssociationList)
+type SensitivityList = [Name]
 
-newtype GenerateStatement = GenerateStatement String GenerationScheme [ConcurrentStatement] (Maybe String)
+data ComponentInstantiationStatement = ComponentInstantiationStatement String Name (Maybe AssociationList) (Maybe AssociationList)
+
+data GenerateStatement = GenerateStatement String GenerationScheme [ConcurrentStatement] (Maybe String)
 
 data ProcessDeclarativeItem = ProcessDeclarative_SubprogramDeclaration     SubprogramDeclaration
                             | ProcessDeclarative_SubprogramBody            SubprogramBody
@@ -501,37 +509,37 @@ data ProcessDeclarativeItem = ProcessDeclarative_SubprogramDeclaration     Subpr
                             | ProcessDeclarative_AttributeSpecification    AttributeSpecification
                             | ProcessDeclarative_UseClause                 UseClause
 
-newtype ConcurrentProcedureCall = ConcurrentProcedureCall (Maybe String) ProcedureCallStatement
+data ConcurrentProcedureCall = ConcurrentProcedureCall (Maybe String) ProcedureCallStatement
 
-newtype ConcurrentAssertionStatement = ConcurrentAssertionStatement (Maybe String) AssertionStatement
+data ConcurrentAssertionStatement = ConcurrentAssertionStatement (Maybe String) AssertionStatement
 
 data ConcurrentSignalAssignmentStatement = ConditionalSignalAssignment (Maybe String) Target SignalAssignmentOptions ConditionalWaveforms
                                          | SelectedSignalAssignment (Maybe String) Expression Target SignalAssignmentOptions [SelectedWaveformPair]
 
-newtype SignalAssignmentOptions = SignalAssignmentOptions SignalAssignment_Guarded SignalAssignment_Transport
+data SignalAssignmentOptions = SignalAssignmentOptions SignalAssignment_Guarded SignalAssignment_Transport
 
 data SignalAssignment_Guarded = SignalAssignment_Guarded | SignalAssignment_NonGuarded
 
 data SignalAssignment_Transport = SignalAssignment_Transport | SignalAssignment_NonTransport
 
-newtype ConditionalWaveforms = ConditionalWaveforms [ConditionalWaveformPair] Waveform
+data ConditionalWaveforms = ConditionalWaveforms [ConditionalWaveformPair] Waveform
 
-newtype ConditionalWaveformPair = ConditionalWaveformPair Waveform Expression
+data ConditionalWaveformPair = ConditionalWaveformPair Waveform Expression
 
-newtype SelectedWaveformPair = SelectedWaveformPair Waveform [Choice]
+data SelectedWaveformPair = SelectedWaveformPair Waveform [Choice]
 
-data GenerationScheme = GenerationScheme_For ParameterSpecification
+data GenerationScheme = GenerationScheme_For String DiscreteRange
                       | GenerationScheme_If Expression
 
-newtype GenericClause = InterfaceList
+type GenericClause = InterfaceList
 
-newtype PortClause = InterfaceList
+type PortClause = InterfaceList
 
 newtype UseClause = UseClause [SelectedName]
 
 newtype DesignFile = DesignFile [DesignUnit]
 
-newtype DesignUnit = DesignUnit ContextClause LibraryUnit
+data DesignUnit = DesignUnit ContextClause LibraryUnit
 
 data LibraryUnit = Library_PrimaryUnit PrimaryUnit
                  | Library_SecondaryUnit SecondaryUnit
@@ -543,9 +551,9 @@ data PrimaryUnit = Primary_EntityDeclaration EntityDeclaration
 data SecondaryUnit = Secondary_ArchitectureBody ArchitectureBody
                    | Secondary_PackageBody PackageBody
 
-newtype LibraryClause = [String]
+type LibraryClause = [String]
 
-newtype ContextClause = [ContextItem]
+type ContextClause = [ContextItem]
 
 data ContextItem = Context_LibraryClause LibraryClause
                  | Context_UseClause UseClause

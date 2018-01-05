@@ -260,11 +260,11 @@ tokens :-
 {
 -- The token type:
 data Token = Keyword ReservedWord
-                   | Operator OperatorType
-                   | Identifier String
-                   | Literal LitType
-                   | EOF
-                   deriving (Eq,Show)
+           | Operator OperatorType
+           | Identifier String
+           | Literal LitType
+           | EOF
+           deriving (Eq,Show)
 
 makeReserved :: ReservedWord -> AlexInput -> Int -> Alex Token
 makeReserved keyword (position, _, _, _) _ =

@@ -4,6 +4,7 @@ import Parser.Happy.Types
 import Parser.Happy.Functions
 import Parser.Alex.Types (Alex)
 import qualified Parser.Lexer as Lex
+import qualified Parser.TokenTypes as Tokens
 }
 
 %name v1987
@@ -13,116 +14,116 @@ import qualified Parser.Lexer as Lex
 %error{parseError}
 
 %token
-   abs            {Keyword Abs}
-   access         {Keyword Access}
-   after          {Keyword After}
-   alias          {Keyword Alias}
-   all            {Keyword All}
-   and            {Keyword And}
-   architecture   {Keyword Architecture}
-   array          {Keyword Array}
-   assert         {Keyword Assert}
-   attribute      {Keyword Attribute}
-   begin          {Keyword Begin}
-   block          {Keyword Block}
-   body           {Keyword Body}
-   buffer         {Keyword Buffer}
-   bus            {Keyword Bus}
-   case           {Keyword Case}
-   component      {Keyword Component}
-   configuration  {Keyword Configuration}
-   constant       {Keyword Constant}
-   disconnect     {Keyword Disconnect}
-   downto         {Keyword Downto}
-   else           {Keyword Else}
-   elsif          {Keyword Elsif}
-   end            {Keyword End}
-   entity         {Keyword Entity}
-   exit           {Keyword Exit}
-   file           {Keyword File}
-   for            {Keyword For}
-   function       {Keyword Function}
-   generate       {Keyword Generate}
-   generic        {Keyword Generic}
-   guarded        {Keyword Guarded}
-   if             {Keyword If}
-   in             {Keyword In}
-   inout          {Keyword Inout}
-   is             {Keyword Is}
-   label          {Keyword Label}
-   library        {Keyword Library}
-   linkage        {Keyword Linkage}
-   loop           {Keyword Loop}
-   map            {Keyword Map}
-   mod            {Keyword Mod}
-   nand           {Keyword Nand}
-   new            {Keyword New}
-   next           {Keyword Next}
-   nor            {Keyword Nor}
-   not            {Keyword Not}
-   null           {Keyword Null}
-   of             {Keyword Of}
-   on             {Keyword On}
-   open           {Keyword Open}
-   or             {Keyword Or}
-   others         {Keyword Others}
-   out            {Keyword Out}
-   package        {Keyword Package}
-   port           {Keyword Port}
-   procedure      {Keyword Procedure}
-   process        {Keyword Process}
-   range          {Keyword Range}
-   record         {Keyword Record}
-   register       {Keyword Register}
-   rem            {Keyword Rem}
-   report         {Keyword Report}
-   return         {Keyword Return}
-   select         {Keyword Select}
-   severity       {Keyword Severity}
-   signal         {Keyword Signal}
-   subtype        {Keyword Subtype}
-   then           {Keyword Then}
-   to             {Keyword To}
-   transport      {Keyword Transport}
-   type           {Keyword Type}
-   units          {Keyword Units}
-   until          {Keyword Until}
-   use            {Keyword Use}
-   variable       {Keyword Variable}
-   wait           {Keyword Wait}
-   when           {Keyword When}
-   while          {Keyword While}
-   with           {Keyword With}
-   xor            {Keyword Xor}
-   '=>'           {Operator Arrow}
-   '**'           {Operator DoubleStar}
-   ':='           {Operator VarAssign}
-   '/='           {Operator Inequality}
-   '>='           {Operator GreaterThanOrEqual}
-   '<='           {Operator SignAssign}
-   '<>'           {Operator Box}
-   '&'            {Operator Ampersand}
-   '\''           {Operator Apostrophe}
-   '('            {Operator LeftParen}
-   ')'            {Operator RightParen}
-   '*'            {Operator Star}
-   '+'            {Operator Plus}
-   ','            {Operator Comma}
-   '-'            {Operator Hyphen}
-   '.'            {Operator Period}
-   '/'            {Operator Slash}
-   ':'            {Operator Colon}
-   ';'            {Operator Semicolon}
-   '<'            {Operator LessThan}
-   '='            {Operator Equal}
-   '>'            {Operator GreaterThan}
-   '|'            {Operator Bar}
-   identifier     {Identifier $$}
-   integer        {Literal Univ_Int $$}
-   real           {Literal Univ_Real $$}
-   bitstr         {Literal BitStr _ _}
-   str            {Literal Str $$}
-   char           {Literal Character $$}
+   abs            {Lex.Keyword Tokens.Abs}
+   access         {Lex.Keyword Tokens.Access}
+   after          {Lex.Keyword Tokens.After}
+   alias          {Lex.Keyword Tokens.Alias}
+   all            {Lex.Keyword Tokens.All}
+   and            {Lex.Keyword Tokens.And}
+   architecture   {Lex.Keyword Tokens.Architecture}
+   array          {Lex.Keyword Tokens.Array}
+   assert         {Lex.Keyword Tokens.Assert}
+   attribute      {Lex.Keyword Tokens.Attribute}
+   begin          {Lex.Keyword Tokens.Begin}
+   block          {Lex.Keyword Tokens.Block}
+   body           {Lex.Keyword Tokens.Body}
+   buffer         {Lex.Keyword Tokens.Buffer}
+   bus            {Lex.Keyword Tokens.Bus}
+   case           {Lex.Keyword Tokens.Case}
+   component      {Lex.Keyword Tokens.Component}
+   configuration  {Lex.Keyword Tokens.Configuration}
+   constant       {Lex.Keyword Tokens.Constant}
+   disconnect     {Lex.Keyword Tokens.Disconnect}
+   downto         {Lex.Keyword Tokens.Downto}
+   else           {Lex.Keyword Tokens.Else}
+   elsif          {Lex.Keyword Tokens.Elsif}
+   end            {Lex.Keyword Tokens.End}
+   entity         {Lex.Keyword Tokens.Entity}
+   exit           {Lex.Keyword Tokens.Exit}
+   file           {Lex.Keyword Tokens.File}
+   for            {Lex.Keyword Tokens.For}
+   function       {Lex.Keyword Tokens.Function}
+   generate       {Lex.Keyword Tokens.Generate}
+   generic        {Lex.Keyword Tokens.Generic}
+   guarded        {Lex.Keyword Tokens.Guarded}
+   if             {Lex.Keyword Tokens.If}
+   in             {Lex.Keyword Tokens.In}
+   inout          {Lex.Keyword Tokens.Inout}
+   is             {Lex.Keyword Tokens.Is}
+   label          {Lex.Keyword Tokens.Label}
+   library        {Lex.Keyword Tokens.Library}
+   linkage        {Lex.Keyword Tokens.Linkage}
+   loop           {Lex.Keyword Tokens.Loop}
+   map            {Lex.Keyword Tokens.Map}
+   mod            {Lex.Keyword Tokens.Mod}
+   nand           {Lex.Keyword Tokens.Nand}
+   new            {Lex.Keyword Tokens.New}
+   next           {Lex.Keyword Tokens.Next}
+   nor            {Lex.Keyword Tokens.Nor}
+   not            {Lex.Keyword Tokens.Not}
+   null           {Lex.Keyword Tokens.Null}
+   of             {Lex.Keyword Tokens.Of}
+   on             {Lex.Keyword Tokens.On}
+   open           {Lex.Keyword Tokens.Open}
+   or             {Lex.Keyword Tokens.Or}
+   others         {Lex.Keyword Tokens.Others}
+   out            {Lex.Keyword Tokens.Out}
+   package        {Lex.Keyword Tokens.Package}
+   port           {Lex.Keyword Tokens.Port}
+   procedure      {Lex.Keyword Tokens.Procedure}
+   process        {Lex.Keyword Tokens.Process}
+   range          {Lex.Keyword Tokens.Range}
+   record         {Lex.Keyword Tokens.Record}
+   register       {Lex.Keyword Tokens.Register}
+   rem            {Lex.Keyword Tokens.Rem}
+   report         {Lex.Keyword Tokens.Report}
+   return         {Lex.Keyword Tokens.Return}
+   select         {Lex.Keyword Tokens.Select}
+   severity       {Lex.Keyword Tokens.Severity}
+   signal         {Lex.Keyword Tokens.Signal}
+   subtype        {Lex.Keyword Tokens.Subtype}
+   then           {Lex.Keyword Tokens.Then}
+   to             {Lex.Keyword Tokens.To}
+   transport      {Lex.Keyword Tokens.Transport}
+   type           {Lex.Keyword Tokens.Type}
+   units          {Lex.Keyword Tokens.Units}
+   until          {Lex.Keyword Tokens.Until}
+   use            {Lex.Keyword Tokens.Use}
+   variable       {Lex.Keyword Tokens.Variable}
+   wait           {Lex.Keyword Tokens.Wait}
+   when           {Lex.Keyword Tokens.When}
+   while          {Lex.Keyword Tokens.While}
+   with           {Lex.Keyword Tokens.With}
+   xor            {Lex.Keyword Tokens.Xor}
+   '=>'           {Lex.Operator Tokens.Arrow}
+   '**'           {Lex.Operator Tokens.DoubleStar}
+   ':='           {Lex.Operator Tokens.VarAssign}
+   '/='           {Lex.Operator Tokens.Inequality}
+   '>='           {Lex.Operator Tokens.GreaterThanOrEqual}
+   '<='           {Lex.Operator Tokens.SignAssign}
+   '<>'           {Lex.Operator Tokens.Box}
+   '&'            {Lex.Operator Tokens.Ampersand}
+   '\''           {Lex.Operator Tokens.Apostrophe}
+   '('            {Lex.Operator Tokens.LeftParen}
+   ')'            {Lex.Operator Tokens.RightParen}
+   '*'            {Lex.Operator Tokens.Star}
+   '+'            {Lex.Operator Tokens.Plus}
+   ','            {Lex.Operator Tokens.Comma}
+   '-'            {Lex.Operator Tokens.Hyphen}
+   '.'            {Lex.Operator Tokens.Period}
+   '/'            {Lex.Operator Tokens.Slash}
+   ':'            {Lex.Operator Tokens.Colon}
+   ';'            {Lex.Operator Tokens.Semicolon}
+   '<'            {Lex.Operator Tokens.LessThan}
+   '='            {Lex.Operator Tokens.Equal}
+   '>'            {Lex.Operator Tokens.GreaterThan}
+   '|'            {Lex.Operator Tokens.Bar}
+   identifier     {Lex.Identifier $$}
+   integer        {Lex.Literal Tokens.Univ_Int $$}
+   real           {Lex.Literal Tokens.Univ_Real $$}
+   bitstr         {Lex.Literal Tokens.BitStr _ _}
+   str            {Lex.Literal Tokens.Str $$}
+   char           {Lex.Literal Tokens.Character $$}
 
 %%
 
@@ -233,7 +234,7 @@ subprogram_declaration : subprogram_specification ';' {SubprogramDeclaration $1}
 
 subprogram_specification : procedure designator '(' formal_parameter_list ')'                   {ProcedureDeclaration $2 (Just $4)}
                          | procedure designator                                                    {ProcedureDeclaration $2 Nothing}
-                         | function designator '(' formal_parameter_list ')' return type_mark      {FunctionDeclaration $2 (Just $6) $9}
+                         | function designator '(' formal_parameter_list ')' return type_mark      {FunctionDeclaration $2 (Just $4) $6}
                          | function designator return type_mark                                    {FunctionDeclaration $2 Nothing $4}
 
 designator : identifier {Designator_Identifier $1}
@@ -540,6 +541,8 @@ instantiation_list : label_list  {InstantiationList_Label $1}
                    | others      {InstantiationList_Others}
                    | all         {InstantiationList_All}
 
+label_list : identifier_list {$1}
+
 binding_indication : entity_aspect generic_map_aspect port_map_aspect   {BindingIndication $1 (Just $2) (Just $3)}
                    | entity_aspect generic_map_aspect                   {BindingIndication $1 (Just $2) Nothing}
                    | entity_aspect                    port_map_aspect   {BindingIndication $1 Nothing (Just $2)}
@@ -554,7 +557,7 @@ generic_map_aspect : generic map '(' association_list ')' {$3}
 
 port_map_aspect : port map '(' association_list ')' {$3}
 
-disconnection_specification : disconnection signal_list ':' type_mark after expression ';' {DisconnectionSpecification $2 $4 $6}
+disconnection_specification : disconnect signal_list ':' type_mark after expression ';' {DisconnectionSpecification $2 $4 $6}
 
 signal_list : name_list {GuardedSignal_List $1}
             | others    {GuardedSignal_Others}
@@ -574,6 +577,30 @@ prefix : name           {Prefix_Name $1}
        | function_call  {Prefix_Name $1}
 
 simple_name : identifier {$1}
+
+operator_symbol : '=>'  {Operator Arrow}
+                | '**'  {Operator DoubleStar}
+                | ':='  {Operator VarAssign}
+                | '/='  {Operator Inequality}
+                | '>='  {Operator GreaterThanOrEqual}
+                | '<='  {Operator SignAssign}
+                | '<>'  {Operator Box}
+                | '&'   {Operator Ampersand}
+                | '\''  {Operator Apostrophe}
+                | '('   {Operator LeftParen}
+                | ')'   {Operator RightParen}
+                | '*'   {Operator Star}
+                | '+'   {Operator Plus}
+                | ','   {Operator Comma}
+                | '-'   {Operator Hyphen}
+                | '.'   {Operator Period}
+                | '/'   {Operator Slash}
+                | ':'   {Operator Colon}
+                | ';'   {Operator Semicolon}
+                | '<'   {Operator LessThan}
+                | '='   {Operator Equal}
+                | '>'   {Operator GreaterThan}
+                | '|'   {Operator Bar}
 
 selected_name : prefix '.' suffix {SelectedName $1 $3}
 
@@ -604,8 +631,8 @@ expression : relation         {Expression_Relation $1}
 and_expression : relation and and_expression {AndExpression $1 $3}
                | relation and relation       {AndRelation $1 $3}
 
-or_expression : relation or or_expresssion   {OrExpression $1 $3}
-              | realtion or relation         {OrRelation $1 $3}
+or_expression : relation or or_expression   {OrExpression $1 $3}
+              | relation or relation         {OrRelation $1 $3}
 
 xor_expression : relation xor xor_expression {XorExpression $1 $3}
                | relation xor relation       {XorRelation $1 $3}
@@ -620,6 +647,13 @@ relation : simple_expression relational_operator simple_expression   {Relation_C
 simple_expression : '+' term adding_operation_list {SimpleExpression Positive $2 $3}
                   | '-' term adding_operation_list {SimpleExpression Negative $2 $3}
                   |     term adding_operation_list {SimpleExpression Positive $1 $2}
+
+relational_operator : '='  {Relation_Equals}
+                    | '/=' {Relation_NotEquals}
+                    | '<'  {Relation_LessThan}
+                    | '<=' {Relation_LessThanOrEqual}
+                    | '>'  {Relation_GreaterThan}
+                    | '>=' {Relation_GreaterThanOrEqual}
 
 adding_operation_list : {- empty -}                            {[]}
                       | adding_operation_list adding_operation {$2 : $1}
@@ -670,7 +704,7 @@ abstract_literal : integer {UniversalInteger $1}
 
 string_literal : str {$1}
 
-bit_string_literal : bitstr {$1 & \Literal (BitStr (base,value)) -> BitStrLiteral base value}
+bit_string_literal : bitstr {$1 & \Lex.Literal (Tokens.BitStr (base,value)) -> BitStrLiteral base value}
 
 aggregate : '(' element_association_list ')' {$2}
 
@@ -726,6 +760,8 @@ wait_statement : wait   on sensitivity_list  until condition   for expression ';
                | wait                        until condition                  ';'   {WaitStatement Nothing     (Just $3)   Nothing}
                | wait                                          for expression ';'   {WaitStatement Nothing     Nothing     (Just $3)}
                | wait                                                         ';'   {WaitStatement Nothing     Nothing     Nothing}
+
+sensitivity_list : name_list {$1}
 
 assertion_statement : assert condition report expression severity expression  ';' {AssertionStatement $2 (Just $4)   (Just $6)}
                     | assert condition report expression                      ';' {AssertionStatement $2 (Just $4)   Nothing}
@@ -876,8 +912,11 @@ component_instantiation_statement : identifier ':' name generic_map_aspect port_
 generate_statement : identifier ':' generation_scheme generate concurrent_statement_list end generate identifier  ';' {GenerateStatement $1 $3 $5 (Just $8)}
                    | identifier ':' generation_scheme generate concurrent_statement_list end generate             ';' {GenerateStatement $1 $3 $5 Nothing}
 
-generation_scheme : for parameter_specification {GenerationScheme_For $2}
-                  | if condition                {GenerationScheme_If $2}
+generation_scheme : for identifier ':' discrete_range {GenerationScheme_For $2 $4}
+                  | if condition                      {GenerationScheme_If $2}
+
+-- Boolean expression
+condition : expression {$1}
 
 concurrent_statement_list : {- empty -}                                    {[]}
                           | concurrent_statement_list concurrent_statement {$2 : $1}

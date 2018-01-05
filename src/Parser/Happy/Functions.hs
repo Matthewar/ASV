@@ -5,4 +5,4 @@ import Parser.Alex.Functions (alexError)
 import Parser.Lexer (Token)
 
 parseError :: [Token] -> Alex a
-parseError = alexError GenericParseError
+parseError _ = alexError GenericParseError
