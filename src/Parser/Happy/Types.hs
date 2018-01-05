@@ -133,8 +133,7 @@ data PackageBodyDeclarativeItem = PackageBodyDeclarativeItem_SubprogramDeclarati
                                 | PackageBodyDeclarativeItem_UseClause             UseClause
 
 data ScalarTypeDefinition = EnumerationTypeDefinition [EnumerationLiteral]
-                          | IntegerTypeDefinition Range
-                          | FloatingTypeDefinition Range
+                          | UniversalTypeDefinition Range
                           | PhysicalTypeDefinition Range String [SecondaryUnitDeclaration]
 
 data EnumerationLiteral = EnumerationLiteral_Identifier String
@@ -182,7 +181,7 @@ data TypeDeclaration = FullTypeDeclaration String TypeDefinition
 data TypeDefinition = TypeDefinition_Scalar ScalarTypeDefinition
                     | TypeDefinition_Composite CompositeTypeDefinition
                     | TypeDefinition_Access SubtypeIndication
-                    | TypeDefinition_File String
+                    | TypeDefinition_File Name
 
 data SubtypeDeclaration = SubtypeDeclaration String SubtypeIndication
 
