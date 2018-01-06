@@ -4,6 +4,14 @@ import Data.Char as Char
 import Data.Int (Int64)
 import Data.ByteString.Char8 as ByteString
 
+-- |Token Type
+data Token = Keyword ReservedWord
+           | Operator OperatorType
+           | Identifier String
+           | Literal LitType
+           | EOF
+           deriving (Eq,Show)
+
 data ReservedWord = Abs
                   | Access
                   | After

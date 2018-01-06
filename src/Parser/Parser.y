@@ -1,129 +1,130 @@
 {
 module Parser.Parser where
+
 import Parser.Happy.Types
 import Parser.Happy.Functions
-import Parser.Alex.Types (Alex)
+import Parser.Alex.Monad (Alex)
 import qualified Parser.Lexer as Lex
 import qualified Parser.TokenTypes as Tokens
 }
 
 %name v1987
-%lexer{Lex.lexer}{Lex.EOF}
-%tokentype{Lex.Token}
+%lexer{Lex.lexer}{Tokens.EOF}
+%tokentype{Tokens.Token}
 %monad{Alex}
 %error{parseError}
 
 %token
-   abs            {Lex.Keyword Tokens.Abs}
-   access         {Lex.Keyword Tokens.Access}
-   after          {Lex.Keyword Tokens.After}
-   alias          {Lex.Keyword Tokens.Alias}
-   all            {Lex.Keyword Tokens.All}
-   and            {Lex.Keyword Tokens.And}
-   architecture   {Lex.Keyword Tokens.Architecture}
-   array          {Lex.Keyword Tokens.Array}
-   assert         {Lex.Keyword Tokens.Assert}
-   attribute      {Lex.Keyword Tokens.Attribute}
-   begin          {Lex.Keyword Tokens.Begin}
-   block          {Lex.Keyword Tokens.Block}
-   body           {Lex.Keyword Tokens.Body}
-   buffer         {Lex.Keyword Tokens.Buffer}
-   bus            {Lex.Keyword Tokens.Bus}
-   case           {Lex.Keyword Tokens.Case}
-   component      {Lex.Keyword Tokens.Component}
-   configuration  {Lex.Keyword Tokens.Configuration}
-   constant       {Lex.Keyword Tokens.Constant}
-   disconnect     {Lex.Keyword Tokens.Disconnect}
-   downto         {Lex.Keyword Tokens.Downto}
-   else           {Lex.Keyword Tokens.Else}
-   elsif          {Lex.Keyword Tokens.Elsif}
-   end            {Lex.Keyword Tokens.End}
-   entity         {Lex.Keyword Tokens.Entity}
-   exit           {Lex.Keyword Tokens.Exit}
-   file           {Lex.Keyword Tokens.File}
-   for            {Lex.Keyword Tokens.For}
-   function       {Lex.Keyword Tokens.Function}
-   generate       {Lex.Keyword Tokens.Generate}
-   generic        {Lex.Keyword Tokens.Generic}
-   guarded        {Lex.Keyword Tokens.Guarded}
-   if             {Lex.Keyword Tokens.If}
-   in             {Lex.Keyword Tokens.In}
-   inout          {Lex.Keyword Tokens.Inout}
-   is             {Lex.Keyword Tokens.Is}
-   label          {Lex.Keyword Tokens.Label}
-   library        {Lex.Keyword Tokens.Library}
-   linkage        {Lex.Keyword Tokens.Linkage}
-   loop           {Lex.Keyword Tokens.Loop}
-   map            {Lex.Keyword Tokens.Map}
-   mod            {Lex.Keyword Tokens.Mod}
-   nand           {Lex.Keyword Tokens.Nand}
-   new            {Lex.Keyword Tokens.New}
-   next           {Lex.Keyword Tokens.Next}
-   nor            {Lex.Keyword Tokens.Nor}
-   not            {Lex.Keyword Tokens.Not}
-   null           {Lex.Keyword Tokens.Null}
-   of             {Lex.Keyword Tokens.Of}
-   on             {Lex.Keyword Tokens.On}
-   open           {Lex.Keyword Tokens.Open}
-   or             {Lex.Keyword Tokens.Or}
-   others         {Lex.Keyword Tokens.Others}
-   out            {Lex.Keyword Tokens.Out}
-   package        {Lex.Keyword Tokens.Package}
-   port           {Lex.Keyword Tokens.Port}
-   procedure      {Lex.Keyword Tokens.Procedure}
-   process        {Lex.Keyword Tokens.Process}
-   range          {Lex.Keyword Tokens.Range}
-   record         {Lex.Keyword Tokens.Record}
-   register       {Lex.Keyword Tokens.Register}
-   rem            {Lex.Keyword Tokens.Rem}
-   report         {Lex.Keyword Tokens.Report}
-   return         {Lex.Keyword Tokens.Return}
-   select         {Lex.Keyword Tokens.Select}
-   severity       {Lex.Keyword Tokens.Severity}
-   signal         {Lex.Keyword Tokens.Signal}
-   subtype        {Lex.Keyword Tokens.Subtype}
-   then           {Lex.Keyword Tokens.Then}
-   to             {Lex.Keyword Tokens.To}
-   transport      {Lex.Keyword Tokens.Transport}
-   type           {Lex.Keyword Tokens.Type}
-   units          {Lex.Keyword Tokens.Units}
-   until          {Lex.Keyword Tokens.Until}
-   use            {Lex.Keyword Tokens.Use}
-   variable       {Lex.Keyword Tokens.Variable}
-   wait           {Lex.Keyword Tokens.Wait}
-   when           {Lex.Keyword Tokens.When}
-   while          {Lex.Keyword Tokens.While}
-   with           {Lex.Keyword Tokens.With}
-   xor            {Lex.Keyword Tokens.Xor}
-   '=>'           {Lex.Operator Tokens.Arrow}
-   '**'           {Lex.Operator Tokens.DoubleStar}
-   ':='           {Lex.Operator Tokens.VarAssign}
-   '/='           {Lex.Operator Tokens.Inequality}
-   '>='           {Lex.Operator Tokens.GreaterThanOrEqual}
-   '<='           {Lex.Operator Tokens.SignAssign}
-   '<>'           {Lex.Operator Tokens.Box}
-   '&'            {Lex.Operator Tokens.Ampersand}
-   '\''           {Lex.Operator Tokens.Apostrophe}
-   '('            {Lex.Operator Tokens.LeftParen}
-   ')'            {Lex.Operator Tokens.RightParen}
-   '*'            {Lex.Operator Tokens.Star}
-   '+'            {Lex.Operator Tokens.Plus}
-   ','            {Lex.Operator Tokens.Comma}
-   '-'            {Lex.Operator Tokens.Hyphen}
-   '.'            {Lex.Operator Tokens.Period}
-   '/'            {Lex.Operator Tokens.Slash}
-   ':'            {Lex.Operator Tokens.Colon}
-   ';'            {Lex.Operator Tokens.Semicolon}
-   '<'            {Lex.Operator Tokens.LessThan}
-   '='            {Lex.Operator Tokens.Equal}
-   '>'            {Lex.Operator Tokens.GreaterThan}
-   '|'            {Lex.Operator Tokens.Bar}
-   identifier     {Lex.Identifier $$}
-   integer        {Lex.Literal (Tokens.Univ_Int $$)}
-   real           {Lex.Literal (Tokens.Univ_Real $$)}
-   bitstr         {Lex.Literal (Tokens.BitStr _ _)}
-   str            {Lex.Literal (Tokens.Str $$)}
-   char           {Lex.Literal (Tokens.Character $$)}
+   abs            {Tokens.Keyword Tokens.Abs}
+   access         {Tokens.Keyword Tokens.Access}
+   after          {Tokens.Keyword Tokens.After}
+   alias          {Tokens.Keyword Tokens.Alias}
+   all            {Tokens.Keyword Tokens.All}
+   and            {Tokens.Keyword Tokens.And}
+   architecture   {Tokens.Keyword Tokens.Architecture}
+   array          {Tokens.Keyword Tokens.Array}
+   assert         {Tokens.Keyword Tokens.Assert}
+   attribute      {Tokens.Keyword Tokens.Attribute}
+   begin          {Tokens.Keyword Tokens.Begin}
+   block          {Tokens.Keyword Tokens.Block}
+   body           {Tokens.Keyword Tokens.Body}
+   buffer         {Tokens.Keyword Tokens.Buffer}
+   bus            {Tokens.Keyword Tokens.Bus}
+   case           {Tokens.Keyword Tokens.Case}
+   component      {Tokens.Keyword Tokens.Component}
+   configuration  {Tokens.Keyword Tokens.Configuration}
+   constant       {Tokens.Keyword Tokens.Constant}
+   disconnect     {Tokens.Keyword Tokens.Disconnect}
+   downto         {Tokens.Keyword Tokens.Downto}
+   else           {Tokens.Keyword Tokens.Else}
+   elsif          {Tokens.Keyword Tokens.Elsif}
+   end            {Tokens.Keyword Tokens.End}
+   entity         {Tokens.Keyword Tokens.Entity}
+   exit           {Tokens.Keyword Tokens.Exit}
+   file           {Tokens.Keyword Tokens.File}
+   for            {Tokens.Keyword Tokens.For}
+   function       {Tokens.Keyword Tokens.Function}
+   generate       {Tokens.Keyword Tokens.Generate}
+   generic        {Tokens.Keyword Tokens.Generic}
+   guarded        {Tokens.Keyword Tokens.Guarded}
+   if             {Tokens.Keyword Tokens.If}
+   in             {Tokens.Keyword Tokens.In}
+   inout          {Tokens.Keyword Tokens.Inout}
+   is             {Tokens.Keyword Tokens.Is}
+   label          {Tokens.Keyword Tokens.Label}
+   library        {Tokens.Keyword Tokens.Library}
+   linkage        {Tokens.Keyword Tokens.Linkage}
+   loop           {Tokens.Keyword Tokens.Loop}
+   map            {Tokens.Keyword Tokens.Map}
+   mod            {Tokens.Keyword Tokens.Mod}
+   nand           {Tokens.Keyword Tokens.Nand}
+   new            {Tokens.Keyword Tokens.New}
+   next           {Tokens.Keyword Tokens.Next}
+   nor            {Tokens.Keyword Tokens.Nor}
+   not            {Tokens.Keyword Tokens.Not}
+   null           {Tokens.Keyword Tokens.Null}
+   of             {Tokens.Keyword Tokens.Of}
+   on             {Tokens.Keyword Tokens.On}
+   open           {Tokens.Keyword Tokens.Open}
+   or             {Tokens.Keyword Tokens.Or}
+   others         {Tokens.Keyword Tokens.Others}
+   out            {Tokens.Keyword Tokens.Out}
+   package        {Tokens.Keyword Tokens.Package}
+   port           {Tokens.Keyword Tokens.Port}
+   procedure      {Tokens.Keyword Tokens.Procedure}
+   process        {Tokens.Keyword Tokens.Process}
+   range          {Tokens.Keyword Tokens.Range}
+   record         {Tokens.Keyword Tokens.Record}
+   register       {Tokens.Keyword Tokens.Register}
+   rem            {Tokens.Keyword Tokens.Rem}
+   report         {Tokens.Keyword Tokens.Report}
+   return         {Tokens.Keyword Tokens.Return}
+   select         {Tokens.Keyword Tokens.Select}
+   severity       {Tokens.Keyword Tokens.Severity}
+   signal         {Tokens.Keyword Tokens.Signal}
+   subtype        {Tokens.Keyword Tokens.Subtype}
+   then           {Tokens.Keyword Tokens.Then}
+   to             {Tokens.Keyword Tokens.To}
+   transport      {Tokens.Keyword Tokens.Transport}
+   type           {Tokens.Keyword Tokens.Type}
+   units          {Tokens.Keyword Tokens.Units}
+   until          {Tokens.Keyword Tokens.Until}
+   use            {Tokens.Keyword Tokens.Use}
+   variable       {Tokens.Keyword Tokens.Variable}
+   wait           {Tokens.Keyword Tokens.Wait}
+   when           {Tokens.Keyword Tokens.When}
+   while          {Tokens.Keyword Tokens.While}
+   with           {Tokens.Keyword Tokens.With}
+   xor            {Tokens.Keyword Tokens.Xor}
+   '=>'           {Tokens.Operator Tokens.Arrow}
+   '**'           {Tokens.Operator Tokens.DoubleStar}
+   ':='           {Tokens.Operator Tokens.VarAssign}
+   '/='           {Tokens.Operator Tokens.Inequality}
+   '>='           {Tokens.Operator Tokens.GreaterThanOrEqual}
+   '<='           {Tokens.Operator Tokens.SignAssign}
+   '<>'           {Tokens.Operator Tokens.Box}
+   '&'            {Tokens.Operator Tokens.Ampersand}
+   '\''           {Tokens.Operator Tokens.Apostrophe}
+   '('            {Tokens.Operator Tokens.LeftParen}
+   ')'            {Tokens.Operator Tokens.RightParen}
+   '*'            {Tokens.Operator Tokens.Star}
+   '+'            {Tokens.Operator Tokens.Plus}
+   ','            {Tokens.Operator Tokens.Comma}
+   '-'            {Tokens.Operator Tokens.Hyphen}
+   '.'            {Tokens.Operator Tokens.Period}
+   '/'            {Tokens.Operator Tokens.Slash}
+   ':'            {Tokens.Operator Tokens.Colon}
+   ';'            {Tokens.Operator Tokens.Semicolon}
+   '<'            {Tokens.Operator Tokens.LessThan}
+   '='            {Tokens.Operator Tokens.Equal}
+   '>'            {Tokens.Operator Tokens.GreaterThan}
+   '|'            {Tokens.Operator Tokens.Bar}
+   identifier     {Tokens.Identifier $$}
+   integer        {Tokens.Literal (Tokens.Univ_Int $$)}
+   real           {Tokens.Literal (Tokens.Univ_Real $$)}
+   bitstr         {Tokens.Literal (Tokens.BitStr _ _)}
+   str            {Tokens.Literal (Tokens.Str $$)}
+   char           {Tokens.Literal (Tokens.Character $$)}
 
 %%
 
@@ -885,7 +886,7 @@ string_literal :: { String }
                : str {$1}
 
 bit_string_literal :: { BitStrLiteral }
-                   : bitstr {(\(Lex.Literal (Tokens.BitStr base value)) -> BitStrLiteral base value) $1}
+                   : bitstr {(\(Tokens.Literal (Tokens.BitStr base value)) -> BitStrLiteral base value) $1}
 
 aggregate :: { Aggregate }
           : '(' element_association_list ')' {$2}

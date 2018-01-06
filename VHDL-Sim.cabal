@@ -17,8 +17,12 @@ library
   hs-source-dirs:      src
   exposed-modules:     Parser.Lexer
                      , Parser.TokenTypes
-                     , Parser.Alex.Types
+                     , Parser.ErrorTypes
+                     , Parser.PositionWrapper
+                     , Parser.Alex.BaseTypes
+                     , Parser.Alex.Monad
                      , Parser.Alex.Functions
+                     , Parser.Alex.LexFunctions
                      , Parser.Parser
                      , Parser.Happy.Types
                      , Parser.Happy.Functions

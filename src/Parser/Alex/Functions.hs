@@ -1,15 +1,15 @@
--- Adapted from alex default wrapper file
+-- Adapted from Alex default wrapper file
 module Parser.Alex.Functions where
-
-import Data.Word (Word8)
 
 import Data.Char (ord)
 import qualified Data.Bits
 
-import Parser.Alex.Types
+import Parser.ErrorTypes
+import Parser.Alex.BaseTypes
+import Parser.Alex.Monad (Alex(..))
 
--- | Encode a Haskell String to a list of Word8 values, in UTF8 format.
-utf8Encode :: Char -> [Word8]
+-- | Encode a Haskell String to a list of Byte values, in UTF8 format.
+utf8Encode :: Char -> [Byte]
 utf8Encode = map fromIntegral . go . ord
  where
   go oc

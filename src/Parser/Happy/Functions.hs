@@ -1,8 +1,9 @@
 module Parser.Happy.Functions where
 
-import Parser.Alex.Types (Alex,ParserError(..)) -- ?? Move this error location
+import Parser.Alex.Monad (Alex)
 import Parser.Alex.Functions (alexError)
-import Parser.Lexer (Token)
+import Parser.TokenTypes (Token)
+import Parser.ErrorTypes
 
 parseError :: Token -> Alex a
 parseError _ = alexError GenericParseError
