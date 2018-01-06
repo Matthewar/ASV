@@ -41,114 +41,114 @@ $delimiter = [\& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \| \n \ ]
 
 tokens :-
 -- Keywords
-<0,nondelim>               [Aa][Bb][Ss]                                          { makeReserved Abs                        `andBegin`  separator   }
-<0,nondelim>               [Aa][Cc][Cc][Ee][Ss][Ss]                              { makeReserved Access                     `andBegin`  separator   }
-<0,nondelim>               [Aa][Ff][Tt][Ee][Rr]                                  { makeReserved After                      `andBegin`  separator   }
-<0,nondelim>               [Aa][Ll][Ii][Aa][Ss]                                  { makeReserved Alias                      `andBegin`  separator   }
-<0,nondelim>               [Aa][Ll][Ll]                                          { makeReserved All                        `andBegin`  separator   }
-<0,nondelim>               [Aa][Nn][Dd]                                          { makeReserved And                        `andBegin`  separator   }
-<0,nondelim>               [Aa][Rr][Cc][Hh][Ii][Tt][Ee][Cc][Tt][Uu][Rr][Ee]      { makeReserved Architecture               `andBegin`  separator   }
-<0,nondelim>               [Aa][Rr][Rr][Aa][Yy]                                  { makeReserved Array                      `andBegin`  separator   }
-<0,nondelim>               [Aa][Ss][Ss][Ee][Rr][Tt]                              { makeReserved Assert                     `andBegin`  separator   }
-<0,nondelim>               [Aa][Tt][Tt][Rr][Ii][Bb][Uu][Tt][Ee]                  { makeReserved Attribute                  `andBegin`  separator   }
+<0,nondelim>               [Aa][Bb][Ss]                                          { makeToken (makeReserved Abs)            separator   }
+<0,nondelim>               [Aa][Cc][Cc][Ee][Ss][Ss]                              { makeToken (makeReserved Access)         separator   }
+<0,nondelim>               [Aa][Ff][Tt][Ee][Rr]                                  { makeToken (makeReserved After)          separator   }
+<0,nondelim>               [Aa][Ll][Ii][Aa][Ss]                                  { makeToken (makeReserved Alias)          separator   }
+<0,nondelim>               [Aa][Ll][Ll]                                          { makeToken (makeReserved All)            separator   }
+<0,nondelim>               [Aa][Nn][Dd]                                          { makeToken (makeReserved And)            separator   }
+<0,nondelim>               [Aa][Rr][Cc][Hh][Ii][Tt][Ee][Cc][Tt][Uu][Rr][Ee]      { makeToken (makeReserved Architecture)   separator   }
+<0,nondelim>               [Aa][Rr][Rr][Aa][Yy]                                  { makeToken (makeReserved Array)          separator   }
+<0,nondelim>               [Aa][Ss][Ss][Ee][Rr][Tt]                              { makeToken (makeReserved Assert)         separator   }
+<0,nondelim>               [Aa][Tt][Tt][Rr][Ii][Bb][Uu][Tt][Ee]                  { makeToken (makeReserved Attribute)      separator   }
 
-<0,nondelim>               [Bb][Ee][Gg][Ii][Nn]                                  { makeReserved Begin                      `andBegin`  separator   }
-<0,nondelim>               [Bb][Ll][Oo][Cc][Kk]                                  { makeReserved Block                      `andBegin`  separator   }
-<0,nondelim>               [Bb][Oo][Dd][Yy]                                      { makeReserved Body                       `andBegin`  separator   }
-<0,nondelim>               [Bb][Uu][Ff][Ff][Ee][Rr]                              { makeReserved Buffer                     `andBegin`  separator   }
-<0,nondelim>               [Bb][Uu][Ss]                                          { makeReserved Bus                        `andBegin`  separator   }
+<0,nondelim>               [Bb][Ee][Gg][Ii][Nn]                                  { makeToken (makeReserved Begin)          separator   }
+<0,nondelim>               [Bb][Ll][Oo][Cc][Kk]                                  { makeToken (makeReserved Block)          separator   }
+<0,nondelim>               [Bb][Oo][Dd][Yy]                                      { makeToken (makeReserved Body)           separator   }
+<0,nondelim>               [Bb][Uu][Ff][Ff][Ee][Rr]                              { makeToken (makeReserved Buffer)         separator   }
+<0,nondelim>               [Bb][Uu][Ss]                                          { makeToken (makeReserved Bus)            separator   }
 
-<0,nondelim>               [Cc][Aa][Ss][Ee]                                      { makeReserved Case                       `andBegin`  separator   }
-<0,nondelim>               [Cc][Oo][Mm][Pp][Oo][Nn][Ee][Nn][Tt]                  { makeReserved Component                  `andBegin`  separator   }
-<0,nondelim>               [Cc][Oo][Nn][Ff][Ii][Gg][Uu][Rr][Aa][Tt][Ii][Oo][Nn]  { makeReserved Configuration              `andBegin`  separator   }
-<0,nondelim>               [Cc][Oo][Nn][Ss][Tt][Aa][Nn][Tt]                      { makeReserved Constant                   `andBegin`  separator   }
+<0,nondelim>               [Cc][Aa][Ss][Ee]                                      { makeToken (makeReserved Case)           separator   }
+<0,nondelim>               [Cc][Oo][Mm][Pp][Oo][Nn][Ee][Nn][Tt]                  { makeToken (makeReserved Component)      separator   }
+<0,nondelim>               [Cc][Oo][Nn][Ff][Ii][Gg][Uu][Rr][Aa][Tt][Ii][Oo][Nn]  { makeToken (makeReserved Configuration)  separator   }
+<0,nondelim>               [Cc][Oo][Nn][Ss][Tt][Aa][Nn][Tt]                      { makeToken (makeReserved Constant)       separator   }
 
-<0,nondelim>               [Dd][Ii][Ss][Cc][Oo][Nn][Nn][Ee][Cc][Tt]              { makeReserved Disconnect                 `andBegin`  separator   }
-<0,nondelim>               [Dd][Oo][Ww][Nn][Tt][Oo]                              { makeReserved Downto                     `andBegin`  separator   }
+<0,nondelim>               [Dd][Ii][Ss][Cc][Oo][Nn][Nn][Ee][Cc][Tt]              { makeToken (makeReserved Disconnect)     separator   }
+<0,nondelim>               [Dd][Oo][Ww][Nn][Tt][Oo]                              { makeToken (makeReserved Downto)         separator   }
 
-<0,nondelim>               [Ee][Ll][Ss][Ee]                                      { makeReserved Else                       `andBegin`  separator   }
-<0,nondelim>               [Ee][Ll][Ss][Ii][Ff]                                  { makeReserved Elsif                      `andBegin`  separator   }
-<0,nondelim>               [Ee][Nn][Dd]                                          { makeReserved End                        `andBegin`  separator   }
-<0,nondelim>               [Ee][Nn][Tt][Ii][Tt][Yy]                              { makeReserved Entity                     `andBegin`  separator   }
-<0,nondelim>               [Ee][Xx][Ii][Tt]                                      { makeReserved Exit                       `andBegin`  separator   }
+<0,nondelim>               [Ee][Ll][Ss][Ee]                                      { makeToken (makeReserved Else)           separator   }
+<0,nondelim>               [Ee][Ll][Ss][Ii][Ff]                                  { makeToken (makeReserved Elsif)          separator   }
+<0,nondelim>               [Ee][Nn][Dd]                                          { makeToken (makeReserved End)            separator   }
+<0,nondelim>               [Ee][Nn][Tt][Ii][Tt][Yy]                              { makeToken (makeReserved Entity)         separator   }
+<0,nondelim>               [Ee][Xx][Ii][Tt]                                      { makeToken (makeReserved Exit)           separator   }
 
-<0,nondelim>               [Ff][Ii][Ll][Ee]                                      { makeReserved File                       `andBegin`  separator   }
-<0,nondelim>               [Ff][Oo][Rr]                                          { makeReserved For                        `andBegin`  separator   }
-<0,nondelim>               [Ff][Uu][Nn][Cc][Tt][Ii][Oo][Nn]                      { makeReserved Function                   `andBegin`  separator   }
+<0,nondelim>               [Ff][Ii][Ll][Ee]                                      { makeToken (makeReserved File)           separator   }
+<0,nondelim>               [Ff][Oo][Rr]                                          { makeToken (makeReserved For)            separator   }
+<0,nondelim>               [Ff][Uu][Nn][Cc][Tt][Ii][Oo][Nn]                      { makeToken (makeReserved Function)       separator   }
 
-<0,nondelim>               [Gg][Ee][Nn][Ee][Rr][Aa][Tt][Ee]                      { makeReserved Generate                   `andBegin`  separator   }
-<0,nondelim>               [Gg][Ee][Nn][Ee][Rr][Ii][Cc]                          { makeReserved Generic                    `andBegin`  separator   }
-<0,nondelim>               [Gg][Uu][Aa][Rr][Dd][Ee][Dd]                          { makeReserved Guarded                    `andBegin`  separator   }
+<0,nondelim>               [Gg][Ee][Nn][Ee][Rr][Aa][Tt][Ee]                      { makeToken (makeReserved Generate)       separator   }
+<0,nondelim>               [Gg][Ee][Nn][Ee][Rr][Ii][Cc]                          { makeToken (makeReserved Generic)        separator   }
+<0,nondelim>               [Gg][Uu][Aa][Rr][Dd][Ee][Dd]                          { makeToken (makeReserved Guarded)        separator   }
 
-<0,nondelim>               [Ii][Ff]                                              { makeReserved If                         `andBegin`  separator   }
-<0,nondelim>               [Ii][Nn]                                              { makeReserved In                         `andBegin`  separator   }
-<0,nondelim>               [Ii][Nn][Oo][Uu][Tt]                                  { makeReserved Inout                      `andBegin`  separator   }
-<0,nondelim>               [Ii][Ss]                                              { makeReserved Is                         `andBegin`  separator   }
+<0,nondelim>               [Ii][Ff]                                              { makeToken (makeReserved If)             separator   }
+<0,nondelim>               [Ii][Nn]                                              { makeToken (makeReserved In)             separator   }
+<0,nondelim>               [Ii][Nn][Oo][Uu][Tt]                                  { makeToken (makeReserved Inout)          separator   }
+<0,nondelim>               [Ii][Ss]                                              { makeToken (makeReserved Is)             separator   }
 
-<0,nondelim>               [Ll][Aa][Bb][Ee][Ll]                                  { makeReserved Label                      `andBegin`  separator   }
-<0,nondelim>               [Ll][Ii][Bb][Rr][Aa][Rr][Yy]                          { makeReserved Library                    `andBegin`  separator   }
-<0,nondelim>               [Ll][Ii][Nn][Kk][Aa][Gg][Ee]                          { makeReserved Linkage                    `andBegin`  separator   }
-<0,nondelim>               [Ll][Oo][Oo][Pp]                                      { makeReserved Loop                       `andBegin`  separator   }
+<0,nondelim>               [Ll][Aa][Bb][Ee][Ll]                                  { makeToken (makeReserved Label)          separator   }
+<0,nondelim>               [Ll][Ii][Bb][Rr][Aa][Rr][Yy]                          { makeToken (makeReserved Library)        separator   }
+<0,nondelim>               [Ll][Ii][Nn][Kk][Aa][Gg][Ee]                          { makeToken (makeReserved Linkage)        separator   }
+<0,nondelim>               [Ll][Oo][Oo][Pp]                                      { makeToken (makeReserved Loop)           separator   }
 
-<0,nondelim>               [Mm][Aa][Pp]                                          { makeReserved Map                        `andBegin`  separator   }
-<0,nondelim>               [Mm][Oo][Dd]                                          { makeReserved Mod                        `andBegin`  separator   }
+<0,nondelim>               [Mm][Aa][Pp]                                          { makeToken (makeReserved Map)            separator   }
+<0,nondelim>               [Mm][Oo][Dd]                                          { makeToken (makeReserved Mod)            separator   }
 
-<0,nondelim>               [Nn][Aa][Nn][Dd]                                      { makeReserved Nand                       `andBegin`  separator   }
-<0,nondelim>               [Nn][Ee][Ww]                                          { makeReserved New                        `andBegin`  separator   }
-<0,nondelim>               [Nn][Ee][Xx][Tt]                                      { makeReserved Next                       `andBegin`  separator   }
-<0,nondelim>               [Nn][Oo][Rr]                                          { makeReserved Nor                        `andBegin`  separator   }
-<0,nondelim>               [Nn][Oo][Tt]                                          { makeReserved Not                        `andBegin`  separator   }
-<0,nondelim>               [Nn][Uu][Ll][Ll]                                      { makeReserved Null                       `andBegin`  separator   }
+<0,nondelim>               [Nn][Aa][Nn][Dd]                                      { makeToken (makeReserved Nand)           separator   }
+<0,nondelim>               [Nn][Ee][Ww]                                          { makeToken (makeReserved New)            separator   }
+<0,nondelim>               [Nn][Ee][Xx][Tt]                                      { makeToken (makeReserved Next)           separator   }
+<0,nondelim>               [Nn][Oo][Rr]                                          { makeToken (makeReserved Nor)            separator   }
+<0,nondelim>               [Nn][Oo][Tt]                                          { makeToken (makeReserved Not)            separator   }
+<0,nondelim>               [Nn][Uu][Ll][Ll]                                      { makeToken (makeReserved Null)           separator   }
 
-<0,nondelim>               [Oo][Ff]                                              { makeReserved Of                         `andBegin`  separator   }
-<0,nondelim>               [Oo][Nn]                                              { makeReserved On                         `andBegin`  separator   }
-<0,nondelim>               [Oo][Pp][Ee][Nn]                                      { makeReserved Open                       `andBegin`  separator   }
-<0,nondelim>               [Oo][Rr]                                              { makeReserved Or                         `andBegin`  separator   }
-<0,nondelim>               [Oo][Tt][Hh][Ee][Rr][Ss]                              { makeReserved Others                     `andBegin`  separator   }
-<0,nondelim>               [Oo][Uu][Tt]                                          { makeReserved Out                        `andBegin`  separator   }
+<0,nondelim>               [Oo][Ff]                                              { makeToken (makeReserved Of)             separator   }
+<0,nondelim>               [Oo][Nn]                                              { makeToken (makeReserved On)             separator   }
+<0,nondelim>               [Oo][Pp][Ee][Nn]                                      { makeToken (makeReserved Open)           separator   }
+<0,nondelim>               [Oo][Rr]                                              { makeToken (makeReserved Or)             separator   }
+<0,nondelim>               [Oo][Tt][Hh][Ee][Rr][Ss]                              { makeToken (makeReserved Others)         separator   }
+<0,nondelim>               [Oo][Uu][Tt]                                          { makeToken (makeReserved Out)            separator   }
 
-<0,nondelim>               [Pp][Aa][Cc][Kk][Aa][Gg][Ee]                          { makeReserved Package                    `andBegin`  separator   }
-<0,nondelim>               [Pp][Oo][Rr][Tt]                                      { makeReserved Port                       `andBegin`  separator   }
-<0,nondelim>               [Pp][Rr][Oo][Cc][Ee][Dd][Uu][Rr][Ee]                  { makeReserved Procedure                  `andBegin`  separator   }
-<0,nondelim>               [Pp][Rr][Oo][Cc][Ee][Ss][Ss]                          { makeReserved Process                    `andBegin`  separator   }
+<0,nondelim>               [Pp][Aa][Cc][Kk][Aa][Gg][Ee]                          { makeToken (makeReserved Package)        separator   }
+<0,nondelim>               [Pp][Oo][Rr][Tt]                                      { makeToken (makeReserved Port)           separator   }
+<0,nondelim>               [Pp][Rr][Oo][Cc][Ee][Dd][Uu][Rr][Ee]                  { makeToken (makeReserved Procedure)      separator   }
+<0,nondelim>               [Pp][Rr][Oo][Cc][Ee][Ss][Ss]                          { makeToken (makeReserved Process)        separator   }
 
-<0,nondelim>               [Rr][Aa][Nn][Gg][Ee]                                  { makeReserved Range                      `andBegin`  separator   }
-<0,nondelim>               [Rr][Ee][Cc][Oo][Rr][Dd]                              { makeReserved Record                     `andBegin`  separator   }
-<0,nondelim>               [Rr][Ee][Gg][Ii][Ss][Tt][Ee][Rr]                      { makeReserved Register                   `andBegin`  separator   }
-<0,nondelim>               [Rr][Ee][Mm]                                          { makeReserved Rem                        `andBegin`  separator   }
-<0,nondelim>               [Rr][Ee][Pp][Oo][Rr][Tt]                              { makeReserved Report                     `andBegin`  separator   }
-<0,nondelim>               [Rr][Ee][Tt][Uu][Rr][Nn]                              { makeReserved Return                     `andBegin`  separator   }
+<0,nondelim>               [Rr][Aa][Nn][Gg][Ee]                                  { makeToken (makeReserved Range)          separator   }
+<0,nondelim>               [Rr][Ee][Cc][Oo][Rr][Dd]                              { makeToken (makeReserved Record)         separator   }
+<0,nondelim>               [Rr][Ee][Gg][Ii][Ss][Tt][Ee][Rr]                      { makeToken (makeReserved Register)       separator   }
+<0,nondelim>               [Rr][Ee][Mm]                                          { makeToken (makeReserved Rem)            separator   }
+<0,nondelim>               [Rr][Ee][Pp][Oo][Rr][Tt]                              { makeToken (makeReserved Report)         separator   }
+<0,nondelim>               [Rr][Ee][Tt][Uu][Rr][Nn]                              { makeToken (makeReserved Return)         separator   }
 
-<0,nondelim>               [Ss][Ee][Ll][Ee][Cc][Tt]                              { makeReserved Select                     `andBegin`  separator   }
-<0,nondelim>               [Ss][Ee][Vv][Ee][Rr][Ii][Tt][Yy]                      { makeReserved Severity                   `andBegin`  separator   }
-<0,nondelim>               [Ss][Ii][Gg][Nn][Aa][Ll]                              { makeReserved Signal                     `andBegin`  separator   }
-<0,nondelim>               [Ss][Uu][Bb][Tt][Yy][Pp][Ee]                          { makeReserved Subtype                    `andBegin`  separator   }
+<0,nondelim>               [Ss][Ee][Ll][Ee][Cc][Tt]                              { makeToken (makeReserved Select)         separator   }
+<0,nondelim>               [Ss][Ee][Vv][Ee][Rr][Ii][Tt][Yy]                      { makeToken (makeReserved Severity)       separator   }
+<0,nondelim>               [Ss][Ii][Gg][Nn][Aa][Ll]                              { makeToken (makeReserved Signal)         separator   }
+<0,nondelim>               [Ss][Uu][Bb][Tt][Yy][Pp][Ee]                          { makeToken (makeReserved Subtype)        separator   }
 
-<0,nondelim>               [Tt][Hh][Ee][Nn]                                      { makeReserved Then                       `andBegin`  separator   }
-<0,nondelim>               [Tt][Oo]                                              { makeReserved To                         `andBegin`  separator   }
-<0,nondelim>               [Tt][Rr][Aa][Nn][Ss][Pp][Oo][Rr][Tt]                  { makeReserved Transport                  `andBegin`  separator   }
-<0,nondelim>               [Tt][Yy][Pp][Ee]                                      { makeReserved Type                       `andBegin`  separator   }
+<0,nondelim>               [Tt][Hh][Ee][Nn]                                      { makeToken (makeReserved Then)           separator   }
+<0,nondelim>               [Tt][Oo]                                              { makeToken (makeReserved To)             separator   }
+<0,nondelim>               [Tt][Rr][Aa][Nn][Ss][Pp][Oo][Rr][Tt]                  { makeToken (makeReserved Transport)      separator   }
+<0,nondelim>               [Tt][Yy][Pp][Ee]                                      { makeToken (makeReserved Type)           separator   }
 
-<0,nondelim>               [Uu][Nn][Ii][Tt][Ss]                                  { makeReserved Units                      `andBegin`  separator   }
-<0,nondelim>               [Uu][Nn][Tt][Ii][Ll]                                  { makeReserved Until                      `andBegin`  separator   }
-<0,nondelim>               [Uu][Ss][Ee]                                          { makeReserved Use                        `andBegin`  separator   }
+<0,nondelim>               [Uu][Nn][Ii][Tt][Ss]                                  { makeToken (makeReserved Units)          separator   }
+<0,nondelim>               [Uu][Nn][Tt][Ii][Ll]                                  { makeToken (makeReserved Until)          separator   }
+<0,nondelim>               [Uu][Ss][Ee]                                          { makeToken (makeReserved Use)            separator   }
 
-<0,nondelim>               [Vv][Aa][Rr][Ii][Aa][Bb][Ll][Ee]                      { makeReserved Variable                   `andBegin`  separator   }
+<0,nondelim>               [Vv][Aa][Rr][Ii][Aa][Bb][Ll][Ee]                      { makeToken (makeReserved Variable)       separator   }
 
-<0,nondelim>               [Ww][Aa][Ii][Tt]                                      { makeReserved Wait                       `andBegin`  separator   }
-<0,nondelim>               [Ww][Hh][Ee][Nn]                                      { makeReserved When                       `andBegin`  separator   }
-<0,nondelim>               [Ww][Hh][Ii][Ll][Ee]                                  { makeReserved While                      `andBegin`  separator   }
-<0,nondelim>               [Ww][Ii][Tt][Hh]                                      { makeReserved With                       `andBegin`  separator   }
+<0,nondelim>               [Ww][Aa][Ii][Tt]                                      { makeToken (makeReserved Wait)           separator   }
+<0,nondelim>               [Ww][Hh][Ee][Nn]                                      { makeToken (makeReserved When)           separator   }
+<0,nondelim>               [Ww][Hh][Ii][Ll][Ee]                                  { makeToken (makeReserved While)          separator   }
+<0,nondelim>               [Ww][Ii][Tt][Hh]                                      { makeToken (makeReserved With)           separator   }
 
-<0,nondelim>               [Xx][Oo][Rr]                                          { makeReserved Xor                        `andBegin`  separator   }
+<0,nondelim>               [Xx][Oo][Rr]                                          { makeToken (makeReserved Xor)            separator   }
 
 -- Valid Identifier
-<0,nondelim>               @letter @underline_letter_or_digit *                  { (\alexIn -> makeIdentifier alexIn)      `andBegin`  separator   }
+<0,nondelim>               @letter @underline_letter_or_digit *                  { makeToken makeIdentifier                separator   }
 -- Invalid Identifier
 -- <0,nondelim>               "_" @underline_letter_or_digit *                      {
 
 -- Valid Decimal
-<0,nondelim>               @integer (\. @integer)? @exponent?                    { (\alexIn -> makeDecimalLiteral alexIn)  `andBegin`  separator   }
+<0,nondelim>               @integer (\. @integer)? @exponent?                    { makeToken makeDecimalLiteral            separator   }
 -- Invalid Decimal
 -- - Underscores in incorrect positions
 -- -- Underscore at the start or end of value components
@@ -169,21 +169,21 @@ tokens :-
 <0,nondelim>               ($digit | "_")+ \. ($digit | "_")+ [Ee] [\+\-]?                                                 { errorDecimalLiteral }
 
 -- Valid Based
-<0,nondelim>               [0-9]+ "#" @hex_value (\. @hex_value)? "#" @exponent?   { (\alexIn -> makeBasedLiteral '#' alexIn)   `andBegin`  separator   }
-<0,nondelim>               [0-9]+ ":" @hex_value (\. @hex_value)? ":" @exponent?   { (\alexIn -> makeBasedLiteral ':' alexIn)   `andBegin`  separator   }
+<0,nondelim>               [0-9]+ "#" @hex_value (\. @hex_value)? "#" @exponent? { makeToken (makeBasedLiteral '#')        separator   }
+<0,nondelim>               [0-9]+ ":" @hex_value (\. @hex_value)? ":" @exponent? { makeToken (makeBasedLiteral ':')        separator   }
 
 -- Valid Str-esque types
-<0,nondelim>               \' (@graphic_character | \") \'                       { (\alexIn -> makeCharLiteral alexIn)     `andBegin`  separator   }
-<0,nondelim>               \" (@graphic_character | [\"]{2})* \"                 { (\alexIn -> makeStrLiteral alexIn)      `andBegin`  separator   }
-<0,nondelim>               \% (@graphic_character | \" | [\%]{2})* \%            { (\alexIn -> makeStrLiteral alexIn)      `andBegin`  separator   }
+<0,nondelim>               \' (@graphic_character | \") \'                       { makeToken makeCharLiteral               separator   }
+<0,nondelim>               \" (@graphic_character | [\"]{2})* \"                 { makeToken makeStrLiteral                separator   }
+<0,nondelim>               \% (@graphic_character | \" | [\%]{2})* \%            { makeToken makeStrLiteral                separator   }
 
 -- Valid Bit Strings
-<0,nondelim>               [Bb] \" @binary_value \"                              { (\alexIn -> makeBitStrLiteral BinBased alexIn)   `andBegin`  separator   }
-<0,nondelim>               [Bb] "%" @binary_value "%"                            { (\alexIn -> makeBitStrLiteral BinBased alexIn)   `andBegin`  separator   }
-<0,nondelim>               [Oo] \" @octal_value \"                               { (\alexIn -> makeBitStrLiteral OctBased alexIn)   `andBegin`  separator   }
-<0,nondelim>               [Oo] "%" @octal_value "%"                             { (\alexIn -> makeBitStrLiteral OctBased alexIn)   `andBegin`  separator   }
-<0,nondelim>               [Xx] \" @hex_value \"                                 { (\alexIn -> makeBitStrLiteral HexBased alexIn)   `andBegin`  separator   }
-<0,nondelim>               [Xx] "%" @hex_value "%"                               { (\alexIn -> makeBitStrLiteral HexBased alexIn)   `andBegin`  separator   }
+<0,nondelim>               [Bb] \" @binary_value \"                              { makeToken (makeBitStrLiteral BinBased)  separator   }
+<0,nondelim>               [Bb] "%" @binary_value "%"                            { makeToken (makeBitStrLiteral BinBased)  separator   }
+<0,nondelim>               [Oo] \" @octal_value \"                               { makeToken (makeBitStrLiteral OctBased)  separator   }
+<0,nondelim>               [Oo] "%" @octal_value "%"                             { makeToken (makeBitStrLiteral OctBased)  separator   }
+<0,nondelim>               [Xx] \" @hex_value \"                                 { makeToken (makeBitStrLiteral HexBased)  separator   }
+<0,nondelim>               [Xx] "%" @hex_value "%"                               { makeToken (makeBitStrLiteral HexBased)  separator   }
 -- Invalid Bit Strings
 -- - Invalid characters
 <0,nondelim>               [Bb] \" ( $binary | "_" )* ~ $binary ( $binary | "_" )* \"     { errorBitStrLiteral }
@@ -231,33 +231,37 @@ tokens :-
 <0,nondelim>               [BbOoXx] "%" "%"                                               { errorBitStrLiteralEmpty }
 
 <0,separator,identifier>   "--".*                                                ;
-<0,separator,identifier>   $white+                                               {                                         begin       0           }
-<0,separator>              "=>"                                                  { makeOperator Arrow                      `andBegin`  identifier  }
-<0,separator>              "**"                                                  { makeOperator DoubleStar                 `andBegin`  identifier  }
-<0,separator>              ":="                                                  { makeOperator VarAssign                  `andBegin`  identifier  }
-<0,separator>              "/="                                                  { makeOperator Inequality                 `andBegin`  identifier  }
-<0,separator>              ">="                                                  { makeOperator GreaterThanOrEqual         `andBegin`  identifier  }
-<0,separator>              "<="                                                  { makeOperator SignAssign                 `andBegin`  identifier  }
-<0,separator>              "<>"                                                  { makeOperator Box                        `andBegin`  identifier  }
-<0,separator>              "&"                                                   { makeOperator Ampersand                  `andBegin`  identifier  }
-<0,separator>              "'"                                                   { makeOperator Apostrophe                 `andBegin`  identifier  }
-<0,separator>              "("                                                   { makeOperator LeftParen                  `andBegin`  identifier  }
-<0,separator>              ")"                                                   { makeOperator RightParen                 `andBegin`  identifier  }
-<0,separator>              "*"                                                   { makeOperator Star                       `andBegin`  identifier  }
-<0,separator>              "+"                                                   { makeOperator Plus                       `andBegin`  identifier  }
-<0,separator>              ","                                                   { makeOperator Comma                      `andBegin`  identifier  }
-<0,separator>              "-"                                                   { makeOperator Hyphen                     `andBegin`  identifier  }
-<0,separator>              "."                                                   { makeOperator Period                     `andBegin`  identifier  }
-<0,separator>              "/"                                                   { makeOperator Slash                      `andBegin`  identifier  }
-<0,separator>              ":"                                                   { makeOperator Colon                      `andBegin`  identifier  }
-<0,separator>              ";"                                                   { makeOperator Semicolon                  `andBegin`  identifier  }
-<0,separator>              "<"                                                   { makeOperator LessThan                   `andBegin`  identifier  }
-<0,separator>              "="                                                   { makeOperator Equal                      `andBegin`  identifier  }
-<0,separator>              ">"                                                   { makeOperator GreaterThan                `andBegin`  identifier  }
-<0,separator>              "|"                                                   { makeOperator Bar                        `andBegin`  identifier  }
+<0,separator,identifier>   $white+                                               {                                               begin 0     }
+<0,separator>              "=>"                                                  { makeToken (makeOperator Arrow)                identifier  }
+<0,separator>              "**"                                                  { makeToken (makeOperator DoubleStar)           identifier  }
+<0,separator>              ":="                                                  { makeToken (makeOperator VarAssign)            identifier  }
+<0,separator>              "/="                                                  { makeToken (makeOperator Inequality)           identifier  }
+<0,separator>              ">="                                                  { makeToken (makeOperator GreaterThanOrEqual)   identifier  }
+<0,separator>              "<="                                                  { makeToken (makeOperator SignAssign)           identifier  }
+<0,separator>              "<>"                                                  { makeToken (makeOperator Box)                  identifier  }
+<0,separator>              "&"                                                   { makeToken (makeOperator Ampersand)            identifier  }
+<0,separator>              "'"                                                   { makeToken (makeOperator Apostrophe)           identifier  }
+<0,separator>              "("                                                   { makeToken (makeOperator LeftParen)            identifier  }
+<0,separator>              ")"                                                   { makeToken (makeOperator RightParen)           identifier  }
+<0,separator>              "*"                                                   { makeToken (makeOperator Star)                 identifier  }
+<0,separator>              "+"                                                   { makeToken (makeOperator Plus)                 identifier  }
+<0,separator>              ","                                                   { makeToken (makeOperator Comma)                identifier  }
+<0,separator>              "-"                                                   { makeToken (makeOperator Hyphen)               identifier  }
+<0,separator>              "."                                                   { makeToken (makeOperator Period)               identifier  }
+<0,separator>              "/"                                                   { makeToken (makeOperator Slash)                identifier  }
+<0,separator>              ":"                                                   { makeToken (makeOperator Colon)                identifier  }
+<0,separator>              ";"                                                   { makeToken (makeOperator Semicolon)            identifier  }
+<0,separator>              "<"                                                   { makeToken (makeOperator LessThan)             identifier  }
+<0,separator>              "="                                                   { makeToken (makeOperator Equal)                identifier  }
+<0,separator>              ">"                                                   { makeToken (makeOperator GreaterThan)          identifier  }
+<0,separator>              "|"                                                   { makeToken (makeOperator Bar)                  identifier  }
 -- Need to sort replacement characters
 
 {
+makeToken :: AlexAction Token -> Int -> AlexInput -> Int -> Alex Token
+makeToken newToken code =
+   newToken `andBegin` code
+
 -- | Monadic call to lexer (requires continuation monad)
 -- Used by happy to call the alex lexer
 lexer :: (Token -> Alex a) -> Alex a
@@ -276,7 +280,7 @@ lexerList str = runAlex str $ do
                            token -> loop (token:tknLst)
    loop []
 
--- | Lexer scan
+-- |Lexer scan
 alexMonadScan = do
   inp__ <- alexGetInput
   sc <- alexGetStartCode
