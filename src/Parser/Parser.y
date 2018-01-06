@@ -122,42 +122,61 @@ import qualified Parser.TokenTypes as Tokens
    integer        {Lex.Literal (Tokens.Univ_Int $$)}
    real           {Lex.Literal (Tokens.Univ_Real $$)}
    bitstr         {Lex.Literal (Tokens.BitStr _ _)}
-   str            {Lex.Literal Tokens.Str $$}
-   char           {Lex.Literal Tokens.Character $$}
+   str            {Lex.Literal (Tokens.Str $$)}
+   char           {Lex.Literal (Tokens.Character $$)}
 
 %%
 
+design_file :: { DesignFile }
+            : design_unit_list {DesignFile $1}
+
+-- entity_declaration ::=
+--    entity identifier is
+--       entity_header
+--       entity_declarative_part
+--  [ begin
+--       entity_statement_part
+--    end [ <entity>_simple_name ] ;
+-- <entity>_simple_name must repeat identifier
 entity_declaration :: { EntityDeclaration }
                    : entity identifier is entity_header entity_declarative_part begin entity_statement_part end identifier ';'  {EntityDeclaration $2 $4 $5 (Just $7) (Just $9)}
                    | entity identifier is entity_header entity_declarative_part begin entity_statement_part end ';'             {EntityDeclaration $2 $4 $5 (Just $7) Nothing}
-                   | entity identifier is entity_header entity_declarative_part end identifier ';'                              {EntityDeclaration $2 $4 $5 Nothing (Just $6)}
+                   | entity identifier is entity_header entity_declarative_part end identifier ';'                              {EntityDeclaration $2 $4 $5 Nothing (Just $7)}
                    | entity identifier is entity_header entity_declarative_part end ';'                                         {EntityDeclaration $2 $4 $5 Nothing Nothing}
 
--- formal_generic_clause and formal_port_clause ??
+-- entity_header ::=
+--    [ <formal>_generic_clause ]
+--    [ <formal>_port_clause ]
+-- generic_clause ::=
+--    generic ( generic_list ) ;
+-- port_clause ::=
+--    port ( port_list ) ;
+-- generic_list ::= <generic>_interface_list
+-- port_list ::= <port>_interface_list
 entity_header :: { EntityHeader }
-              : generic_clause port_clause   {EntityHeader (Just $1) (Just $2)}
-              | generic_clause               {EntityHeader (Just $1) Nothing}
-              | port_clause                  {EntityHeader Nothing (Just $1)}
-              | {- empty -}                  {EntityHeader Nothing Nothing}
+              : generic '(' interface_list ')' ';' port '(' interface_list ')' ';'  {EntityHeader (Just $3) (Just $8)}
+              | generic '(' interface_list ')' ';'                                  {EntityHeader (Just $3) Nothing}
+              |                                    port '(' interface_list ')' ';'  {EntityHeader Nothing (Just $3)}
+              | {- empty -}                                                         {EntityHeader Nothing Nothing}
 
-generic_clause :: { GenericClause }
-               : generic '(' generic_list ')' ';' {GenericClause $3}
-
-port_clause :: { PortClause }
-            : port '(' port_list ')' ';' {PortClause $3}
-
--- ?? generic_interface_list
-generic_list :: { InterfaceList }
-             : interface_list {$1}
-
--- ?? port_interface_list
-port_list :: { InterfaceList }
-          : interface_list {$1}
-
+-- entity_declarative_part ::= { entity_declarative_item }
 entity_declarative_part :: { EntityDeclarativePart }
                         : {- empty -} {[]}
                         | entity_declarative_part entity_declarative_item {$2 : $1}
 
+-- entity_declarative_item ::=
+--    subprogram_declaration
+--    | subprogram_body
+--    | type_declaration
+--    | subtype_declaration
+--    | constant_declaration
+--    | signal_declaration
+--    | file_declaration
+--    | alias_declaration
+--    | attribute_declaration
+--    | attribute_specification
+--    | disconnection_specification
+--    | use_clause
 entity_declarative_item :: { EntityDeclarativeItem }
                         : subprogram_declaration      {EntityDeclaration_SubprogramDeclaration $1}
                         | subprogram_body             {EntityDeclaration_SubprogramBody $1}
@@ -172,25 +191,36 @@ entity_declarative_item :: { EntityDeclarativeItem }
                         | disconnection_specification {EntityDeclaration_DisconnectionSpecification $1}
                         | use_clause                  {EntityDeclaration_UseClause $1}
 
+-- entity_statement_part ::=
+--    { entity_statement }
 entity_statement_part :: {EntityStatementPart}
                       : {- empty -} {[]}
                       | entity_statement_part entity_statement {$2 : $1}
 
--- ?? passive_concurrent_procedure_call and passive_process_statement
+-- entity_statement ::=
+--    concurrent_assertion_statement
+--    | <passive>_concurrent_procedure_call
+--    | <passive>_process_statement
 entity_statement :: { EntityStatement }
                  : concurrent_assertion_statement  {EntityStatement_ConcurrentAssertionStatement $1}
                  | concurrent_procedure_call       {EntityStatement_ConcurrentProcedureCall $1}
                  | process_statement               {EntityStatement_ProcessStatement $1}
 
+-- architecture_body ::=
+--    architecture identifier of <entity>_name is
+--       architecture_declarative_part
+--    begin
+--       architecture_statement_part
+--    end [ <architecture>_simple_name ] ;
 architecture_body :: { ArchitectureBody }
-                  : architecture identifier of identifier is architecture_declarative_part begin architecture_statement_part end identifier ';' {ArchitectureBody $2 $4 $6 $8 (Just $10)}
-                  | architecture identifier of identifier is architecture_declarative_part begin architecture_statement_part end ';'            {ArchitectureBody $2 $4 $6 $8 Nothing}
+                  : architecture identifier of name is architecture_declarative_part begin architecture_statement_part end identifier ';' {ArchitectureBody $2 $4 $6 $8 (Just $10)}
+                  | architecture identifier of name is architecture_declarative_part begin architecture_statement_part end ';'            {ArchitectureBody $2 $4 $6 $8 Nothing}
 
 architecture_declarative_part :: { ArchitectureDeclarativePart }
                               : {- empty -} {[]}
                               | architecture_declarative_part block_declarative_item {$2 : $1}
 
-block_declarative_item :: { BlockDeclarativePart }
+block_declarative_item :: { BlockDeclarativeItem }
                        : subprogram_declaration       {BlockDeclarativeItem_SubprogramDeclaration $1}
                        | subprogram_body              {BlockDeclarativeItem_SubprogramBody $1}
                        | type_declaration             {BlockDeclarativeItem_TypeDeclaration $1}
@@ -222,8 +252,19 @@ configuration_declarative_item :: { ConfigurationDeclarativeItem }
                                : use_clause              {ConfigurationDeclarativeItem_UseClause $1}
                                | attribute_specification {ConfigurationDeclarativeItem_AttributeSpecification $1}
 
+-- block_configuration ::=
+--    for block_specification
+--       { use_clause }
+--       { configuration_item }
+--    end for ;
+-- block_specification ::=
+--    <architecture>_name
+--    | <block_statement>_label
+--    | <generate_statement>_label [ ( index_specification ) ]
+-- NOTE: Labels will be caught by 'name' parser
 block_configuration :: { BlockConfiguration }
-                    : for block_specification use_clause_list configuration_item_list end for ';' {BlockConfiguration $2 $3 $4}
+                    : for identifier '(' index_specification ')'  use_clause_list configuration_item_list end for ';' {BlockConfiguration (BlockSpecification_Generate $2 $4) $6 $7}
+                    | for name                                    use_clause_list configuration_item_list end for ';' {BlockConfiguration (BlockSpecification_Name $2) $3 $4}
 
 use_clause_list :: { [UseClause] }
                 : {- empty -}                {[]}
@@ -232,10 +273,6 @@ use_clause_list :: { [UseClause] }
 configuration_item_list :: { [ConfigurationItem] }
                         : {- empty -}                                {[]}
                         | configuration_item_list configuration_item {$2 : $1}
-
-block_specification :: { BlockSpecification }
-                    : identifier                               {BlockSpecificationIdentifier $1}
-                    | identifier '(' index_specification ')'   {BlockSpecificationGenerate $1 $2}
 
 -- ?? static_expression
 index_specification :: { IndexSpecification }
@@ -261,7 +298,7 @@ subprogram_declaration :: { SubprogramDeclaration }
 subprogram_specification :: { SubprogramSpecification }
                          : procedure designator '(' formal_parameter_list ')'                   {ProcedureDeclaration $2 (Just $4)}
                          | procedure designator                                                 {ProcedureDeclaration $2 Nothing}
-                         | function designator '(' formal_parameter_list ')' return type_mark   {FunctionDeclaration $2 (Just $4) $6}
+                         | function designator '(' formal_parameter_list ')' return type_mark   {FunctionDeclaration $2 (Just $4) $7}
                          | function designator return type_mark                                 {FunctionDeclaration $2 Nothing $4}
 
 designator :: { Designator }
@@ -397,7 +434,7 @@ array_type_definition :: { ArrayTypeDefinition }
                       : array '(' index_subtype_definition_list ')' of subtype_indication {UnconstrainedArrayTypeDefinition $3 $6}
                       | array '(' discrete_range_list ')' of subtype_indication           {ConstrainedArrayTypeDefinition $3 $6}
 
-index_subtype_definition_list :: { String }
+index_subtype_definition_list :: { [String] }
                               : index_subtype_definition                               {[$1]}
                               | index_subtype_definition_list index_subtype_definition {$2 : $1}
 
@@ -514,7 +551,7 @@ interface_declaration :: { InterfaceDeclaration }
                       | constant identifier_list ':'        subtype_indication                        {InterfaceDeclaration (Just Constant)        $2 Nothing     $4 Nothing}
                       | signal   identifier_list ':' mode   subtype_indication bus  ':=' expression   {InterfaceDeclaration (Just GuardedSignal)   $2 (Just $4)   $5 (Just $8)}
                       | signal   identifier_list ':' mode   subtype_indication bus                    {InterfaceDeclaration (Just GuardedSignal)   $2 (Just $4)   $5 Nothing}
-                      | signal   identifier_list ':' mode   subtype_indication      ':=' expression   {InterfaceDeclaration (Just Signal)          $2 (Just $4)   $5 (Just $6)}
+                      | signal   identifier_list ':' mode   subtype_indication      ':=' expression   {InterfaceDeclaration (Just Signal)          $2 (Just $4)   $5 (Just $7)}
                       | signal   identifier_list ':' mode   subtype_indication                        {InterfaceDeclaration (Just Signal)          $2 (Just $4)   $5 Nothing}
                       | signal   identifier_list ':'        subtype_indication bus  ':=' expression   {InterfaceDeclaration (Just GuardedSignal)   $2 Nothing     $4 (Just $7)}
                       | signal   identifier_list ':'        subtype_indication bus                    {InterfaceDeclaration (Just GuardedSignal)   $2 Nothing     $4 Nothing}
@@ -578,10 +615,10 @@ attribute_declaration :: { AttributeDeclaration }
                       : attribute identifier ':' type_mark ';' {AttributeDeclaration $2 $4}
 
 component_declaration :: { ComponentDeclaration }
-                      : component identifier generic_clause port_clause end component ';' {ComponentDeclaration $2 (Just $3) (Just $4)}
-                      | component identifier generic_clause             end component ';' {ComponentDeclaration $2 (Just $3) Nothing}
-                      | component identifier                port_clause end component ';' {ComponentDeclaration $2 Nothing (Just $3)}
-                      | component identifier                            end component ';' {ComponentDeclaration $2 Nothing Nothing}
+                      : component identifier generic '(' interface_list ')' ';'  port '(' interface_list ')' ';'  end component ';' {ComponentDeclaration $2 (Just $5) (Just $10)}
+                      | component identifier generic '(' interface_list ')' ';'                                   end component ';' {ComponentDeclaration $2 (Just $5) Nothing}
+                      | component identifier                                     port '(' interface_list ')' ';'  end component ';' {ComponentDeclaration $2 Nothing (Just $5)}
+                      | component identifier                                                                      end component ';' {ComponentDeclaration $2 Nothing Nothing}
 
 attribute_specification :: { AttributeSpecification }
                         : attribute attribute_designator of entity_name_list ':' entity_class is expression ';' {AttributeSpecification $2 $4 $6 $8}
@@ -638,10 +675,10 @@ entity_aspect :: { EntityAspect }
               | open                            {EntityAspect_Open}
 
 generic_map_aspect :: { AssociationList }
-                   : generic map '(' association_list ')' {$3}
+                   : generic map '(' association_list ')' {$4}
 
 port_map_aspect :: { AssociationList }
-                : port map '(' association_list ')' {$3}
+                : port map '(' association_list ')' {$4}
 
 disconnection_specification :: { DisconnectionSpecification }
                             : disconnect signal_list ':' type_mark after expression ';' {DisconnectionSpecification $2 $4 $6}
@@ -663,9 +700,13 @@ name :: { Name }
      | slice_name       {Name_Slice $1}
      | attribute_name   {Name_Attribute $1}
 
+-- prefix ::=
+--    name
+--    | function_call
+-- NOTE: One case of function_call is caught by 'name' parser
 prefix :: { Prefix }
        : name           {Prefix_Name $1}
-       | function_call  {Prefix_Name $1}
+       | function_call  {Prefix_Function $1}
 
 simple_name :: { String }
             : identifier {$1}
@@ -779,7 +820,7 @@ adding_operator :: { AddingOperator }
 term :: { Term }
      : factor multiplying_operation_list {Term $1 $2}
 
-multiplying_operation_list :: { [MultiplyingOperation }
+multiplying_operation_list :: { [MultiplyingOperation] }
                            : {- empty -}                                      {[]}
                            | multiplying_operation_list multiplying_operation {$2 : $1}
 
@@ -795,9 +836,19 @@ multiplying_operator :: { MultiplyingOperator }
 factor :: { Factor }
        : primary '**' primary {Factor_Pow $1 $3}
        | primary              {Factor_Value $1}
-       | abs primary          {Factor_Abs $1}
-       | not primary          {Factor_Not $1}
+       | abs primary          {Factor_Abs $2}
+       | not primary          {Factor_Not $2}
 
+-- primary ::=
+--    name
+--    | literal
+--    | aggregate
+--    | function_call
+--    | qualified_expression
+--    | type_conversion
+--    | allocator
+--    | ( expression )
+-- NOTE: One case of function_call is caught by 'name' parser
 primary :: { Primary }
         : name                   {Primary_Name $1}
         | literal                {Primary_Literal $1}
@@ -807,6 +858,13 @@ primary :: { Primary }
         | type_conversion        {Primary_TypeConversion $1}
         | allocator              {Primary_Allocator $1}
         | '(' expression ')'     {Primary_Expression $2}
+
+-- Second part may never be triggered because higher level section has 'name' on its own
+-- function_call ::=
+--    <function>_name [ ( actual_parameter_part ) ]
+-- NOTE: Only matches full case of this
+function_call :: { FunctionCall }
+              : name '(' actual_parameter_part ')' {FunctionCall $1 $3}
 
 literal :: { Literal }
         : numeric_literal     {Literal_Numeric $1}
@@ -827,7 +885,7 @@ string_literal :: { String }
                : str {$1}
 
 bit_string_literal :: { BitStrLiteral }
-                   : bitstr {$1 & \Lex.Literal (Tokens.BitStr (base,value)) -> BitStrLiteral base value}
+                   : bitstr {(\(Lex.Literal (Tokens.BitStr base value)) -> BitStrLiteral base value) $1}
 
 aggregate :: { Aggregate }
           : '(' element_association_list ')' {$2}
@@ -849,11 +907,6 @@ choice :: { Choice }
        | discrete_range    {Choice_DiscreteRange $1}
        | simple_name       {Choice_ElementName $1}
        | others            {Choice_Others}
-
--- Second part may never be triggered because higher level section has 'name' on its own
-function_call :: { FunctionCall }
-              : name '(' actual_parameter_part ')' {FunctionCall $1 (Just $3)}
-              | name                               {FunctionCall $1 Nothing}
 
 actual_parameter_part :: { AssociationList }
                       : association_list {$1}
@@ -932,8 +985,8 @@ procedure_call_statement :: { ProcedureCallStatement }
                          | name                                ';' {ProcedureCallStatement $1 Nothing}
 
 if_statement :: { IfStatement }
-             : if condition then sequence_of_statements elsif_statement_list else sequence_of_statements end if ';' {IfStatement $2 $3 $4 (Just $6)}
-             | if condition then sequence_of_statements elsif_statement_list                             end if ';' {IfStatement $2 $3 $4 Nothing}
+             : if condition then sequence_of_statements elsif_statement_list else sequence_of_statements end if ';' {IfStatement $2 $4 $5 (Just $7)}
+             | if condition then sequence_of_statements elsif_statement_list                             end if ';' {IfStatement $2 $4 $5 Nothing}
 
 elsif_statement_list :: { [ElsifStatement] }
                      : {- empty -}                          {[]}
@@ -1000,12 +1053,12 @@ block_header :: { BlockHeader }
              | {- empty -}                            {BlockHeader Nothing Nothing}
 
 block_header_generic :: { BlockHeader_Generic }
-                     : generic_clause generic_map_aspect ';' {BlockHeader_Generic $1 (Just $2)}
-                     | generic_clause                    ';' {BlockHeader_Generic $1 Nothing}
+                     : generic '(' interface_list ')' ';' generic_map_aspect ';'  {BlockHeader_Generic $3 (Just $6)}
+                     | generic '(' interface_list ')' ';'                         {BlockHeader_Generic $3 Nothing}
 
 block_header_port :: { BlockHeader_Port }
-                  : port_clause port_map_aspect ';' {BlockHeader_Port $1 (Just $2)}
-                  | port_clause                 ';' {BlockHeader_Port $1 Nothing}
+                  : port '(' interface_list ')' ';' port_map_aspect ';' {BlockHeader_Port $3 (Just $6)}
+                  | port '(' interface_list ')' ';'                     {BlockHeader_Port $3 Nothing}
 
 block_declarative_part :: { BlockDeclarativePart }
                        : {- empty -}                                    {[]}
@@ -1030,7 +1083,7 @@ process_statement_part :: { ProcessStatementPart }
                        | process_statement_part sequential_statement {$2 : $1}
 
 process_declarative_item :: { ProcessDeclarativeItem }
-                         : subprogram_declaration  {ProcessDeclarative_SubtypeDeclaration $1}
+                         : subprogram_declaration  {ProcessDeclarative_SubprogramDeclaration $1}
                          | subprogram_body         {ProcessDeclarative_SubprogramBody $1}
                          | type_declaration        {ProcessDeclarative_TypeDeclaration $1}
                          | subtype_declaration     {ProcessDeclarative_SubtypeDeclaration $1}
@@ -1108,9 +1161,6 @@ selected_name_list :: { [SelectedName] }
                    : selected_name                          {[$1]}
                    | selected_name_list ',' selected_name   {$3 : $1}
 
-design_file :: { DesignFile }
-            : design_unit_list {DesignFile $1}
-
 design_unit_list :: { [DesignUnit] }
                  : design_unit                  {[$1]}
                  | design_unit_list design_unit {$2 : $1}
@@ -1122,10 +1172,10 @@ library_unit :: { LibraryUnit }
              : primary_unit   {Library_PrimaryUnit $1}
              | secondary_unit {Library_SecondaryUnit $1}
 
-primary_unit :: { Primary }
-             : entity_declaration         {Primary_EntityDeclaration $1}
-             | configuration_declaration  {Primary_ConfigurationDeclaration $1}
-             | package_declaration        {Primary_PackageDeclaration $1}
+primary_unit :: { PrimaryUnit }
+             : entity_declaration         {PrimaryUnit_EntityDeclaration $1}
+             | configuration_declaration  {PrimaryUnit_ConfigurationDeclaration $1}
+             | package_declaration        {PrimaryUnit_PackageDeclaration $1}
 
 secondary_unit :: { SecondaryUnit }
                : architecture_body  {Secondary_ArchitectureBody $1}
@@ -1141,3 +1191,7 @@ context_clause :: { ContextClause }
 context_item :: { ContextItem }
              : library_clause {Context_LibraryClause $1}
              | use_clause {Context_UseClause $1}
+
+{
+v1987 :: Alex DesignFile
+}

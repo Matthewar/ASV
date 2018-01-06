@@ -161,6 +161,11 @@ instance (Show ParserError) where
       "Lexer found empty bit string "
       ++ str
       ++ (getLineAndColErrStr pos)
+   --show (GenericParseError pos) =
+   --   "Some parser error occurred "
+   --   ++ getLineAndColErrStr pos
+   show (GenericParseError) =
+      "Some parser error occurred"
 
 -- | Get the string containing the line and column string
 getLineAndColErrStr :: AlexPosn -> String
