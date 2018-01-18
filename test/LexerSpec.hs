@@ -4,6 +4,7 @@ import Parser.Alex.BaseTypes (AlexPosn(..))
 import Parser.Lexer (lexerList)
 import Parser.ErrorTypes
 import Parser.TokenTypes
+import Parser.PositionWrapper
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -459,7 +460,7 @@ singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
           doubleValue = base * 10 ** exp
           expectedValue =
             if isInfinite doubleValue then
-                  Left $ LexErr_UniversalInt_OutOfBounds value $ AlexPn 0 1 0
+                  Left $ PosnWrapper { getPos = AlexPn 0 1 0, unPos = LexErr_UniversalInt_OutOfBounds value }
             else Right [Literal $ Univ_Int $ floor doubleValue]
           lexRun = lexerList value
       in lexRun == expectedValue

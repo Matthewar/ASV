@@ -1,9 +1,13 @@
-module Parser.Happy.Functions where
+module Parser.Happy.Functions 
+   ( parseError
+   )
+where
 
 import Parser.Alex.Monad (Alex)
 import Parser.Alex.Functions (alexError)
-import Parser.TokenTypes (Token)
+import Parser.TokenTypes (WrappedToken)
+import Parser.PositionWrapper
 import Parser.ErrorTypes
 
-parseError :: Token -> Alex a
-parseError _ = alexError GenericParseError
+parseError :: WrappedToken -> Alex a
+parseError err = alexError $ PosnWrapper {getPos = getPos err, unPos = GenericParseError}

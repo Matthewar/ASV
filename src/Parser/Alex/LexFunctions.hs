@@ -2,7 +2,6 @@ module Parser.Alex.LexFunctions where
 
 import Parser.Alex.BaseTypes
 import Parser.Alex.Monad
-import Parser.Alex.Functions (alexError)
 import Parser.TokenTypes
 import Parser.ErrorTypes
 
@@ -11,20 +10,19 @@ import Data.List.Split (splitOn)
 import Text.Read (readMaybe)
 import Data.Function ((&))
 
-makeReserved :: ReservedWord -> AlexInput -> Int -> Alex Token
-makeReserved keyword (position, _, _, _) _ =
-   let keyType = Keyword keyword
-   in return $ keyType
+type CreateToken = String -> Either ParserError Token
 
-makeIdentifier :: AlexInput -> Int -> Alex Token
-makeIdentifier (position, _, _, str) length =
-   let identifier = take length str
-   in return $ Identifier identifier
+makeReserved :: ReservedWord -> CreateToken
+makeReserved keyword _ =
+   return $ Keyword keyword
 
-makeDecimalLiteral :: AlexInput -> Int -> Alex Token
-makeDecimalLiteral (position, _, _, str) length =
-   let extractedStr = take length str
-       formattedStr = filter (\char -> char /= '_') extractedStr
+makeIdentifier :: CreateToken
+makeIdentifier identifier =
+   return $ Identifier identifier
+
+makeDecimalLiteral :: CreateToken
+makeDecimalLiteral extractedStr =
+   let formattedStr = filter (\char -> char /= '_') extractedStr
        isReal = elem '.' formattedStr
        convertToLiteralType =
          if isReal then Univ_Real
@@ -33,7 +31,7 @@ makeDecimalLiteral (position, _, _, str) length =
          let errorType =
                if isReal then LexErr_UniversalReal_OutOfBounds
                else LexErr_UniversalInt_OutOfBounds
-         in alexError $ errorType extractedStr position
+         in Left $ errorType extractedStr
        checkError (Just value) =
          value
          & convertToLiteralType
@@ -43,19 +41,17 @@ makeDecimalLiteral (position, _, _, str) length =
       & readMaybe
       & checkError
 
-errorDecimalLiteral :: AlexInput -> Int -> Alex Token
-errorDecimalLiteral (position, _, _, str) length =
-   take length str
-   & \err -> LexErr_DecimalLiteral_InvalidFormat err position
-   & alexError
+errorDecimalLiteral :: CreateToken
+errorDecimalLiteral extractedStr =
+   Left $ LexErr_DecimalLiteral_InvalidFormat extractedStr
 
-makeBasedLiteral :: Char -> AlexInput -> Int -> Alex Token
-makeBasedLiteral separator (position, _, _, str) length = do
-   let basedStr = take length str
+-- ?? Needs recoding
+makeBasedLiteral :: Char -> CreateToken
+makeBasedLiteral separator basedStr = do
    (base,value,exponent) <- case splitOn [separator] basedStr of
       (base:value:('E':exponent):[]) -> return (base,value,exponent)
       (base:value:"":[]) -> return (base,value,"0")
-      _ -> alexError $ LexErr_BasedLiteral_InvalidValue basedStr position -- ?? This error is incorrect
+      _ -> Left $ LexErr_BasedLiteral_InvalidValue basedStr -- ?? This error is incorrect
    baseInt <- return $ read base
    exponentInt <- return $ read exponent
    let convertBasedUnits ans iter (unit:units) =
@@ -79,16 +75,15 @@ makeBasedLiteral separator (position, _, _, str) length = do
       & Univ_Real
       & Literal
       & return
-   else alexError $ LexErr_BasedLiteral_InvalidBaseValue (floor baseInt) basedStr position
+   else Left $ LexErr_BasedLiteral_InvalidBaseValue (floor baseInt) basedStr
 
-makeCharLiteral :: AlexInput -> Int -> Alex Token
-makeCharLiteral (position, _, _, ('\'':char:'\'':[])) _ =
+makeCharLiteral :: CreateToken
+makeCharLiteral ('\'':char:'\'':[]) =
    return $ Literal $ Character char
 
-makeStrLiteral :: AlexInput -> Int -> Alex Token
-makeStrLiteral (position, _, _, str) length =
-   let completeStr = take length str
-       container :: Char
+makeStrLiteral :: CreateToken
+makeStrLiteral completeStr =
+   let container :: Char
        container = head completeStr
        strContents :: String
        strContents = -- Remove first and last elements
@@ -106,10 +101,9 @@ makeStrLiteral (position, _, _, str) length =
       & Literal
       & return
 
-makeBitStrLiteral :: LiteralBase -> AlexInput -> Int -> Alex Token
-makeBitStrLiteral base (position, _, _, str) length =
-   take length str
-   & init
+makeBitStrLiteral :: LiteralBase -> CreateToken
+makeBitStrLiteral base extractedStr =
+   init extractedStr
    & \(_:_:bitString) ->
       filter (\c -> c /= '_') bitString
       & ByteString.pack
@@ -117,22 +111,19 @@ makeBitStrLiteral base (position, _, _, str) length =
       & Literal
       & return
 
-errorBitStrLiteral :: AlexInput -> Int -> Alex Token
-errorBitStrLiteral (position, _, _, str) length =
-   let bitStr = take length str
-   in alexError $ LexErr_BitStrLiteral_InvalidStr bitStr position
+errorBitStrLiteral :: CreateToken
+errorBitStrLiteral bitStr =
+   Left $ LexErr_BitStrLiteral_InvalidStr bitStr
 
-errorBitStrLiteralBase :: AlexInput -> Int -> Alex Token
-errorBitStrLiteralBase (position, _, _, str) length =
-   let bitStr = take length str
-       (base:_) = bitStr
-   in alexError $ LexErr_BitStrLiteral_InvalidBase base bitStr position
+errorBitStrLiteralBase :: CreateToken
+errorBitStrLiteralBase bitStr =
+   let (base:_) = bitStr
+   in Left $ LexErr_BitStrLiteral_InvalidBase base bitStr
 
-errorBitStrLiteralEmpty :: AlexInput -> Int -> Alex Token
-errorBitStrLiteralEmpty (position, _, _, str) length =
-   let bitStr = take length str
-   in alexError $ LexErr_BitStrLiteral_EmptyStr bitStr position
+errorBitStrLiteralEmpty :: CreateToken
+errorBitStrLiteralEmpty bitStr =
+   Left $ LexErr_BitStrLiteral_EmptyStr bitStr
 
-makeOperator :: OperatorType -> AlexInput -> Int -> Alex Token
-makeOperator op (position, _, _, _) _ =
+makeOperator :: OperatorType -> CreateToken
+makeOperator op _ =
    return $ Operator op

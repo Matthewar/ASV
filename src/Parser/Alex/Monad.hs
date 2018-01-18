@@ -4,9 +4,9 @@ module Parser.Alex.Monad where
 import qualified Control.Applicative as App (Applicative (..))
 
 import Parser.Alex.BaseTypes
-import Parser.ErrorTypes (ParserError)
+import Parser.ErrorTypes (WrappedParserError)
 
-newtype Alex a = Alex { unAlex :: AlexState -> Either ParserError (AlexState, a) }
+newtype Alex a = Alex { unAlex :: AlexState -> Either WrappedParserError (AlexState, a) }
 
 instance Functor Alex where
   fmap f a = Alex $ \s -> case unAlex a s of

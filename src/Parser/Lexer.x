@@ -5,6 +5,7 @@ import Data.Function ((&))
 
 import Parser.TokenTypes
 import Parser.ErrorTypes
+import Parser.PositionWrapper
 import Parser.Alex.BaseTypes
 import Parser.Alex.Monad
 import Parser.Alex.Functions
@@ -152,21 +153,21 @@ tokens :-
 -- Invalid Decimal
 -- - Underscores in incorrect positions
 -- -- Underscore at the start or end of value components
-<0,nondelim>               "_" ($digit | "_")+ (\. ($digit | "_")+)? ([Ee] [\+\-]? ($digit | "_")+)?                       { errorDecimalLiteral }
-<0,nondelim>               ($digit | "_")+ "_" (\. ($digit | "_")+)? ([Ee] [\+\-]? ($digit | "_")+)?                       { errorDecimalLiteral }
-<0,nondelim>               ($digit | "_")+ \. "_" ($digit | "_")+ ([Ee] [\+\-]? ($digit | "_")+)?                          { errorDecimalLiteral }
-<0,nondelim>               ($digit | "_")+ \. ($digit | "_")+ "_" ([Ee] [\+\-]? ($digit | "_")+)?                          { errorDecimalLiteral }
-<0,nondelim>               ($digit | "_")+ (\. ($digit | "_")+)? [Ee] "_"+ [\+\-]? ($digit | "_")+                         { errorDecimalLiteral }
-<0,nondelim>               ($digit | "_")+ (\. ($digit | "_")+)? [Ee] [\+\-]? "_" ($digit | "_")+                          { errorDecimalLiteral }
-<0,nondelim>               ($digit | "_")+ (\. ($digit | "_")+)? [Ee] [\+\-]? ($digit | "_")+ "_"                          { errorDecimalLiteral }
+<0,nondelim>               "_" ($digit | "_")+ (\. ($digit | "_")+)? ([Ee] [\+\-]? ($digit | "_")+)?                       { makeError errorDecimalLiteral }
+<0,nondelim>               ($digit | "_")+ "_" (\. ($digit | "_")+)? ([Ee] [\+\-]? ($digit | "_")+)?                       { makeError errorDecimalLiteral }
+<0,nondelim>               ($digit | "_")+ \. "_" ($digit | "_")+ ([Ee] [\+\-]? ($digit | "_")+)?                          { makeError errorDecimalLiteral }
+<0,nondelim>               ($digit | "_")+ \. ($digit | "_")+ "_" ([Ee] [\+\-]? ($digit | "_")+)?                          { makeError errorDecimalLiteral }
+<0,nondelim>               ($digit | "_")+ (\. ($digit | "_")+)? [Ee] "_"+ [\+\-]? ($digit | "_")+                         { makeError errorDecimalLiteral }
+<0,nondelim>               ($digit | "_")+ (\. ($digit | "_")+)? [Ee] [\+\-]? "_" ($digit | "_")+                          { makeError errorDecimalLiteral }
+<0,nondelim>               ($digit | "_")+ (\. ($digit | "_")+)? [Ee] [\+\-]? ($digit | "_")+ "_"                          { makeError errorDecimalLiteral }
 -- -- Double underscores in the centre of value components
-<0,nondelim>               ($digit | "_")+ "__" ($digit | "_")+ (\. ($digit | "_")+)? ([Ee] [\+\-]? ($digit | "_")+)?      { errorDecimalLiteral }
-<0,nondelim>               ($digit | "_")+ \. ($digit | "_")+ "__" ($digit | "_")+ ([Ee] [\+\-]? ($digit | "_")+)?         { errorDecimalLiteral }
-<0,nondelim>               ($digit | "_")+ (\. ($digit | "_")+)? [Ee] [\+\-]? ($digit | "_")+ "__" ($digit | "_")+         { errorDecimalLiteral }
+<0,nondelim>               ($digit | "_")+ "__" ($digit | "_")+ (\. ($digit | "_")+)? ([Ee] [\+\-]? ($digit | "_")+)?      { makeError errorDecimalLiteral }
+<0,nondelim>               ($digit | "_")+ \. ($digit | "_")+ "__" ($digit | "_")+ ([Ee] [\+\-]? ($digit | "_")+)?         { makeError errorDecimalLiteral }
+<0,nondelim>               ($digit | "_")+ (\. ($digit | "_")+)? [Ee] [\+\-]? ($digit | "_")+ "__" ($digit | "_")+         { makeError errorDecimalLiteral }
 -- - Empty components of values ?? Improve regex of these?
-<0,nondelim>               \. ($digit | "_")+ [Ee] [\+\-]? ($digit | "_")+                                                 { errorDecimalLiteral }
-<0,nondelim>               ($digit | "_")+ \. [Ee] [\+\-]? ($digit | "_")+                                                 { errorDecimalLiteral }
-<0,nondelim>               ($digit | "_")+ \. ($digit | "_")+ [Ee] [\+\-]?                                                 { errorDecimalLiteral }
+<0,nondelim>               \. ($digit | "_")+ [Ee] [\+\-]? ($digit | "_")+                                                 { makeError errorDecimalLiteral }
+<0,nondelim>               ($digit | "_")+ \. [Ee] [\+\-]? ($digit | "_")+                                                 { makeError errorDecimalLiteral }
+<0,nondelim>               ($digit | "_")+ \. ($digit | "_")+ [Ee] [\+\-]?                                                 { makeError errorDecimalLiteral }
 
 -- Valid Based
 <0,nondelim>               [0-9]+ "#" @hex_value (\. @hex_value)? "#" @exponent? { makeToken (makeBasedLiteral '#')        separator   }
@@ -186,49 +187,49 @@ tokens :-
 <0,nondelim>               [Xx] "%" @hex_value "%"                               { makeToken (makeBitStrLiteral HexBased)  separator   }
 -- Invalid Bit Strings
 -- - Invalid characters
-<0,nondelim>               [Bb] \" ( $binary | "_" )* ~ $binary ( $binary | "_" )* \"     { errorBitStrLiteral }
-<0,nondelim>               [Bb] \" ( $binary | "_" )* ~ $binary \"                        { errorBitStrLiteral }
-<0,nondelim>               [Bb] \" ~ $binary ( $binary | "_" )* \"                        { errorBitStrLiteral }
-<0,nondelim>               [Oo] \" ( $octal | "_" )* ~ $octal ( $octal | "_" )* \"        { errorBitStrLiteral }
-<0,nondelim>               [Oo] \" ( $octal | "_" )* ~ $octal \"                          { errorBitStrLiteral }
-<0,nondelim>               [Oo] \" ~ $octal ( $octal | "_" )* \"                          { errorBitStrLiteral }
-<0,nondelim>               [Xx] \" ( $hex | "_" )* ~ $hex ( $hex | "_" )* \"              { errorBitStrLiteral }
-<0,nondelim>               [Xx] \" ( $hex | "_" )* ~ $hex \"                              { errorBitStrLiteral }
-<0,nondelim>               [Xx] \" ~ $hex ( $hex | "_" )* \"                              { errorBitStrLiteral }
-<0,nondelim>               [Bb] "%" ( $binary | "_" )* ~ $binary ( $binary | "_" )* "%"   { errorBitStrLiteral }
-<0,nondelim>               [Bb] "%" ( $binary | "_" )* ~ $binary "%"                      { errorBitStrLiteral }
-<0,nondelim>               [Bb] "%" ~ $binary ( $binary | "_" )* "%"                      { errorBitStrLiteral }
-<0,nondelim>               [Oo] "%" ( $octal | "_" )* ~ $octal ( $octal | "_" )* "%"      { errorBitStrLiteral }
-<0,nondelim>               [Oo] "%" ( $octal | "_" )* ~ $octal "%"                        { errorBitStrLiteral }
-<0,nondelim>               [Oo] "%" ~ $octal ( $octal | "_" )* "%"                        { errorBitStrLiteral }
-<0,nondelim>               [Xx] "%" ( $hex | "_" )* ~ $hex ( $hex | "_" )* "%"            { errorBitStrLiteral }
-<0,nondelim>               [Xx] "%" ( $hex | "_" )* ~ $hex "%"                            { errorBitStrLiteral }
-<0,nondelim>               [Xx] "%" ~ $hex ( $hex | "_" )* "%"                            { errorBitStrLiteral }
+<0,nondelim>               [Bb] \" ( $binary | "_" )* ~ $binary ( $binary | "_" )* \"     { makeError errorBitStrLiteral }
+<0,nondelim>               [Bb] \" ( $binary | "_" )* ~ $binary \"                        { makeError errorBitStrLiteral }
+<0,nondelim>               [Bb] \" ~ $binary ( $binary | "_" )* \"                        { makeError errorBitStrLiteral }
+<0,nondelim>               [Oo] \" ( $octal | "_" )* ~ $octal ( $octal | "_" )* \"        { makeError errorBitStrLiteral }
+<0,nondelim>               [Oo] \" ( $octal | "_" )* ~ $octal \"                          { makeError errorBitStrLiteral }
+<0,nondelim>               [Oo] \" ~ $octal ( $octal | "_" )* \"                          { makeError errorBitStrLiteral }
+<0,nondelim>               [Xx] \" ( $hex | "_" )* ~ $hex ( $hex | "_" )* \"              { makeError errorBitStrLiteral }
+<0,nondelim>               [Xx] \" ( $hex | "_" )* ~ $hex \"                              { makeError errorBitStrLiteral }
+<0,nondelim>               [Xx] \" ~ $hex ( $hex | "_" )* \"                              { makeError errorBitStrLiteral }
+<0,nondelim>               [Bb] "%" ( $binary | "_" )* ~ $binary ( $binary | "_" )* "%"   { makeError errorBitStrLiteral }
+<0,nondelim>               [Bb] "%" ( $binary | "_" )* ~ $binary "%"                      { makeError errorBitStrLiteral }
+<0,nondelim>               [Bb] "%" ~ $binary ( $binary | "_" )* "%"                      { makeError errorBitStrLiteral }
+<0,nondelim>               [Oo] "%" ( $octal | "_" )* ~ $octal ( $octal | "_" )* "%"      { makeError errorBitStrLiteral }
+<0,nondelim>               [Oo] "%" ( $octal | "_" )* ~ $octal "%"                        { makeError errorBitStrLiteral }
+<0,nondelim>               [Oo] "%" ~ $octal ( $octal | "_" )* "%"                        { makeError errorBitStrLiteral }
+<0,nondelim>               [Xx] "%" ( $hex | "_" )* ~ $hex ( $hex | "_" )* "%"            { makeError errorBitStrLiteral }
+<0,nondelim>               [Xx] "%" ( $hex | "_" )* ~ $hex "%"                            { makeError errorBitStrLiteral }
+<0,nondelim>               [Xx] "%" ~ $hex ( $hex | "_" )* "%"                            { makeError errorBitStrLiteral }
 -- - Incorrect underscores
-<0,nondelim>               [Bb] \" "_" ( $binary | "_" )* \"                              { errorBitStrLiteral }
-<0,nondelim>               [Bb] \" ( $binary | "_" )* "_" \"                              { errorBitStrLiteral }
-<0,nondelim>               [Bb] \" ( $binary | "_" )+ "__" ( $binary | "_" )+ \"          { errorBitStrLiteral }
-<0,nondelim>               [Oo] \" "_" ( $octal | "_" )* \"                               { errorBitStrLiteral }
-<0,nondelim>               [Oo] \" ( $octal | "_" )* "_" \"                               { errorBitStrLiteral }
-<0,nondelim>               [Oo] \" ( $octal | "_" )+ "__" ( $octal | "_" )+ \"            { errorBitStrLiteral }
-<0,nondelim>               [Xx] \" "_" ( $hex | "_" )* \"                                 { errorBitStrLiteral }
-<0,nondelim>               [Xx] \" ( $hex | "_" )* "_" \"                                 { errorBitStrLiteral }
-<0,nondelim>               [Xx] \" ( $hex | "_" )+ "__" ( $hex | "_" )+ \"                { errorBitStrLiteral }
-<0,nondelim>               [Bb] "%" "_" ( $binary | "_" )* "%"                            { errorBitStrLiteral }
-<0,nondelim>               [Bb] "%" ( $binary | "_" )* "_" "%"                            { errorBitStrLiteral }
-<0,nondelim>               [Bb] "%" ( $binary | "_" )+ "__" ( $binary | "_" )+ "%"        { errorBitStrLiteral }
-<0,nondelim>               [Oo] "%" "_" ( $octal | "_" )* "%"                             { errorBitStrLiteral }
-<0,nondelim>               [Oo] "%" ( $octal | "_" )* "_" "%"                             { errorBitStrLiteral }
-<0,nondelim>               [Oo] "%" ( $octal | "_" )+ "__" ( $octal | "_" )+ "%"          { errorBitStrLiteral }
-<0,nondelim>               [Xx] "%" "_" ( $hex | "_" )* "%"                               { errorBitStrLiteral }
-<0,nondelim>               [Xx] "%" ( $hex | "_" )* "_" "%"                               { errorBitStrLiteral }
-<0,nondelim>               [Xx] "%" ( $hex | "_" )+ "__" ( $hex | "_" )+ "%"              { errorBitStrLiteral }
+<0,nondelim>               [Bb] \" "_" ( $binary | "_" )* \"                              { makeError errorBitStrLiteral }
+<0,nondelim>               [Bb] \" ( $binary | "_" )* "_" \"                              { makeError errorBitStrLiteral }
+<0,nondelim>               [Bb] \" ( $binary | "_" )+ "__" ( $binary | "_" )+ \"          { makeError errorBitStrLiteral }
+<0,nondelim>               [Oo] \" "_" ( $octal | "_" )* \"                               { makeError errorBitStrLiteral }
+<0,nondelim>               [Oo] \" ( $octal | "_" )* "_" \"                               { makeError errorBitStrLiteral }
+<0,nondelim>               [Oo] \" ( $octal | "_" )+ "__" ( $octal | "_" )+ \"            { makeError errorBitStrLiteral }
+<0,nondelim>               [Xx] \" "_" ( $hex | "_" )* \"                                 { makeError errorBitStrLiteral }
+<0,nondelim>               [Xx] \" ( $hex | "_" )* "_" \"                                 { makeError errorBitStrLiteral }
+<0,nondelim>               [Xx] \" ( $hex | "_" )+ "__" ( $hex | "_" )+ \"                { makeError errorBitStrLiteral }
+<0,nondelim>               [Bb] "%" "_" ( $binary | "_" )* "%"                            { makeError errorBitStrLiteral }
+<0,nondelim>               [Bb] "%" ( $binary | "_" )* "_" "%"                            { makeError errorBitStrLiteral }
+<0,nondelim>               [Bb] "%" ( $binary | "_" )+ "__" ( $binary | "_" )+ "%"        { makeError errorBitStrLiteral }
+<0,nondelim>               [Oo] "%" "_" ( $octal | "_" )* "%"                             { makeError errorBitStrLiteral }
+<0,nondelim>               [Oo] "%" ( $octal | "_" )* "_" "%"                             { makeError errorBitStrLiteral }
+<0,nondelim>               [Oo] "%" ( $octal | "_" )+ "__" ( $octal | "_" )+ "%"          { makeError errorBitStrLiteral }
+<0,nondelim>               [Xx] "%" "_" ( $hex | "_" )* "%"                               { makeError errorBitStrLiteral }
+<0,nondelim>               [Xx] "%" ( $hex | "_" )* "_" "%"                               { makeError errorBitStrLiteral }
+<0,nondelim>               [Xx] "%" ( $hex | "_" )+ "__" ( $hex | "_" )+ "%"              { makeError errorBitStrLiteral }
 -- - Invalid bitstring base
-<0,nondelim>               [^BbOoXx] \" .* \"                                             { errorBitStrLiteralBase }
-<0,nondelim>               [^BbOoXx] "%" .* "%"                                           { errorBitStrLiteralBase }
+<0,nondelim>               [^BbOoXx] \" .* \"                                             { makeError errorBitStrLiteralBase }
+<0,nondelim>               [^BbOoXx] "%" .* "%"                                           { makeError errorBitStrLiteralBase }
 -- - Empty bitstring
-<0,nondelim>               [BbOoXx] \" \"                                                 { errorBitStrLiteralEmpty }
-<0,nondelim>               [BbOoXx] "%" "%"                                               { errorBitStrLiteralEmpty }
+<0,nondelim>               [BbOoXx] \" \"                                                 { makeError errorBitStrLiteralEmpty }
+<0,nondelim>               [BbOoXx] "%" "%"                                               { makeError errorBitStrLiteralEmpty }
 
 <0,separator,identifier>   "--".*                                                ;
 <0,separator,identifier>   $white+                                               {                                               begin 0     }
@@ -258,13 +259,26 @@ tokens :-
 -- Need to sort replacement characters
 
 {
-makeToken :: AlexAction Token -> Int -> AlexInput -> Int -> Alex Token
-makeToken newToken code =
-   newToken `andBegin` code
+makeToken :: CreateToken -> Int -> AlexInput -> Int -> Alex WrappedToken
+makeToken newToken code (position, _, _, str) length = do
+   let extractedStr = take length str
+   alexSetStartCode code
+   case newToken extractedStr of
+     Right token ->
+         return $ PosnWrapper { getPos = position, unPos = token }
+     Left err ->
+         alexError $ PosnWrapper { getPos = position, unPos = err }
+
+makeError :: CreateToken -> AlexInput -> Int -> Alex WrappedToken
+makeError errorToken (position, _, _, str) length = do
+   let extractedStr = take length str
+   case errorToken extractedStr of
+      Left err ->
+         alexError $ PosnWrapper { getPos = position, unPos = err }
 
 -- | Monadic call to lexer (requires continuation monad)
 -- Used by happy to call the alex lexer
-lexer :: (Token -> Alex a) -> Alex a
+lexer :: (WrappedToken -> Alex a) -> Alex a
 lexer cont = do
    token <- alexMonadScan
    cont token
@@ -272,12 +286,12 @@ lexer cont = do
 -- | Basic call to lexer
 -- Can be used for debug
 -- Returns either error or list of tokens
-lexerList :: String -> Either ParserError [Token]
+lexerList :: String -> Either WrappedParserError [Token]
 lexerList str = runAlex str $ do
    let loop tknLst = do token <- alexMonadScan
-                        case token of
+                        case unPos token of
                            EOF -> return $ reverse tknLst
-                           token -> loop (token:tknLst)
+                           unPosToken -> loop (unPosToken:tknLst)
    loop []
 
 -- |Lexer scan
@@ -285,8 +299,8 @@ alexMonadScan = do
   inp__ <- alexGetInput
   sc <- alexGetStartCode
   case alexScan inp__ sc of
-    AlexEOF -> return EOF
-    AlexError (pos,_,_,_) -> alexError $ GenericLexError pos
+    AlexEOF -> return $ PosnWrapper { getPos = AlexPn 0 1 0, unPos = EOF }
+    AlexError (pos,_,_,_) -> alexError $ PosnWrapper { getPos = pos, unPos = GenericLexError }
     AlexSkip  inp__' _len -> do
         alexSetInput inp__'
         alexMonadScan
@@ -309,6 +323,6 @@ andBegin :: AlexAction result -> Int -> AlexAction result
   action input__ len
 
 -- | Return token
-token :: (AlexInput -> Int -> Token) -> AlexAction Token
+token :: (AlexInput -> Int -> WrappedToken) -> AlexAction WrappedToken
 token t input__ len = return (t input__ len)
 }

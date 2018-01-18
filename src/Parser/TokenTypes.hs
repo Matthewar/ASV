@@ -1,5 +1,7 @@
 module Parser.TokenTypes where
 
+import Parser.PositionWrapper
+
 import Data.Char as Char
 import Data.Int (Int64)
 import Data.ByteString.Char8 as ByteString
@@ -11,6 +13,8 @@ data Token = Keyword ReservedWord
            | Literal LitType
            | EOF
            deriving (Eq,Show)
+
+type WrappedToken = PosnWrapper Token
 
 data ReservedWord = Abs
                   | Access

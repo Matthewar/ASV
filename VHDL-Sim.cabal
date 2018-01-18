@@ -26,6 +26,7 @@ library
                      , Parser.Parser
                      , Parser.Happy.Types
                      , Parser.Happy.Functions
+                     , Parser.Happy.ParseFunctions
   build-depends:       base >= 4.7 && < 5
                      , array
                      , split
