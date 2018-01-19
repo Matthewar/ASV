@@ -2,6 +2,7 @@ module Parser.ErrorTypes
 ( 
    ParserError(..)
    , WrappedParserError
+   , printParserError
 )
 where
 
