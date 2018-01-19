@@ -1,6 +1,4 @@
-# Language Implementation - 1987
-
-## Lexical Elements
+# Lexical Elements
 There are a number of different lexical elements, which fall into the categories of the basic token.
 
 ```haskell
@@ -12,19 +10,19 @@ data Token = Keyword ReservedWord -- Reserved keywords, case insensitive
            | EOF -- Used by parser to denote EOF (not a VHDL lexical element)
 ```
 
-### Keywords
+## Keywords
 There are a limited number of reserved words (or keywords) that need to be implemented.
 Keywords are case insensitive.
 
-#### Sanity Tests
+### Sanity Tests
 There are two tests for each keyword (inputted on their own):
 * Completely lower case
 * Completely upper case
 
-#### Extensive Testing
+### Extensive Testing
 TODO: Not yet mapped out
 
-#### Implementation
+### Implementation
 | Keyword | Sanity Test | Extensive Test |
 | :------ | :---------: | :------------: |
 | `Abs`           | [x] | [ ] |
@@ -109,17 +107,17 @@ TODO: Not yet mapped out
 | `With`          | [x] | [ ] |
 | `Xor`           | [x] | [ ] |
 
-### Operator
+## Operator
 There are a limited number of operators that need to be implemented.
 
-#### Sanity Tests
+### Sanity Tests
 There is a single test for each operator.
 This test consists of the operator on its own in the input string.
 
-#### Extensive Testing
+### Extensive Testing
 TODO: Not yet mapped out
 
-#### Implementation
+### Implementation
 | Operator | Sanity Test | Extensive Test |
 | :------- | :---------: | :------------: |
 | `=>` | [x] | [ ] |
@@ -146,23 +144,23 @@ TODO: Not yet mapped out
 | `>`  | [x] | [ ] |
 | `|`  | [x] | [ ] |
 
-### Identifier
+## Identifier
 Identifiers are a combination of letters and numbers that represent names.
 An identifier matches the regex pattern `[a-zA-Z](_?[a-zA-Z0-9])*`.
 
-#### Sanity Tests
+### Sanity Tests
 There is a randomised test for sanity.
 It creates a random valid identifier within some length range.
 This random identifier is input alone into the lexer, 100 times.
 
-#### Extensive Testing
+### Extensive Testing
 TODO: Not yet mapped out
 
-#### Implementation
+### Implementation
 * Sanity Test: [x]
 * Extensive Test: [ ]
 
-### Literals
+## Literals
 There are a number of different literals that exist in VHDL:
 * Based value
 * Decimal value
@@ -182,7 +180,7 @@ Note that the `Universal` values are converted from the actual literal types:
 * Based value
 * Decimal value
 
-#### Sanity Tests
+### Sanity Tests
 There are randomised tests for several different cases.
 These tests consist of the randomly generated literals on their own as an input.
 Each test case is run 100 times with different inputs.
@@ -219,10 +217,10 @@ Each random generator test is as follows:
 * Based literal tests:
     * TODO: Not yet implemented
 
-#### Extensive Testing
+### Extensive Testing
 TODO: Not yet mapped out
 
-#### Implementation
+### Implementation
 | Literal Type | Sanity Test | Extensive Test |
 | :----------- | :---------: | :------------: |
 | Based        | [ ] | [ ] |
@@ -230,7 +228,3 @@ TODO: Not yet mapped out
 | Bit string   | [x] | [ ] |
 | String       | [x] | [ ] |
 | Character    | [x] | [ ] |
-
-## Syntax Elements
-The specification of the language includes a large number of statements which can appear in files.
-It is unlikely they will all be implemented initially, instead a subset will be prioritised.
