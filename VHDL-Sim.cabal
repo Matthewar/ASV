@@ -44,7 +44,6 @@ executable VHDL-Sim-exe
                      , VHDL-Sim
                      , array
                      , split
---  build-tools:         alex
   default-language:    Haskell2010
 
 test-suite VHDL-Sim-test

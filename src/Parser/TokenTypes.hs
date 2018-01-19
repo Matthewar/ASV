@@ -7,12 +7,22 @@ import Data.Int (Int64)
 import Data.ByteString.Char8 as ByteString
 
 -- |Token Type
-data Token = Keyword ReservedWord
-           | Operator OperatorType
-           | Identifier String
-           | Literal LitType
-           | EOF
-           deriving (Eq,Show)
+data Token =
+   -- |Any reserved word
+   -- Used to identify statements
+   Keyword ReservedWord
+   -- |Operators
+   -- Used to identify statements and in expressions
+   | Operator OperatorType
+   -- |Identifier
+   -- Names and markers
+   | Identifier String
+   -- |Literals
+   -- Values
+   | Literal LitType
+   -- |End of File marker
+   | EOF
+   deriving (Eq,Show)
 
 type WrappedToken = PosnWrapper Token
 
@@ -99,10 +109,17 @@ data ReservedWord = Abs
                   | Xor
                   deriving (Eq,Show)
 
-data LiteralBase = BinBased -- B
-                 | OctBased -- O
-                 | HexBased -- X
-                 deriving (Eq,Show,Ord)
+data LiteralBase =
+   -- |Binary base
+   -- Marked by B character
+   BinBased
+   -- |Octal base
+   -- Marked by O character
+   | OctBased
+   -- |Hexadecimal base
+   -- Marked by X character
+   | HexBased
+   deriving (Eq,Show,Ord)
 
 data LitType = Univ_Int Int64
              | Univ_Real Double
@@ -112,7 +129,7 @@ data LitType = Univ_Int Int64
              deriving (Eq,Show)
 
 data OperatorType = Arrow              -- =>
-                  | DoubleStar         -- **
+                  | DoubleStar         -- \\**
                   | VarAssign          -- :=
                   | Inequality         -- /=
                   | GreaterThanOrEqual -- >=
@@ -122,7 +139,7 @@ data OperatorType = Arrow              -- =>
                   | Apostrophe         -- '
                   | LeftParen          -- (
                   | RightParen         -- )
-                  | Star               -- *
+                  | Star               -- \\*
                   | Plus               -- +
                   | Comma              -- ,
                   | Hyphen             -- -
@@ -133,7 +150,7 @@ data OperatorType = Arrow              -- =>
                   | LessThan           -- <
                   | Equal              -- =
                   | GreaterThan        -- >
-                  | Bar                -- |
+                  | Bar                -- \\|
                   deriving (Eq)
 
 instance Show OperatorType where
