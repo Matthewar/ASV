@@ -21,15 +21,6 @@ $digit = [0-9]
 @underline_digit = "_"? $digit
 @integer = $digit @underline_digit*
 @exponent = [Ee] [\+\-]? @integer
-$binary = [01]
-@underline_binary = "_"? $binary
-@binary_value = $binary @underline_binary*
-$octal = [0-7]
-@underline_octal = "_"? $octal
-@octal_value = $octal @underline_octal*
-$hex = [0-9a-fA-F]
-@underline_hex = "_"? $hex
-@hex_value = $hex @underline_hex*
 $special_character = [\# \& \  \' \( \) \* \, \- \. \/ \: \; \< \= \> \_ \| \+]
 @special_character_w_quote = \" | $special_character
 $other_special_character = [ \! \$ \% \@ \? \[ \] \\ \^ \` \{ \} \~]
@@ -39,6 +30,52 @@ $space_character = \
 @graphic_character = @basic_graphic_character | $lower_case_letter | $other_special_character
 @compound_delimiter = "=>" | "**" | ":=" | "/=" | ">=" | "<=" | "<>"
 $delimiter = [\& \' \( \) \* \+ \, \- \. \/ \: \; \< \= \> \| \n \ ]
+-- Values
+$binary = [01]
+@underline_binary = "_"? $binary
+@binary_value = $binary @underline_binary*
+$base_three = [0-2]
+@underline_base_three = "_"? $base_three
+@base_three_value = $base_three @underline_base_three*
+$base_four = [0-3]
+@underline_base_four = "_"? $base_two
+@base_four_value = $base_two @underline_base_two*
+$base_five = [0-4]
+@underline_base_five = "_"? $base_five
+@base_five_value = $base_five @underline_base_five*
+$base_six = [0-5]
+@underline_base_six = "_"? $base_six
+@base_six_value = $base_six @underline_base_six*
+$base_seven = [0-6]
+@underline_base_seven = "_"? $base_seven
+@base_seven_value = $base_seven @underline_base_seven*
+$octal = [0-7]
+@underline_octal = "_"? $octal
+@octal_value = $octal @underline_octal*
+$base_nine = [0-8]
+@underline_base_nine = "_"? $base_nine
+@base_nine_value = $base_nine @underline_base_nine*
+$base_ten = [0-9]
+@underline_base_ten = "_"? $base_ten
+@base_ten_value = $base_ten @underline_base_ten*
+$base_eleven = [0-9aA]
+@underline_base_eleven = "_"? $base_eleven
+@base_eleven_value = $base_eleven @underline_base_eleven*
+$base_twelve = [0-9abAB]
+@underline_base_twelve = "_"? $base_twelve
+@base_twelve_value = $base_twelve @underline_base_twelve*
+$base_thirteen = [0-9a-cA-C]
+@underline_base_thirteen = "_"? $base_thirteen
+@base_thirteen_value = $base_thirteen @underline_base_thirteen*
+$base_fourteen = [0-9a-dA-D]
+@underline_base_fourteen = "_"? $base_fourteen
+@base_fourteen_value = $base_fourteen @underline_base_fourteen*
+$base_fifteen = [0-9a-eA-E]
+@underline_base_fifteen = "_"? $base_fifteen
+@base_fifteen_value = $base_fifteen @underline_base_fifteen*
+$hex = [0-9a-fA-F]
+@underline_hex = "_"? $hex
+@hex_value = $hex @underline_hex*
 
 tokens :-
 -- Keywords
@@ -170,8 +207,55 @@ tokens :-
 <0,nondelim>               ($digit | "_")+ \. ($digit | "_")+ [Ee] [\+\-]?                                                 { makeError errorDecimalLiteral }
 
 -- Valid Based
-<0,nondelim>               [0-9]+ "#" @hex_value (\. @hex_value)? "#" @exponent? { makeToken (makeBasedLiteral '#')        separator   }
-<0,nondelim>               [0-9]+ ":" @hex_value (\. @hex_value)? ":" @exponent? { makeToken (makeBasedLiteral ':')        separator   }
+<0,nondelim>               "2#"  @binary_value        (\. @binary_value)?        "#" @exponent? { makeToken (makeBasedLiteral '#' 2)   separator   }
+<0,nondelim>               "3#"  @base_three_value    (\. @base_three_value)?    "#" @exponent? { makeToken (makeBasedLiteral '#' 3)   separator   }
+<0,nondelim>               "4#"  @base_four_value     (\. @base_four_value)?     "#" @exponent? { makeToken (makeBasedLiteral '#' 4)   separator   }
+<0,nondelim>               "5#"  @base_five_value     (\. @base_five_value)?     "#" @exponent? { makeToken (makeBasedLiteral '#' 5)   separator   }
+<0,nondelim>               "6#"  @base_six_value      (\. @base_six_value)?      "#" @exponent? { makeToken (makeBasedLiteral '#' 6)   separator   }
+<0,nondelim>               "7#"  @base_seven_value    (\. @base_seven_value)?    "#" @exponent? { makeToken (makeBasedLiteral '#' 7)   separator   }
+<0,nondelim>               "8#"  @octal_value         (\. @octal_value)?         "#" @exponent? { makeToken (makeBasedLiteral '#' 8)   separator   }
+<0,nondelim>               "9#"  @base_nine_value     (\. @base_nine_value)?     "#" @exponent? { makeToken (makeBasedLiteral '#' 9)   separator   }
+<0,nondelim>               "10#" @base_ten_value      (\. @base_ten_value)?      "#" @exponent? { makeToken (makeBasedLiteral '#' 10)  separator   }
+<0,nondelim>               "11#" @base_eleven_value   (\. @base_eleven_value)?   "#" @exponent? { makeToken (makeBasedLiteral '#' 11)  separator   }
+<0,nondelim>               "12#" @base_twelve_value   (\. @base_twelve_value)?   "#" @exponent? { makeToken (makeBasedLiteral '#' 12)  separator   }
+<0,nondelim>               "13#" @base_thirteen_value (\. @base_thirteen_value)? "#" @exponent? { makeToken (makeBasedLiteral '#' 13)  separator   }
+<0,nondelim>               "14#" @base_fourteen_value (\. @base_fourteen_value)? "#" @exponent? { makeToken (makeBasedLiteral '#' 14)  separator   }
+<0,nondelim>               "15#" @base_fifteen_value  (\. @base_fifteen_value)?  "#" @exponent? { makeToken (makeBasedLiteral '#' 15)  separator   }
+<0,nondelim>               "16#" @hex_value           (\. @hex_value)?           "#" @exponent? { makeToken (makeBasedLiteral '#' 16)  separator   }
+<0,nondelim>               "2:"  @binary_value        (\. @binary_value)?        ":" @exponent? { makeToken (makeBasedLiteral ':' 2)   separator   }
+<0,nondelim>               "3:"  @base_three_value    (\. @base_three_value)?    ":" @exponent? { makeToken (makeBasedLiteral ':' 3)   separator   }
+<0,nondelim>               "4:"  @base_four_value     (\. @base_four_value)?     ":" @exponent? { makeToken (makeBasedLiteral ':' 4)   separator   }
+<0,nondelim>               "5:"  @base_five_value     (\. @base_five_value)?     ":" @exponent? { makeToken (makeBasedLiteral ':' 5)   separator   }
+<0,nondelim>               "6:"  @base_six_value      (\. @base_six_value)?      ":" @exponent? { makeToken (makeBasedLiteral ':' 6)   separator   }
+<0,nondelim>               "7:"  @base_seven_value    (\. @base_seven_value)?    ":" @exponent? { makeToken (makeBasedLiteral ':' 7)   separator   }
+<0,nondelim>               "8:"  @octal_value         (\. @octal_value)?         ":" @exponent? { makeToken (makeBasedLiteral ':' 8)   separator   }
+<0,nondelim>               "9:"  @base_nine_value     (\. @base_nine_value)?     ":" @exponent? { makeToken (makeBasedLiteral ':' 9)   separator   }
+<0,nondelim>               "10:" @base_ten_value      (\. @base_ten_value)?      ":" @exponent? { makeToken (makeBasedLiteral ':' 10)  separator   }
+<0,nondelim>               "11:" @base_eleven_value   (\. @base_eleven_value)?   ":" @exponent? { makeToken (makeBasedLiteral ':' 11)  separator   }
+<0,nondelim>               "12:" @base_twelve_value   (\. @base_twelve_value)?   ":" @exponent? { makeToken (makeBasedLiteral ':' 12)  separator   }
+<0,nondelim>               "13:" @base_thirteen_value (\. @base_thirteen_value)? ":" @exponent? { makeToken (makeBasedLiteral ':' 13)  separator   }
+<0,nondelim>               "14:" @base_fourteen_value (\. @base_fourteen_value)? ":" @exponent? { makeToken (makeBasedLiteral ':' 14)  separator   }
+<0,nondelim>               "15:" @base_fifteen_value  (\. @base_fifteen_value)?  ":" @exponent? { makeToken (makeBasedLiteral ':' 15)  separator   }
+<0,nondelim>               "16:" @hex_value           (\. @hex_value)?           ":" @exponent? { makeToken (makeBasedLiteral ':' 16)  separator   }
+
+-- Invalid based
+-- - Underscores in incorrect positions
+-- -- Underscore at the start or end of value components
+-- -- Double underscores in the centre of value components
+-- - Invalid characters
+-- -- Invalid value
+-- -- Invalid base
+-- -- Invalid exponent
+-- - Empty components of values
+-- -- Empty Value
+--<0,nondelim>               ([0-9] | "10" | "11" | "12" | "13" | "14" | "15" | "16") "#"                              "#" @exponent?    { makeError errorBasedLiteral_ValueEmpty }
+--<0,nondelim>               ([0-9] | "10" | "11" | "12" | "13" | "14" | "15" | "16") ":"                              ":" @exponent?    { makeError errorBasedLiteral_ValueEmpty }
+-- -- Missing Base
+--<0,nondelim>                                                                        "#" @hex_value (\. @hex_value)?  "#" @exponent?    { makeError errorBasedLiteral_BaseEmpty }
+--<0,nondelim>                                                                        ":" @hex_value (\. @hex_value)?  ":" @exponent?    { makeError errorBasedLiteral_BaseEmpty }
+-- -- Missing Exponent
+--<0,nondelim>               ([0-9] | "10" | "11" | "12" | "13" | "14" | "15" | "16") "#" @hex_value (\. @hex_value)?  "#" [Ee] [\+\-]?  { makeError errorBasedLiteral_ExponentEmpty }
+--<0,nondelim>               ([0-9] | "10" | "11" | "12" | "13" | "14" | "15" | "16") ":" @hex_value (\. @hex_value)?  ":" [Ee] [\+\-]?  { makeError errorBasedLiteral_ExponentEmpty }
 
 -- Valid Str-esque types
 <0,nondelim>               \' (@graphic_character | \") \'                       { makeToken makeCharLiteral               separator   }

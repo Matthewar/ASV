@@ -46,8 +46,33 @@ errorDecimalLiteral extractedStr =
    Left $ LexErr_DecimalLiteral_InvalidFormat extractedStr
 
 -- ?? Needs recoding
-makeBasedLiteral :: Char -> CreateToken
-makeBasedLiteral separator basedStr = do
+makeBasedLiteral :: Char -> Int -> CreateToken
+makeBasedLiteral separator base basedStr = do
+   let formattedStr = filter (\char -> char /= '_') basedStr
+       (base,value,exponent) = case splitOn [separator] formattedStr of
+         (base:value:('E':exponent):[]) -> return (base,value,exponent)
+         (base:value:('e':exponent):[]) -> return (base,value,exponent)
+         (base:value:[]) -> return (base,value,"0")
+       baseInt = read base
+       exponentInt = read exponent
+       exponentValue = base ^^ exponentInt
+       isReal = elem '.' formattedStr
+
+   where convertUnits ans _ [] = ans
+         convertUnits curAns iter (unit:units) =
+            let multiplier = base ^^ iter
+                unitVal = read [unit]
+                ans = curAns + (unitVal * multiplier)
+            in convertUnits ans (iter+1) units
+         convertDecimals ans _ [] = ans
+         convertDecimals curAns iter (dec:decs) =
+            let multiplier = base ^^ iter
+                decVal = read [dec]
+                ans = curAns + (decVal * multiplier)
+            in convertDecimals ans (iter-1) decs
+
+
+
    (base,value,exponent) <- case splitOn [separator] basedStr of
       (base:value:('E':exponent):[]) -> return (base,value,exponent)
       (base:value:"":[]) -> return (base,value,"0")
