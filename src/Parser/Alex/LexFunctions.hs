@@ -45,62 +45,40 @@ errorDecimalLiteral :: CreateToken
 errorDecimalLiteral extractedStr =
    Left $ LexErr_DecimalLiteral_InvalidFormat extractedStr
 
--- ?? Needs recoding
-makeBasedLiteral :: Char -> Int -> CreateToken
-makeBasedLiteral separator base basedStr = do
+makeBasedLiteral :: Char -> Double -> CreateToken
+makeBasedLiteral separator base basedStr =
    let formattedStr = filter (\char -> char /= '_') basedStr
-       (base,value,exponent) = case splitOn [separator] formattedStr of
-         (base:value:('E':exponent):[]) -> return (base,value,exponent)
-         (base:value:('e':exponent):[]) -> return (base,value,exponent)
-         (base:value:[]) -> return (base,value,"0")
-       baseInt = read base
+       (value,exponent) = case splitOn [separator] formattedStr of
+         (_:value:('E':exponent):[]) -> (value,exponent)
+         (_:value:('e':exponent):[]) -> (value,exponent)
+         (_:value:[]) -> (value,"0")
        exponentInt = read exponent
-       exponentValue = base ^^ exponentInt
-       isReal = elem '.' formattedStr
-
+       exponentValue =  base ** exponentInt
+       convertedValue = case splitOn "." value of
+         (unitStr:decStr:[]) -> convertUnits' unitStr + convertDecimals' decStr
+         (unitStr:[]) -> convertUnits' unitStr
+       totalValue = convertedValue * exponentValue
+       convertToLiteralType =
+         if floor totalValue == ceiling totalValue then Univ_Int . floor
+         else Univ_Real
+   in totalValue
+      & convertToLiteralType
+      & Literal -- ?? Check for overflow error
+      & return
    where convertUnits ans _ [] = ans
          convertUnits curAns iter (unit:units) =
             let multiplier = base ^^ iter
                 unitVal = read [unit]
                 ans = curAns + (unitVal * multiplier)
             in convertUnits ans (iter+1) units
+         convertUnits' = convertUnits 0.0 0
          convertDecimals ans _ [] = ans
          convertDecimals curAns iter (dec:decs) =
             let multiplier = base ^^ iter
                 decVal = read [dec]
                 ans = curAns + (decVal * multiplier)
             in convertDecimals ans (iter-1) decs
-
-
-
-   (base,value,exponent) <- case splitOn [separator] basedStr of
-      (base:value:('E':exponent):[]) -> return (base,value,exponent)
-      (base:value:"":[]) -> return (base,value,"0")
-      _ -> Left $ LexErr_BasedLiteral_InvalidValue basedStr -- ?? This error is incorrect
-   baseInt <- return $ read base
-   exponentInt <- return $ read exponent
-   let convertBasedUnits ans iter (unit:units) =
-         (read [unit]) * (baseInt ** iter)
-         & \currentDigitWeight -> currentDigitWeight + ans
-         & \newAns -> convertBasedUnits newAns (iter+1) units
-       convertBasedUnits ans _ [] = ans
-       convertBasedDecimals ans iter (decimal:decimals) =
-         (read [decimal]) * (baseInt ** iter)
-         & \currentDigitWeight -> currentDigitWeight + ans
-         & \newAns -> convertBasedDecimals newAns (iter-1) decimals
-       convertBasedDecimals ans _ [] = ans
-       convertBasedFloat number =
-         case splitOn "." number of
-            (units:decimals:[]) -> (convertBasedUnits 0 0 $ reverse units) + (convertBasedDecimals 0 (-1) decimals)
-            (units:[]) -> convertBasedUnits 0 0 $ reverse units
-   if elem baseInt [2..16] then
-      convertBasedFloat value
-      & \numericValue -> numericValue * (baseInt ^ exponentInt)
---      & Decimal
-      & Univ_Real
-      & Literal
-      & return
-   else Left $ LexErr_BasedLiteral_InvalidBaseValue (floor baseInt) basedStr
+         convertDecimals' = convertDecimals 0.0 (-1)
 
 makeCharLiteral :: CreateToken
 makeCharLiteral ('\'':char:'\'':[]) =
