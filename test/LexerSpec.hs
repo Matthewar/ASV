@@ -559,19 +559,25 @@ genExponent = do
    expVal <- genInteger 0 1
    return $ (expChar:expSign) ++ expVal
 
-generateBasedStr :: Char -> QC.Gen String -- ?? Missing "."
+generateBasedStr :: Char -> QC.Gen String
 generateBasedStr container = do
    base <- QC.elements [2..16]
    let baseChars = show base
    basedStr <- generateExtendedBasedStr base
+   optionalFractional <- QC.elements [True,False]
    expStr <- genExponent
-   return $ baseChars ++ [container] ++ basedStr ++ [container] ++ expStr
+   let fullBasedStr =
+         if optionalFractional then
+            basedStr ++ "." ++ basedStr
+         else
+            basedStr
+   return $ baseChars ++ [container] ++ fullBasedStr ++ [container] ++ expStr
 
 generateExtendedBasedStr :: Int -> QC.Gen String
 generateExtendedBasedStr base = do
    let allowedChars = charMap !! (base-2)
    firstChar <- QC.elements allowedChars
-   lengthStr <- QC.elements [0..50]
+   lengthStr <- QC.elements [0..25]
    otherChars <- replicateM lengthStr $ generateUnderscoreExtendedChar allowedChars
    return $ [firstChar] ++ (concat otherChars)
    where charMap =
