@@ -14,7 +14,9 @@ import Data.Function ((&))
 import qualified Data.Map.Strict as MapS
 import Data.List.Split (splitOneOf,splitOn)
 import qualified Data.ByteString.Char8 as ByteString (pack)
-import Data.Char (toUpper)
+import Data.Char (toUpper,digitToInt)
+import Data.List (findIndex)
+import Numeric (readInt)
 
 tests :: TestTree
 tests = testGroup "Lexer Tests"
@@ -439,59 +441,54 @@ singleBasedLiterals_cont container =
             (base:val:('e':exp):[]) -> (base,val,exp)
             (base:val:"":[]) -> (base,val,"0")
           baseVal = read baseChars
-          expVal = read exponentStr
-          convertUnits ans _ [] = ans
-          convertUnits curAns iter (unit:units) =
-            let multiplier = baseVal ^^ iter
-                unitVal = hexRead unit
-                ans = curAns + (unitVal * multiplier)
-            in convertUnits ans (iter+1) units
-          convertUnits' units = convertUnits 0.0 0 $ reverse units
-          convertDecimals ans _ [] = ans
-          convertDecimals curAns iter (dec:decs) =
-            let multiplier = baseVal ^^ iter
-                decVal = hexRead dec
-                ans = curAns + (decVal * multiplier)
-            in convertDecimals ans (iter-1) decs
-          convertDecimals' = convertDecimals 0.0 (-1)
-          convertedValue = case splitOn "." valueStr of
-            (unitStr:decStr:[]) -> convertUnits' unitStr + convertDecimals' decStr
-            (unitStr:[]) -> convertUnits' unitStr
-          totalValue = convertedValue * expVal
+          shiftedValue = case splitOn "." valueStr of
+                           (units:decimals:[]) -> units ++ decimals
+                           (units:[]) -> units
+          expVal = let exponentAdjust = case findIndex (\char -> char == '.') valueStr of
+                                             Just index -> (length valueStr) - (index+1)
+                                             Nothing -> 0
+                       expStrNoPlus = case exponentStr of
+                                       ('+':val) -> val
+                                       val -> val
+                   in (read expStrNoPlus) - exponentAdjust
+          convertedValue = (fromIntegral $ fromBase (toInteger $ floor baseVal) shiftedValue) * (baseVal ^^ expVal)
           expectedOutput =
-            if isInfinite totalValue then
+            if isInfinite convertedValue then
                let errorType =
-                     if elem '.' valueStr then
+                     if elem '.' filteredBasedStr then
                         LexErr_UniversalReal_OutOfBounds
                      else
                         LexErr_UniversalInt_OutOfBounds
                in Left $ PosnWrapper { getPos = AlexPn 0 1 0, unPos = errorType basedStr }
             else
                Right $
-                  [ Literal $ totalValue
-                  & if floor totalValue == ceiling totalValue then Univ_Int . floor else Univ_Real
+                  [ Literal $ convertedValue
+                  & if floor convertedValue == ceiling convertedValue then Univ_Int . floor else Univ_Real
                   ]
       in lexRun == expectedOutput
-   where hexRead chr = hexMap MapS.! toUpper chr
-         hexMap =
-            [ ('0',0.0)
-            , ('1',1.0)
-            , ('2',2.0)
-            , ('3',3.0)
-            , ('4',4.0)
-            , ('5',5.0)
-            , ('6',6.0)
-            , ('7',7.0)
-            , ('8',8.0)
-            , ('9',9.0)
-            , ('A',10.0)
-            , ('B',11.0)
-            , ('C',12.0)
-            , ('D',13.0)
-            , ('E',14.0)
-            , ('F',15.0)
-            ]
-            & MapS.fromList
+   where fromBase :: Integer -> String -> Integer
+         fromBase base = fst . head . readInt base ((<base).digitToInteger) digitToInt
+         digitToInteger :: Char -> Integer
+         digitToInteger chr = let charMap =
+                                    [ ('0',0)
+                                    , ('1',1)
+                                    , ('2',2)
+                                    , ('3',3)
+                                    , ('4',4)
+                                    , ('5',5)
+                                    , ('6',6)
+                                    , ('7',7)
+                                    , ('8',8)
+                                    , ('9',9)
+                                    , ('A',10)
+                                    , ('B',11)
+                                    , ('C',12)
+                                    , ('D',13)
+                                    , ('E',14)
+                                    , ('F',15)
+                                    ]
+                                    & MapS.fromList
+                              in charMap MapS.! (toUpper chr)
 
 singleDecimalLiterals :: TestTree
 singleDecimalLiterals = testGroup "Single decimal values"

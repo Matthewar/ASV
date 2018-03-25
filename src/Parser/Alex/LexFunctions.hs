@@ -7,10 +7,12 @@ import Parser.ErrorTypes
 
 import qualified Data.ByteString.Char8 as ByteString (pack)
 import Data.List.Split (splitOn)
+import Data.List (findIndex)
 import Text.Read (readMaybe)
 import Data.Function ((&))
 import qualified Data.Map.Strict as MapS
-import Data.Char (toUpper)
+import Data.Char (toUpper,digitToInt)
+import Numeric (readInt)
 
 type CreateToken = String -> Either ParserError Token
 
@@ -54,16 +56,21 @@ makeBasedLiteral separator base basedStr =
          (_:val:('E':exp):[]) -> (val,exp)
          (_:val:('e':exp):[]) -> (val,exp)
          (_:val:"":[]) -> (val,"0")
-       exponentInt = read exponent
-       exponentValue =  base ** exponentInt
-       convertedValue = case splitOn "." value of
-         (unitStr:decStr:[]) -> convertUnits' unitStr + convertDecimals' decStr
-         (unitStr:[]) -> convertUnits' unitStr
-       totalValue = convertedValue * exponentValue
+       shiftedValue = case splitOn "." value of
+                        (units:decimals:[]) -> units ++ decimals
+                        (units:[]) -> units
+       exponentInt = let exponentAdjust = case findIndex (\char -> char == '.') value of
+                                             Just index -> (length value) - (index+1)
+                                             Nothing -> 0
+                         expStr = case exponent of
+                                    ('+':val) -> val
+                                    val -> val
+                     in (read expStr) - exponentAdjust
+       convertedValue = (fromIntegral $ fromBase (toInteger $ floor base) shiftedValue) * (base ^^ exponentInt)
        convertToLiteralType =
-         if floor totalValue == ceiling totalValue then Univ_Int . floor
+         if floor convertedValue == ceiling convertedValue then Univ_Int . floor
          else Univ_Real
-   in if isInfinite totalValue then
+   in if isInfinite convertedValue then
          let errorType =
                if elem '.' value then
                   LexErr_UniversalReal_OutOfBounds
@@ -71,44 +78,33 @@ makeBasedLiteral separator base basedStr =
                   LexErr_UniversalInt_OutOfBounds
          in Left $ errorType basedStr
       else
-         totalValue
+         convertedValue
          & convertToLiteralType
          & Literal
          & return
-   where convertUnits ans _ [] = ans
-         convertUnits curAns iter (unit:units) =
-            let multiplier = base ^^ iter
-                unitVal = hexRead unit
-                ans = curAns + (unitVal * multiplier)
-            in convertUnits ans (iter+1) units
-         convertUnits' units = convertUnits 0.0 0 $ reverse units
-         convertDecimals ans _ [] = ans
-         convertDecimals curAns iter (dec:decs) =
-            let multiplier = base ^^ iter
-                decVal = hexRead dec
-                ans = curAns + (decVal * multiplier)
-            in convertDecimals ans (iter-1) decs
-         convertDecimals' = convertDecimals 0.0 (-1)
-         hexRead chr = hexMap MapS.! toUpper chr
-         hexMap =
-            [ ('0',0.0)
-            , ('1',1.0)
-            , ('2',2.0)
-            , ('3',3.0)
-            , ('4',4.0)
-            , ('5',5.0)
-            , ('6',6.0)
-            , ('7',7.0)
-            , ('8',8.0)
-            , ('9',9.0)
-            , ('A',10.0)
-            , ('B',11.0)
-            , ('C',12.0)
-            , ('D',13.0)
-            , ('E',14.0)
-            , ('F',15.0)
-            ]
-            & MapS.fromList
+   where fromBase :: Integer -> String -> Integer
+         fromBase base = fst . head . readInt base ((<base).digitToInteger) digitToInt
+         digitToInteger :: Char -> Integer
+         digitToInteger chr = let charMap =
+                                    [ ('0',0)
+                                    , ('1',1)
+                                    , ('2',2)
+                                    , ('3',3)
+                                    , ('4',4)
+                                    , ('5',5)
+                                    , ('6',6)
+                                    , ('7',7)
+                                    , ('8',8)
+                                    , ('9',9)
+                                    , ('A',10)
+                                    , ('B',11)
+                                    , ('C',12)
+                                    , ('D',13)
+                                    , ('E',14)
+                                    , ('F',15)
+                                    ]
+                                    & MapS.fromList
+                              in charMap MapS.! (toUpper chr)
 
 makeCharLiteral :: CreateToken
 makeCharLiteral ('\'':char:'\'':[]) =
