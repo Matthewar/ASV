@@ -53,7 +53,7 @@ makeBasedLiteral separator base basedStr =
        (value,exponent) = case splitOn [separator] formattedStr of
          (_:val:('E':exp):[]) -> (val,exp)
          (_:val:('e':exp):[]) -> (val,exp)
-         (_:val:[]) -> (val,"0")
+         (_:val:"":[]) -> (val,"0")
        exponentInt = read exponent
        exponentValue =  base ** exponentInt
        convertedValue = case splitOn "." value of
@@ -81,7 +81,7 @@ makeBasedLiteral separator base basedStr =
                 unitVal = hexRead unit
                 ans = curAns + (unitVal * multiplier)
             in convertUnits ans (iter+1) units
-         convertUnits' = convertUnits 0.0 0
+         convertUnits' units = convertUnits 0.0 0 $ reverse units
          convertDecimals ans _ [] = ans
          convertDecimals curAns iter (dec:decs) =
             let multiplier = base ^^ iter

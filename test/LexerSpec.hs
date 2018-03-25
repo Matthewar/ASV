@@ -437,7 +437,7 @@ singleBasedLiterals_cont container =
           (baseChars,valueStr,exponentStr) = case splitOn [container] filteredBasedStr of
             (base:val:('E':exp):[]) -> (base,val,exp)
             (base:val:('e':exp):[]) -> (base,val,exp)
-            (base:val:[]) -> (base,val,"0")
+            (base:val:"":[]) -> (base,val,"0")
           baseVal = read baseChars
           expVal = read exponentStr
           convertUnits ans _ [] = ans
@@ -446,7 +446,7 @@ singleBasedLiterals_cont container =
                 unitVal = hexRead unit
                 ans = curAns + (unitVal * multiplier)
             in convertUnits ans (iter+1) units
-          convertUnits' = convertUnits 0.0 0
+          convertUnits' units = convertUnits 0.0 0 $ reverse units
           convertDecimals ans _ [] = ans
           convertDecimals curAns iter (dec:decs) =
             let multiplier = baseVal ^^ iter
