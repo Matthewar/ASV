@@ -9,6 +9,8 @@ import qualified Data.ByteString.Char8 as ByteString (pack)
 import Data.List.Split (splitOn)
 import Text.Read (readMaybe)
 import Data.Function ((&))
+import qualified Data.Map.Strict as MapS
+import Data.Char (toUpper)
 
 type CreateToken = String -> Either ParserError Token
 
@@ -49,9 +51,9 @@ makeBasedLiteral :: Char -> Double -> CreateToken
 makeBasedLiteral separator base basedStr =
    let formattedStr = filter (\char -> char /= '_') basedStr
        (value,exponent) = case splitOn [separator] formattedStr of
-         (_:value:('E':exponent):[]) -> (value,exponent)
-         (_:value:('e':exponent):[]) -> (value,exponent)
-         (_:value:[]) -> (value,"0")
+         (_:val:('E':exp):[]) -> (val,exp)
+         (_:val:('e':exp):[]) -> (val,exp)
+         (_:val:[]) -> (val,"0")
        exponentInt = read exponent
        exponentValue =  base ** exponentInt
        convertedValue = case splitOn "." value of
@@ -61,24 +63,52 @@ makeBasedLiteral separator base basedStr =
        convertToLiteralType =
          if floor totalValue == ceiling totalValue then Univ_Int . floor
          else Univ_Real
-   in totalValue
-      & convertToLiteralType
-      & Literal -- ?? Check for overflow error
-      & return
+   in if isInfinite totalValue then
+         let errorType =
+               if elem '.' value then
+                  LexErr_UniversalReal_OutOfBounds
+               else
+                  LexErr_UniversalInt_OutOfBounds
+         in Left $ errorType basedStr
+      else
+         totalValue
+         & convertToLiteralType
+         & Literal
+         & return
    where convertUnits ans _ [] = ans
          convertUnits curAns iter (unit:units) =
             let multiplier = base ^^ iter
-                unitVal = read [unit]
+                unitVal = hexRead unit
                 ans = curAns + (unitVal * multiplier)
             in convertUnits ans (iter+1) units
          convertUnits' = convertUnits 0.0 0
          convertDecimals ans _ [] = ans
          convertDecimals curAns iter (dec:decs) =
             let multiplier = base ^^ iter
-                decVal = read [dec]
+                decVal = hexRead dec
                 ans = curAns + (decVal * multiplier)
             in convertDecimals ans (iter-1) decs
          convertDecimals' = convertDecimals 0.0 (-1)
+         hexRead chr = hexMap MapS.! toUpper chr
+         hexMap =
+            [ ('0',0.0)
+            , ('1',1.0)
+            , ('2',2.0)
+            , ('3',3.0)
+            , ('4',4.0)
+            , ('5',5.0)
+            , ('6',6.0)
+            , ('7',7.0)
+            , ('8',8.0)
+            , ('9',9.0)
+            , ('A',10.0)
+            , ('B',11.0)
+            , ('C',12.0)
+            , ('D',13.0)
+            , ('E',14.0)
+            , ('F',15.0)
+            ]
+            & MapS.fromList
 
 makeCharLiteral :: CreateToken
 makeCharLiteral ('\'':char:'\'':[]) =

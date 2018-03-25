@@ -12,8 +12,9 @@ import qualified Test.Tasty.QuickCheck as QC
 import Control.Monad
 import Data.Function ((&))
 import qualified Data.Map.Strict as MapS
-import Data.List.Split (splitOneOf)
+import Data.List.Split (splitOneOf,splitOn)
 import qualified Data.ByteString.Char8 as ByteString (pack)
+import Data.Char (toUpper)
 
 tests :: TestTree
 tests = testGroup "Lexer Tests"
@@ -415,12 +416,82 @@ singleOperators = testGroup "Single operators"
 
 singleLiterals :: TestTree
 singleLiterals = testGroup "Single literals"
---   [ singleBasedLiterals
-   [ singleDecimalLiterals
+   [ singleBasedLiterals
+   , singleDecimalLiterals
    , singleBitStrLiterals
    , singleStrLiterals
    , singleCharLiterals
    ]
+
+singleBasedLiterals :: TestTree
+singleBasedLiterals = testGroup "Single based values"
+   [ QC.testProperty "with # containers" $ singleBasedLiterals_cont '#'
+   , QC.testProperty "with : containers" $ singleBasedLiterals_cont ':'
+   ]
+
+singleBasedLiterals_cont :: Char -> QC.Property
+singleBasedLiterals_cont container =
+   QC.forAll (generateBasedStr container) $ \basedStr ->
+      let lexRun = lexerList basedStr
+          filteredBasedStr = filter (\char -> char /= '_') basedStr
+          (baseChars,valueStr,exponentStr) = case splitOn [container] filteredBasedStr of
+            (base:val:('E':exp):[]) -> (base,val,exp)
+            (base:val:('e':exp):[]) -> (base,val,exp)
+            (base:val:[]) -> (base,val,"0")
+          baseVal = read baseChars
+          expVal = read exponentStr
+          convertUnits ans _ [] = ans
+          convertUnits curAns iter (unit:units) =
+            let multiplier = baseVal ^^ iter
+                unitVal = hexRead unit
+                ans = curAns + (unitVal * multiplier)
+            in convertUnits ans (iter+1) units
+          convertUnits' = convertUnits 0.0 0
+          convertDecimals ans _ [] = ans
+          convertDecimals curAns iter (dec:decs) =
+            let multiplier = baseVal ^^ iter
+                decVal = hexRead dec
+                ans = curAns + (decVal * multiplier)
+            in convertDecimals ans (iter-1) decs
+          convertDecimals' = convertDecimals 0.0 (-1)
+          convertedValue = case splitOn "." valueStr of
+            (unitStr:decStr:[]) -> convertUnits' unitStr + convertDecimals' decStr
+            (unitStr:[]) -> convertUnits' unitStr
+          totalValue = convertedValue * expVal
+          expectedOutput =
+            if isInfinite totalValue then
+               let errorType =
+                     if elem '.' valueStr then
+                        LexErr_UniversalReal_OutOfBounds
+                     else
+                        LexErr_UniversalInt_OutOfBounds
+               in Left $ PosnWrapper { getPos = AlexPn 0 1 0, unPos = errorType basedStr }
+            else
+               Right $
+                  [ Literal $ totalValue
+                  & if floor totalValue == ceiling totalValue then Univ_Int . floor else Univ_Real
+                  ]
+      in lexRun == expectedOutput
+   where hexRead chr = hexMap MapS.! toUpper chr
+         hexMap =
+            [ ('0',0.0)
+            , ('1',1.0)
+            , ('2',2.0)
+            , ('3',3.0)
+            , ('4',4.0)
+            , ('5',5.0)
+            , ('6',6.0)
+            , ('7',7.0)
+            , ('8',8.0)
+            , ('9',9.0)
+            , ('A',10.0)
+            , ('B',11.0)
+            , ('C',12.0)
+            , ('D',13.0)
+            , ('E',14.0)
+            , ('F',15.0)
+            ]
+            & MapS.fromList
 
 singleDecimalLiterals :: TestTree
 singleDecimalLiterals = testGroup "Single decimal values"
@@ -487,6 +558,39 @@ genExponent = do
    expSign <- QC.elements ["+","-",""]
    expVal <- genInteger 0 1
    return $ (expChar:expSign) ++ expVal
+
+generateBasedStr :: Char -> QC.Gen String -- ?? Missing "."
+generateBasedStr container = do
+   base <- QC.elements [2..16]
+   let baseChars = show base
+   basedStr <- generateExtendedBasedStr base
+   expStr <- genExponent
+   return $ baseChars ++ [container] ++ basedStr ++ [container] ++ expStr
+
+generateExtendedBasedStr :: Int -> QC.Gen String
+generateExtendedBasedStr base = do
+   let allowedChars = charMap !! (base-2)
+   firstChar <- QC.elements allowedChars
+   lengthStr <- QC.elements [0..50]
+   otherChars <- replicateM lengthStr $ generateUnderscoreExtendedChar allowedChars
+   return $ [firstChar] ++ (concat otherChars)
+   where charMap =
+            [ "01"
+            , ['0'..'2']
+            , ['0'..'3']
+            , ['0'..'4']
+            , ['0'..'5']
+            , ['0'..'6']
+            , ['0'..'7']
+            , ['0'..'8']
+            , ['0'..'9']
+            , ['0'..'9'] ++ ['a'] ++ ['A']
+            , ['0'..'9'] ++ ['a'..'b'] ++ ['A'..'B']
+            , ['0'..'9'] ++ ['a'..'c'] ++ ['A'..'C']
+            , ['0'..'9'] ++ ['a'..'d'] ++ ['A'..'D']
+            , ['0'..'9'] ++ ['a'..'e'] ++ ['A'..'E']
+            , ['0'..'9'] ++ ['a'..'f'] ++ ['A'..'F']
+            ]
 
 generateBitStr :: Char -> QC.Gen String
 generateBitStr container = do
