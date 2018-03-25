@@ -1,4 +1,10 @@
--- Adapted from Alex default wrapper file
+{-|
+   Module      : Parser.Alex.BaseTypes
+   Description : Alex specific lexer types
+
+   Adapted from Alex default wrapper file.
+   See [Alex](https://www.haskell.org/alex/)
+|-}
 module Parser.Alex.BaseTypes where
 
 import Data.Word (Word8)

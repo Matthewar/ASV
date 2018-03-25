@@ -1,4 +1,10 @@
--- Adapted from Alex default wrapper file
+{-|
+   Module      : Parser.Alex.Functions
+   Description : Alex specific lexer functions
+
+   Adapted from Alex default wrapper file.
+   See [Alex](https://www.haskell.org/alex/)
+|-}
 module Parser.Alex.Functions where
 
 import Data.Char (ord)

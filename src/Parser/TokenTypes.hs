@@ -24,8 +24,10 @@ data Token =
    | EOF
    deriving (Eq,Show)
 
+-- |Token with position information
 type WrappedToken = PosnWrapper Token
 
+-- |All keywords
 data ReservedWord = Abs
                   | Access
                   | After
@@ -109,6 +111,7 @@ data ReservedWord = Abs
                   | Xor
                   deriving (Eq,Show)
 
+-- |Base of bit string literals
 data LiteralBase =
    -- |Binary base
    -- Marked by B character
@@ -121,36 +124,46 @@ data LiteralBase =
    | HexBased
    deriving (Eq,Show,Ord)
 
-data LitType = Univ_Int Int64
-             | Univ_Real Double
-             | BitStr LiteralBase ByteString
-             | Str String
-             | Character Char
-             deriving (Eq,Show)
+-- |Literal token types
+data LitType =
+   -- |Universal Integer
+   -- Uses 'Int64' so bounded by 64 bits
+   Univ_Int Int64
+   -- |Universal Real
+   -- Uses 'Double' so bounded by implementation of this
+   | Univ_Real Double
+   -- |Bit string literal
+   | BitStr LiteralBase ByteString
+   -- |String literal
+   | Str String
+   -- |Character literal
+   | Character Char
+   deriving (Eq,Show)
 
-data OperatorType = Arrow              -- =>
-                  | DoubleStar         -- \\**
-                  | VarAssign          -- :=
-                  | Inequality         -- /=
-                  | GreaterThanOrEqual -- >=
-                  | SignAssign         -- <=
-                  | Box                -- <>
-                  | Ampersand          -- &
-                  | Apostrophe         -- '
-                  | LeftParen          -- (
-                  | RightParen         -- )
-                  | Star               -- \\*
-                  | Plus               -- +
-                  | Comma              -- ,
-                  | Hyphen             -- -
-                  | Period             -- .
-                  | Slash              -- /
-                  | Colon              -- :
-                  | Semicolon          -- ;
-                  | LessThan           -- <
-                  | Equal              -- =
-                  | GreaterThan        -- >
-                  | Bar                -- \\|
+-- |Operator token types
+data OperatorType = Arrow              -- ^ =>
+                  | DoubleStar         -- ^ \\**
+                  | VarAssign          -- ^ :=
+                  | Inequality         -- ^ /=
+                  | GreaterThanOrEqual -- ^ >=
+                  | SignAssign         -- ^ <=
+                  | Box                -- ^ <>
+                  | Ampersand          -- ^ &
+                  | Apostrophe         -- ^ '
+                  | LeftParen          -- ^ (
+                  | RightParen         -- ^ )
+                  | Star               -- ^ \\*
+                  | Plus               -- ^ +
+                  | Comma              -- ^ ,
+                  | Hyphen             -- ^ -
+                  | Period             -- ^ .
+                  | Slash              -- ^ /
+                  | Colon              -- ^ :
+                  | Semicolon          -- ^ ;
+                  | LessThan           -- ^ <
+                  | Equal              -- ^ =
+                  | GreaterThan        -- ^ >
+                  | Bar                -- ^ \\|
                   deriving (Eq)
 
 instance Show OperatorType where

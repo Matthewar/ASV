@@ -1,3 +1,7 @@
+{-|
+   Module      : Parser.Happy.ParseFunctions
+   Description : Functions that Happy will use to generate nodes
+|-}
 module Parser.Happy.ParseFunctions where
 
 import Data.Int (Int64)

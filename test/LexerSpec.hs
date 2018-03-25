@@ -18,10 +18,13 @@ import Data.Char (toUpper,digitToInt)
 import Data.List (findIndex)
 import Numeric (readInt)
 
+-- |All lexer tests
 tests :: TestTree
 tests = testGroup "Lexer Tests"
    [singleWords]
 
+-- |Single word lexer tests
+-- Consist of a string that will lex to a single token
 singleWords :: TestTree
 singleWords = testGroup "Single word tests for lexer"
    [ singleKeywords
@@ -29,11 +32,15 @@ singleWords = testGroup "Single word tests for lexer"
    , singleLiterals
    , singleIdentifiers ]
 
+-- |Single keyword lexer tests
+-- A single string that lexes to a keyword token
 singleKeywords :: TestTree
 singleKeywords = testGroup "Single keyword tests for lexer"
    [ singleKeywordsUpper
    , singleKeywordsLower ]
 
+-- |Single upper case keyword lexer unit tests
+-- Unit tests with single upper case strings that lex to keyword tokens
 singleKeywordsUpper :: TestTree
 singleKeywordsUpper = testGroup "Single upper case keywords"
    [ testCase "\"ABS\" == Keyword Abs" $
@@ -200,6 +207,8 @@ singleKeywordsUpper = testGroup "Single upper case keywords"
          lexerList "XOR" @?= Right [Keyword Xor]
    ]
 
+-- |Single lower case keyword lexer unit tests
+-- Unit tests with single lower case strings that lex to keyword tokens
 singleKeywordsLower :: TestTree
 singleKeywordsLower = testGroup "Single lower case keywords"
    [ testCase "\"abs\" == Keyword Abs" $
@@ -366,6 +375,8 @@ singleKeywordsLower = testGroup "Single lower case keywords"
          lexerList "xor" @?= Right [Keyword Xor]
    ]
 
+-- |Single operator lexer unit tests
+-- Unit tests with single strings that lex to operator tokens
 singleOperators :: TestTree
 singleOperators = testGroup "Single operators"
    [ testCase "\"=>\" == Arrow" $
@@ -416,6 +427,8 @@ singleOperators = testGroup "Single operators"
          lexerList "|" @?= Right [Operator Bar]
    ]
 
+-- |Single literal lexer tests
+-- A single string that lexes to a literal token
 singleLiterals :: TestTree
 singleLiterals = testGroup "Single literals"
    [ singleBasedLiterals
@@ -425,12 +438,16 @@ singleLiterals = testGroup "Single literals"
    , singleCharLiterals
    ]
 
+-- |Single based literal lexer tests
+-- A single string that lexes to a literal token containing a based literal
+-- Has tests for both container types
 singleBasedLiterals :: TestTree
 singleBasedLiterals = testGroup "Single based values"
    [ QC.testProperty "with # containers" $ singleBasedLiterals_cont '#'
    , QC.testProperty "with : containers" $ singleBasedLiterals_cont ':'
    ]
 
+-- |Generator for a single based literal with specified containers
 singleBasedLiterals_cont :: Char -> QC.Property
 singleBasedLiterals_cont container =
    QC.forAll (generateBasedStr container) $ \basedStr ->
@@ -490,6 +507,10 @@ singleBasedLiterals_cont container =
                                     & MapS.fromList
                               in charMap MapS.! (toUpper chr)
 
+-- |Single decimal literal lexer tests
+-- A single string that lexes to a literal token containing a decimal literal
+-- Has tests for univeral real ('Univ_Real') and universal integer ('Univ_Int') types.
+-- Different tests for literals with and without exponents, and explicitly test zero values.
 singleDecimalLiterals :: TestTree
 singleDecimalLiterals = testGroup "Single decimal values"
    [ singleDecLit_int
@@ -499,6 +520,8 @@ singleDecimalLiterals = testGroup "Single decimal values"
    , singleDecLit_zeroes
    ]
 
+-- |Decimal literal token test type
+-- Tests the universal integer ('Univ_Int') type without an exponent
 singleDecLit_int :: TestTree
 singleDecLit_int = QC.testProperty "Integer value without exponent" $
    let expression :: Int -> Bool
@@ -508,6 +531,8 @@ singleDecLit_int = QC.testProperty "Integer value without exponent" $
          in lexRun == expectedOutput
    in expression . abs
 
+-- |Decimal literal token test type
+-- Tests the universal real ('Univ_Real') type without an exponent
 singleDecLit_real :: TestTree
 singleDecLit_real = QC.testProperty "Real value without exponent" $
    let expression :: Double -> Bool
@@ -517,6 +542,8 @@ singleDecLit_real = QC.testProperty "Real value without exponent" $
          in lexRun == expectedOutput
    in expression . abs
 
+-- |Decimal literal token test type
+-- Tests the universal integer ('Univ_Int') type with an exponent
 singleDecLit_int_exp :: TestTree
 singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
    QC.forAll genVal $ \value ->
@@ -524,7 +551,7 @@ singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
             filter (\char -> not $ elem char "+_") value
             & splitOneOf "Ee"
             & fmap read
-          doubleValue :: Double -- ?? Probably needs changing to deal with numbers too large for double
+          doubleValue :: Double -- ?? Probably needs changing to deal with numbers too large for double, potentially use unbounded Integer instead
           doubleValue = base * 10 ** exp
           expectedValue =
             if isInfinite doubleValue then
@@ -537,12 +564,20 @@ singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
             expStr <- genExponent
             return $ intStr ++ expStr
 
+-- |Generate a VHDL specific integer
+-- > integer ::= digit { [ underline ] digit }
+-- Implemented as:
+-- > 'genInteger' ::= digit { 'genUnderscoreDigit' }
 genInteger fromLength toLength = do
    firstInt <- QC.elements ['0'..'9']
    lengthStr <- QC.elements [fromLength..toLength]
    otherInts <- replicateM lengthStr genUnderscoreDigit
    return $ [firstInt] ++ (concat otherInts)
 
+-- |Generate latter part of a VHDL specific integer
+-- > integer ::= digit { [ underline ] digit }
+-- This function generates the latter part IE
+-- > 'genUnderscoreDigit' ::= [ underline ] digit
 genUnderscoreDigit = do
    optionalUnderscore <- QC.elements [True,False]
    otherDigit <- QC.elements ['0'..'9']
@@ -550,12 +585,39 @@ genUnderscoreDigit = do
       if optionalUnderscore then ['_',otherDigit]
       else [otherDigit]
 
+-- |Generate a VHDL specific exponent
+-- > exponent ::= E [ + ] integer  | E - integer
+-- Note: case insensitive \\'E\\'
+-- Implemented as:
+-- @
+--    'genExponent' ::= exponent_marker [ exponent_sign ] 'genInteger'
+--    exponent_marker ::= E | e
+--    exponent_sign ::= + | -
+-- @
 genExponent = do
    expChar <- QC.elements "Ee"
    expSign <- QC.elements ["+","-",""]
    expVal <- genInteger 0 1
    return $ (expChar:expSign) ++ expVal
 
+-- |Generate a VHDL specific based literal
+-- @
+--    based_literal ::=
+--       base # based_integer [ . based_integer ] # [ exponent ]
+--    base ::= integer
+--    based_integer ::=
+--       extended_digit { [ underline ] extended_digit }
+--    extended_digit ::= digit | letter
+-- @
+-- Note: \\'#\\' container can instead be \\':\\'
+-- Implemented as:
+-- @
+--    'generateBasedStr' ::=
+--       base based_container 'generateExtendedBasedStr' based_container [ 'genExponent' ]
+--    base ::= HASKELL( [2..16] )
+--    based_container ::= # | :
+-- @
+-- Note: based_container must be same on both sides
 generateBasedStr :: Char -> QC.Gen String
 generateBasedStr container = do
    base <- QC.elements [2..16]
@@ -572,6 +634,23 @@ generateBasedStr container = do
             return unitBasedStr
    return $ baseChars ++ [container] ++ fullBasedStr ++ [container] ++ expStr
 
+-- |Generate latter part of a VHDL specific based literal
+-- @
+--    based_literal ::=
+--       base # based_integer [ . based_integer ] # [ exponent ]
+--    base ::= integer
+--    based_integer ::=
+--       extended_digit { [ underline ] extended_digit }
+--    extended_digit ::= digit | letter
+-- @
+-- Note: \\'#\\' container can instead be \\':\\'
+-- This function generates the latter part IE
+-- > 'generateExtendedBasedStr' ::= based_integer [ . based_integer ]
+-- Implemented as:
+-- @
+--    base_integer ::= REGEX( [0-9a-fA-F] )
+-- @
+-- Note: Relevant base restricts range of regex (only full range for hex/base16)
 generateExtendedBasedStr :: Int -> QC.Gen String
 generateExtendedBasedStr base = do
    let allowedChars = charMap !! (base-2)
@@ -597,6 +676,21 @@ generateExtendedBasedStr base = do
             , ['0'..'9'] ++ ['a'..'f'] ++ ['A'..'F']
             ]
 
+-- |Generate a VHDL specific bit string literal
+-- @
+--    bit_string_literal ::= base_specifier " bit_value "
+--    bit_value ::= extended_digit { [ underline ] extended_digit }
+--    base_specified ::= B | O | X
+-- @
+-- Note: B, O, X are case insensitive.
+--       \\'%\\' can be used as a container instead of \\'\\"\\'
+-- Implemented as:
+-- @
+--    'generateBitStr' ::= base_specifier base_container 'generateExtendedStr' base_container
+--    base_specifier ::= B | b | O | o | X | x
+--    base_container ::= " | %
+-- @
+-- Note: Base containers must match
 generateBitStr :: Char -> QC.Gen String
 generateBitStr container = do
    base <- QC.elements [BinBased,OctBased,HexBased]
@@ -610,6 +704,15 @@ generateBitStr container = do
             ]
             & MapS.fromList
 
+-- |Generate a VHDL specific bit_value
+-- Part of VHDL bit string literal
+-- > bit_value ::= extended_digit { [ underline ] extended_digit }
+-- Implemented as:
+-- @
+--    'generateExtendedStr' ::= extended_digit { 'generateUnderscoreExtendedChar' }
+--    extended_digit ::= REGEX( [0-9a-fA-F] )
+-- @
+-- Note: Relevant base restricts range of regex (only full range for hex/base16)
 generateExtendedStr :: LiteralBase -> QC.Gen String
 generateExtendedStr base = do
    let allowedChars = charMap MapS.! base
@@ -624,6 +727,15 @@ generateExtendedStr base = do
             ]
             & MapS.fromList
 
+-- |Generate latter part of VHDL specific bit_value
+-- Part of VHDL bit string literal
+-- > bit_value ::= extended_digit { [ underline ] extended_digit }
+-- Implemented as:
+-- @
+--    'generateUnderscoreExtendedChar' ::= [ _ ] extended_digit
+--    extended_digit ::= REGEX( [0-9a-fA-F] )
+-- @
+-- Note: Relevant base restricts range of regex (only full range for hex/base16)
 generateUnderscoreExtendedChar :: [Char] -> QC.Gen String
 generateUnderscoreExtendedChar allowedChars = do
    optionalUnderscore <- QC.elements [True,False]
@@ -632,6 +744,8 @@ generateUnderscoreExtendedChar allowedChars = do
       if optionalUnderscore then ['_',otherChar]
       else [otherChar]
 
+-- |Decimal literal token test type
+-- Tests the universal integer ('Univ_Real') type with an exponent
 singleDecLit_real_exp :: TestTree
 singleDecLit_real_exp = QC.testProperty "Real value with exponent" $
    QC.forAll genVal $ \value ->
@@ -643,6 +757,10 @@ singleDecLit_real_exp = QC.testProperty "Real value with exponent" $
             expStr <- genExponent
             return $ intStr ++ "." ++ intStr ++ expStr
 
+-- |Decimal literal token test type
+-- Tests for 'Univ_Int' and 'Univ_Real' (universal integer and real respectively) zero values:
+-- * Unit tests for values without exponent
+-- * Random test for values with (random) exponents
 singleDecLit_zeroes :: TestTree
 singleDecLit_zeroes = testGroup "Zero values"
    [ testCase "0" $ lexerList "0" @?= Right [Literal $ Univ_Int 0]
@@ -660,12 +778,16 @@ singleDecLit_zeroes = testGroup "Zero values"
          compareFunc input value =
             lexerList input == Right [Literal $ value]
 
+-- |Single bit string literal lexer tests
+-- A single string that lexes to a literal token containing a bit string literal
+-- Has tests for both container types
 singleBitStrLiterals :: TestTree
 singleBitStrLiterals = testGroup "Single bit strings"
    [ QC.testProperty "with \" containers" $ singleBitStrLiterals_cont '"'
    , QC.testProperty "with % containers" $ singleBitStrLiterals_cont '%'
    ]
 
+-- |Generator for a single bit string literal with specified containers
 singleBitStrLiterals_cont :: Char -> QC.Property
 singleBitStrLiterals_cont container =
    QC.forAll (generateBitStr container) $ \bitStr ->
@@ -689,9 +811,14 @@ singleBitStrLiterals_cont container =
             ]
             & MapS.fromList
 
+-- |All valid characters that can appear in a VHDL string
 validTestStringCharacters :: [Char]
 validTestStringCharacters = ['A'..'Z'] ++ ['0'..'9'] ++ ['a'..'z'] ++
    "#&'()*+,.-/:;<=>_!$%@?[\\]^`{}~"
+
+-- |Single string literal lexer tests
+-- A single string that lexes to a literal token containing a string literal
+-- Has test for empty and random contents of strings, both with different container types
 singleStrLiterals :: TestTree
 singleStrLiterals = testGroup "Singular strings"
    [ singleEmptyString
@@ -700,14 +827,22 @@ singleStrLiterals = testGroup "Singular strings"
    , singleRandomString_diffCont
    ]
 
+-- |Single empty string literal lexer test
+-- Unit test for:
+-- > ""
 singleEmptyString :: TestTree
 singleEmptyString = testCase "\"\" == Literal Str \"\"" $
          lexerList "\"\"" @?= Right [Literal $ Str ""]
 
+-- |Single empty string literal lexer test
+-- Unit test for:
+-- > %%
 singleEmptyString_diffCont :: TestTree
 singleEmptyString_diffCont = testCase "%% == Literal Str \"\"" $
          lexerList "%%" @?= Right [Literal $ Str ""]
 
+-- |Single random string literal lexer test
+-- Random string with \\" containers
 singleRandomString :: TestTree
 singleRandomString = QC.testProperty "Single random string with \" containers" $
    QC.forAll generateRandomString $ \stringContents ->
@@ -726,6 +861,8 @@ singleRandomString = QC.testProperty "Single random string with \" containers" $
             else replicateConts tail (head:output)
          replicateConts [] output = reverse output
 
+-- |Single random string literal lexer test
+-- Random string with \\% containers
 singleRandomString_diffCont :: TestTree
 singleRandomString_diffCont = QC.testProperty "Single random string with % containers" $
    QC.forAll generateRandomString $ \stringContents ->
@@ -744,9 +881,13 @@ singleRandomString_diffCont = QC.testProperty "Single random string with % conta
             else replicateConts tail (head:output)
          replicateConts [] output = reverse output
 
+-- |All valid characters that can appear in a VHDL character literals
 validTestCharacters :: [Char]
 validTestCharacters = ['A'..'Z'] ++ ['0'..'9'] ++ ['a'..'z'] ++
    "\"#&'()*+,.-/:;<=>_!$%@?[\\]^`{}~"
+
+-- |Single character literal lexer tests
+-- A single string that lexes to a character literal token
 singleCharLiterals :: TestTree
 singleCharLiterals = QC.testProperty "Single random character" $
    QC.forAll (QC.elements validTestCharacters) $ \selectedChar ->
@@ -754,7 +895,8 @@ singleCharLiterals = QC.testProperty "Single random character" $
           expectedAnswer = Right [Literal $ Character selectedChar]
       in lexRun == expectedAnswer
 
--- ?? What happens if it randomly generates a valid keyword
+-- |Single identifier literal lexer tests
+-- A single string that lexes to a identifier token
 singleIdentifiers :: TestTree
 singleIdentifiers = QC.testProperty "Single identifier" $
    QC.forAll generateIdentifier $ \identifierStr ->

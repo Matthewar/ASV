@@ -343,6 +343,7 @@ tokens :-
 -- Need to sort replacement characters
 
 {
+-- |General wrapper function to create a new token
 makeToken :: CreateToken -> Int -> AlexInput -> Int -> Alex WrappedToken
 makeToken newToken code (position, _, _, str) length = do
    let extractedStr = take length str
@@ -353,6 +354,7 @@ makeToken newToken code (position, _, _, str) length = do
      Left err ->
          alexError $ PosnWrapper { getPos = position, unPos = err }
 
+-- |General wrapper function for errors picked up in regex
 makeError :: CreateToken -> AlexInput -> Int -> Alex WrappedToken
 makeError errorToken (position, _, _, str) length = do
    let extractedStr = take length str

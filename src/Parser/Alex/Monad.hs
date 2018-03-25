@@ -1,4 +1,10 @@
--- Adapted from Alex default wrapper file
+{-|
+   Module      : Parser.Alex.Monad
+   Description : Alex specific lexer monad type
+
+   Adapted from Alex default wrapper file.
+   See [Alex](https://www.haskell.org/alex/)
+|-}
 module Parser.Alex.Monad where
 
 import qualified Control.Applicative as App (Applicative (..))

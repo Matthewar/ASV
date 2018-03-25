@@ -1,3 +1,7 @@
+{-|
+   Module      : Parser.Alex.LexFunctions
+   Description : Custom lexer functions
+|-}
 module Parser.Alex.LexFunctions where
 
 import Parser.Alex.BaseTypes
@@ -14,16 +18,20 @@ import qualified Data.Map.Strict as MapS
 import Data.Char (toUpper,digitToInt)
 import Numeric (readInt)
 
+-- |Basic token creator function signature
 type CreateToken = String -> Either ParserError Token
 
+-- |Generate a reserved word (keyword) token
 makeReserved :: ReservedWord -> CreateToken
 makeReserved keyword _ =
    return $ Keyword keyword
 
+-- |Generate an identifier token
 makeIdentifier :: CreateToken
 makeIdentifier identifier =
    return $ Identifier identifier
 
+-- |Generate a decimal literal token
 makeDecimalLiteral :: CreateToken
 makeDecimalLiteral extractedStr =
    let formattedStr = filter (\char -> char /= '_') extractedStr
@@ -45,10 +53,12 @@ makeDecimalLiteral extractedStr =
       & readMaybe
       & checkError
 
+-- |Generate an invalid decimal literal error
 errorDecimalLiteral :: CreateToken
 errorDecimalLiteral extractedStr =
    Left $ LexErr_DecimalLiteral_InvalidFormat extractedStr
 
+-- |Generate a based literal token
 makeBasedLiteral :: Char -> Double -> CreateToken
 makeBasedLiteral separator base basedStr =
    let formattedStr = filter (\char -> char /= '_') basedStr
@@ -106,10 +116,12 @@ makeBasedLiteral separator base basedStr =
                                     & MapS.fromList
                               in charMap MapS.! (toUpper chr)
 
+-- |Generate a character literal token
 makeCharLiteral :: CreateToken
 makeCharLiteral ('\'':char:'\'':[]) =
    return $ Literal $ Character char
 
+-- |Generate a string literal token
 makeStrLiteral :: CreateToken
 makeStrLiteral completeStr =
    let container :: Char
@@ -130,6 +142,7 @@ makeStrLiteral completeStr =
       & Literal
       & return
 
+-- |Generate a bit string literal token
 makeBitStrLiteral :: LiteralBase -> CreateToken
 makeBitStrLiteral base extractedStr =
    init extractedStr
@@ -140,19 +153,23 @@ makeBitStrLiteral base extractedStr =
       & Literal
       & return
 
+-- |Generate a generic invalid bit string literal error
 errorBitStrLiteral :: CreateToken
 errorBitStrLiteral bitStr =
    Left $ LexErr_BitStrLiteral_InvalidStr bitStr
 
+-- |Generate a specific invalid bit string literal error: invalid base value
 errorBitStrLiteralBase :: CreateToken
 errorBitStrLiteralBase bitStr =
    let (base:_) = bitStr
    in Left $ LexErr_BitStrLiteral_InvalidBase base bitStr
 
+-- |Generate a specific invalid bit string literal error: empty value
 errorBitStrLiteralEmpty :: CreateToken
 errorBitStrLiteralEmpty bitStr =
    Left $ LexErr_BitStrLiteral_EmptyStr bitStr
 
+-- |Generate an operator token
 makeOperator :: OperatorType -> CreateToken
 makeOperator op _ =
    return $ Operator op

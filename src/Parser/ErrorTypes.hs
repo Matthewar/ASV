@@ -127,6 +127,8 @@ getFloatBound val =
 
 type WrappedParserError = PosnWrapper ParserError
 
+-- |Print parser error
+-- Extracts position of error and error type to produce message.
 printParserError err =
    let position = getPos err
        contents = unPos err
