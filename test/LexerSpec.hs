@@ -563,14 +563,16 @@ generateBasedStr :: Char -> QC.Gen String
 generateBasedStr container = do
    base <- QC.elements [2..16]
    let baseChars = show base
-   basedStr <- generateExtendedBasedStr base
+       basedStrGen = generateExtendedBasedStr base
    optionalFractional <- QC.elements [True,False]
    expStr <- genExponent
-   let fullBasedStr =
-         if optionalFractional then
-            basedStr ++ "." ++ basedStr
+   unitBasedStr <- basedStrGen
+   fullBasedStr <-
+         if optionalFractional then do
+            decBasedStr <- basedStrGen
+            return $ unitBasedStr ++ "." ++ decBasedStr
          else
-            basedStr
+            return unitBasedStr
    return $ baseChars ++ [container] ++ fullBasedStr ++ [container] ++ expStr
 
 generateExtendedBasedStr :: Int -> QC.Gen String
