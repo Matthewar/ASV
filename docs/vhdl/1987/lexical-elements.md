@@ -142,7 +142,7 @@ TODO: Not yet mapped out
 | `<`  | [x] | [ ] |
 | `=`  | [x] | [ ] |
 | `>`  | [x] | [ ] |
-| `|`  | [x] | [ ] |
+| `\|`  | [x] | [ ] |
 
 ## Identifier
 Identifiers are a combination of letters and numbers that represent names.
