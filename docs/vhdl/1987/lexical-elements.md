@@ -9,6 +9,7 @@ data Token = Keyword ReservedWord -- Reserved keywords, case insensitive
            | Literal LitType -- Literal types (values)
            | EOF -- Used by parser to denote EOF (not a VHDL lexical element)
 ```
+Excerpt of the [token types file](/src/Parser/TokenTypes.hs)
 
 ## Keywords
 There are a limited number of reserved words (or keywords) that need to be implemented.
