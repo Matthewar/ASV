@@ -223,7 +223,7 @@ TODO: Not yet mapped out
 ### Implementation
 | Literal Type | Sanity Test | Extensive Test |
 | :----------- | :---------: | :------------: |
-| Based        | [ ] | [ ] |
+| Based        | [x] | [ ] |
 | Decimal      | [x] | [ ] |
 | Bit string   | [x] | [ ] |
 | String       | [x] | [ ] |
