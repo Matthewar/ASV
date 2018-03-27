@@ -52,6 +52,7 @@ test-suite VHDL-Sim-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   other-modules:       LexerSpec
+                     , Generators.LexElements
                      , ParserSpec
   build-depends:       base
                      , VHDL-Sim
