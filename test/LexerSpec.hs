@@ -6,7 +6,7 @@ import Parser.ErrorTypes
 import Parser.TokenTypes
 import Parser.PositionWrapper
 
-import Generators.LexElements
+import Generators.LexElements (genInteger,genExponent,genBasedStr,genBitStr)
 
 import Test.Tasty
 import Test.Tasty.HUnit

@@ -7,6 +7,7 @@ module Generators.LexElements
    , genExponent
    , genBasedStr
    , genBitStr
+   , genIdentifier
    ) where
 
 import Parser.TokenTypes (LiteralBase(..))
@@ -180,3 +181,26 @@ genUnderscoreExtendedChar allowedChars = do
    return $
       if optionalUnderscore then ['_',otherChar]
       else [otherChar]
+
+-- |Generate a VHDL specific identifier
+-- > identifier ::= letter { [ underline ] letter_or_digit }
+-- Implemented as:
+-- @
+--    'genIdentifier' ::= letter { 'genUnderscoreLetterOrDigit' }
+--    'genUnderscoreLetterOrDigit' ::= [ underline ] letter_or_digit
+-- @
+genIdentifier :: Int -> Int -> QC.Gen String
+genIdentifier fromLength toLength = do
+   letter <- QC.elements letters
+   lengthStr <- QC.elements [fromLength..toLength]
+   otherLetters <- replicateM lengthStr genUnderscoreLetterOrDigit
+   return (letter:concat otherLetters)
+   where letters = ['a'..'z'] ++ ['A'..'Z']
+         letters_or_digits = ['0'..'9'] ++ letters
+         genUnderscoreLetterOrDigit :: QC.Gen String
+         genUnderscoreLetterOrDigit = do
+            optionalUnderscore <- QC.elements [True,False]
+            letter_or_digit <- QC.elements letters_or_digits
+            return $
+               if optionalUnderscore then ['_',letter_or_digit]
+               else [letter_or_digit]

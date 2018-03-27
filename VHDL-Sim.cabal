@@ -54,6 +54,7 @@ test-suite VHDL-Sim-test
   other-modules:       LexerSpec
                      , Generators.LexElements
                      , ParserSpec
+                     , Generators.ParseElements
   build-depends:       base
                      , VHDL-Sim
                      , tasty

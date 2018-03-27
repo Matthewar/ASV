@@ -14,11 +14,13 @@ import Parser.Happy.Types
 import Parser.Alex.BaseTypes (AlexPosn(..))
 import Parser.PositionWrapper
 
+import Generators.LexElements(genIdentifier)
+import Generators.ParseElements(genEmptyEntity)
+
 import Test.Tasty
-import Test.Tasty.HUnit
+--import Test.Tasty.HUnit (testCase)
 import qualified Test.Tasty.QuickCheck as QC
 import Data.Function ((&))
-import Control.Monad (replicateM)
 
 -- |Simple command to run string in parser
 runParse :: String -> Either WrappedParserError DesignFile
@@ -132,50 +134,3 @@ emptyEntities = testGroup "Entity unit"
    --, testCase "Architecture Body"
    --, testCase "Package Body"
    --]
-
--- |Generate an empty VHDL entity declaration
--- Pass name, whether optional parts are included
-genEmptyEntity :: String -> Bool -> Bool -> QC.Gen String
-genEmptyEntity entityName statementPart secondLabel = do
-   let space = do
-         numSpaces <- QC.elements [1..10]
-         replicateM numSpaces $ QC.elements "\n\t "
-   space1 <- space
-   space2 <- space
-   space3 <- space
-   space4 <- space
-   let part1 = "entity" ++ space1 ++ entityName ++ space2 ++ "is" ++ space3
-       part3 = "end" ++ space4
-       part5 = ";"
-   part2 <- if statementPart then do
-               space5 <- space
-               return $ "begin" ++ space5
-            else return ""
-   part4 <- if secondLabel then do
-               space6 <- space
-               return $ entityName ++ space6
-            else return ""
-   return $ part1 ++ part2 ++ part3 ++ part4 ++ part5
-
--- |Generate a VHDL specific identifier
--- > identifier ::= letter { [ underline ] letter_or_digit }
--- Implemented as:
--- @
---    'genIdentifier' ::= letter { 'genUnderscoreLetterOrDigit' }
---    'genUnderscoreLetterOrDigit' ::= [ underline ] letter_or_digit
--- @
-genIdentifier :: Int -> Int -> QC.Gen String
-genIdentifier fromLength toLength = do
-   letter <- QC.elements letters
-   lengthStr <- QC.elements [fromLength..toLength]
-   otherLetters <- replicateM lengthStr genUnderscoreLetterOrDigit
-   return (letter:concat otherLetters)
-   where letters = ['a'..'z'] ++ ['A'..'Z']
-         letters_or_digits = ['0'..'9'] ++ letters
-         genUnderscoreLetterOrDigit :: QC.Gen String
-         genUnderscoreLetterOrDigit = do
-            optionalUnderscore <- QC.elements [True,False]
-            letter_or_digit <- QC.elements letters_or_digits
-            return $
-               if optionalUnderscore then ['_',letter_or_digit]
-               else [letter_or_digit]
