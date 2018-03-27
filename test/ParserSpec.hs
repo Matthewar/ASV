@@ -2,6 +2,8 @@ module ParserSpec (tests) where
 
 import Parser.Alex.Functions (runAlex)
 import qualified Parser.Parser as Parser
+import Parser.ErrorTypes (WrappedParserError)
+import Parser.Happy.Types (DesignFile)
 
 import Test.Tasty
 import Test.Tasty.HUnit
