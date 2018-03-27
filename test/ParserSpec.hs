@@ -14,8 +14,8 @@ import Parser.Happy.Types
 import Parser.Alex.BaseTypes (AlexPosn(..))
 import Parser.PositionWrapper
 
-import Generators.LexElements(genIdentifier)
-import Generators.ParseElements(genEmptyEntity)
+import Generators.LexElements (genIdentifier)
+import Generators.ParseElements (genEmptyEntity)
 
 import Test.Tasty
 --import Test.Tasty.HUnit (testCase)

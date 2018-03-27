@@ -8,6 +8,7 @@ module Generators.LexElements
    , genBasedStr
    , genBitStr
    , genIdentifier
+   , genDecimal
    ) where
 
 import Parser.TokenTypes (LiteralBase(..))
@@ -204,3 +205,17 @@ genIdentifier fromLength toLength = do
             return $
                if optionalUnderscore then ['_',letter_or_digit]
                else [letter_or_digit]
+
+-- |Generate a VHDL specific decimal literal
+-- Arguments: range of unit string, range of optional decimal part, whether exponent used
+-- > decimal_literal ::= integer [ . integer ] [ exponent ]
+genDecimal :: (Int,Int) -> Maybe (Int,Int) -> Bool -> QC.Gen String
+genDecimal (unitsFrom,unitsTo) decimalRange includeExponent = do
+   intStr <- genInteger unitsFrom unitsTo
+   decStr <- case decimalRange of
+               Just (decsFrom,decsTo) -> do
+                  baseDecStr <- genInteger decsFrom decsTo
+                  return $ "." ++ baseDecStr
+               Nothing -> return ""
+   expStr <- if includeExponent then genExponent else return ""
+   return $ intStr ++ decStr ++ expStr

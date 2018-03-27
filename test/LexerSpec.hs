@@ -6,7 +6,14 @@ import Parser.ErrorTypes
 import Parser.TokenTypes
 import Parser.PositionWrapper
 
-import Generators.LexElements (genInteger,genExponent,genBasedStr,genBitStr)
+import Generators.LexElements
+         ( genInteger
+         , genExponent
+         , genBasedStr
+         , genBitStr
+         , genIdentifier
+         , genDecimal
+         )
 
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -548,7 +555,7 @@ singleDecLit_real = QC.testProperty "Real value without exponent" $
 -- Tests the universal integer ('Univ_Int') type with an exponent
 singleDecLit_int_exp :: TestTree
 singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
-   QC.forAll genVal $ \value ->
+   QC.forAll (genDecimal (1,10) Nothing True) $ \value ->
       let [base,exp] =
             filter (\char -> not $ elem char "+_") value
             & splitOneOf "Ee"
@@ -561,23 +568,15 @@ singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
             else Right [Literal $ Univ_Int $ floor doubleValue]
           lexRun = lexerList value
       in lexRun == expectedValue
-   where genVal = do
-            intStr <- genInteger 1 10
-            expStr <- genExponent
-            return $ intStr ++ expStr
 
 -- |Decimal literal token test type
 -- Tests the universal integer ('Univ_Real') type with an exponent
 singleDecLit_real_exp :: TestTree
 singleDecLit_real_exp = QC.testProperty "Real value with exponent" $
-   QC.forAll genVal $ \value ->
+   QC.forAll (genDecimal (1,10) (Just (1,10)) True) $ \value ->
       let expectedValue = Right [Literal $ Univ_Real $ read $ filter (/= '_') value]
           lexRun = lexerList value
       in lexRun == expectedValue
-   where genVal = do
-            intStr <- genInteger 1 10
-            expStr <- genExponent
-            return $ intStr ++ "." ++ intStr ++ expStr
 
 -- |Decimal literal token test type
 -- Tests for 'Univ_Int' and 'Univ_Real' (universal integer and real respectively) zero values:
@@ -721,15 +720,7 @@ singleCharLiterals = QC.testProperty "Single random character" $
 -- A single string that lexes to a identifier token
 singleIdentifiers :: TestTree
 singleIdentifiers = QC.testProperty "Single identifier" $
-   QC.forAll generateIdentifier $ \identifierStr ->
+   QC.forAll (genIdentifier 0 100) $ \identifierStr ->
       let lexRun = lexerList identifierStr
           expectedAnswer = Right [Identifier identifierStr]
       in lexRun == expectedAnswer
-   where generateIdentifier = do
-            stringLength <- QC.elements [0..200]
-            fstChar <- QC.elements validStartChar
-            let genOtherChars = QC.elements validOtherChar
-            otherChars <- replicateM stringLength genOtherChars
-            return $ fstChar:otherChars
-         validStartChar = ['a'..'z'] ++ ['A'..'Z']
-         validOtherChar = validStartChar ++ ['0'..'9'] ++ ['_']
