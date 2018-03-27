@@ -568,6 +568,7 @@ singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
 -- > integer ::= digit { [ underline ] digit }
 -- Implemented as:
 -- > 'genInteger' ::= digit { 'genUnderscoreDigit' }
+genInteger :: Int -> Int -> QC.Gen String
 genInteger fromLength toLength = do
    firstInt <- QC.elements ['0'..'9']
    lengthStr <- QC.elements [fromLength..toLength]
@@ -578,6 +579,7 @@ genInteger fromLength toLength = do
 -- > integer ::= digit { [ underline ] digit }
 -- This function generates the latter part IE
 -- > 'genUnderscoreDigit' ::= [ underline ] digit
+genUnderscoreDigit :: QC.Gen String
 genUnderscoreDigit = do
    optionalUnderscore <- QC.elements [True,False]
    otherDigit <- QC.elements ['0'..'9']
@@ -594,6 +596,7 @@ genUnderscoreDigit = do
 --    exponent_marker ::= E | e
 --    exponent_sign ::= + | -
 -- @
+genExponent :: QC.Gen String
 genExponent = do
    expChar <- QC.elements "Ee"
    expSign <- QC.elements ["+","-",""]
