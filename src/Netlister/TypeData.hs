@@ -33,7 +33,9 @@ data Type =
    -- Name of base unit
    -- Secondary unit declarations
    | PhysicalType IntegerRange String (MapS.Map String Int64)
-   | ArrayType ArrayBounds Type
+   -- ?? Function or function body
+   | Subtype (Maybe FunctionBody) Type (Maybe Constraint)
+   -- | ArrayType ArrayBounds Type
 
 type Enumerates = [Enumerate]
 
@@ -54,17 +56,78 @@ newtype FloatRange = FloatRange Double Double RangeDirection
 -- |Range direction
 data RangeDirection = To | Downto
 
+data Constraint =
+   IntegerRangeConstraint IntegerRange
+   | FloatingRangeConstraint FloatRange
+   -- | IndexConstraint
+
 data ArrayBounds =
    Constrained IntegerRange
    | Unconstrained String
 
 type TypeStore = MapS.Map String Type
 
-newtype Function = Function Designator (Maybe [Interface]) Type (Maybe FunctionBody)
+newtype Function = Function Designator [Interface] Type
+
+data Designator =
+   Designator_Identifier String
+   | Designator_Operator Operator
+
+data Operator =
+   And
+   | Or
+   | Nand
+   | Nor
+   | Xor
+   | Equal -- ^ =
+   | Inequality -- ^ /=
+   | LessThan -- ^ <
+   | Assign -- ^ <=
+   | GreaterThan -- ^ >
+   | GreaterThanOrEqual -- ^ >=
+   | Plus -- ^ +
+   | Hyphen -- ^ -
+   | Ampersand -- ^ &
+   | Star -- ^ *
+   | Slash -- ^ /
+   | Mod
+   | Rem
+   | DoubleStar -- ^ **
+   | Abs
+   | Not
+
+readDesignator_Operator :: String -> Operator
+readDesignator_Operator = (MapS.!! designatorOperatorMap) . toUpper
+
+designatorOperatorMap :: MapS.Map String Operator
+designatorOperatorMap =
+   [ ("AND",And)
+   , ("OR",Or)
+   , ("NAND",Nand)
+   , ("NOR",Nor)
+   , ("XOR",Xor)
+   , ("=",Equal)
+   , ("/=",Inequality)
+   , ("<",LessThan)
+   , ("<=",Assign)
+   , (">",GreaterThan)
+   , (">=",GreaterThanOrEqual)
+   , ("+",Plus)
+   , ("-",Hyphen)
+   , ("&",Ampersand)
+   , ("*",Star)
+   , ("/",Slash)
+   , ("MOD",Mod)
+   , ("REM",Rem)
+   , ("**",DoubleStar)
+   , ("ABS",Abs)
+   , ("NOT",Not))
+   ]
+   & MapS.fromList
 
 newtype FunctionBody = FunctionBody [FunctionDeclarative] [FunctionStatement]
 
-type FunctionStore = MapS.Map String Function
+type FunctionStore = MapS.Map Function (Maybe FunctionBody)
 
 newtype PackageHeaderStore =
    PackageHeaderStore

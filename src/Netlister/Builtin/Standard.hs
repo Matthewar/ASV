@@ -162,19 +162,42 @@ types =
          , ("hour",(60^2)*(10^15))
          ] & MapS.fromList
       )
+   ,  ( "NATURAL"
+      , Subtype
+         Nothing
+         Just
+            MapS.!! types "INTEGER"
+         Just
+            IntegerRangeConstraint
+               IntegerRange
+                  0
+                  maxBound
+                  To
+      )
+   ,  ( "POSITIVE"
+      , Subtype
+         Nothing
+         Just
+            MapS.!! types "INTEGER"
+         Just
+            IntegerRangeConstraint
+               IntegerRange
+                  1
+                  maxBound
+                  To
+      )
    ]
-
-functions :: FunctionStore
-functions =
-
--- -- function that returns the current simulation time:
--- function NOW return TIME;
--- -- predefined numeric subtypes:
--- subtype NATURAL is INTEGER range 0 to INTEGERHIGH;
--- subtype POSITIVE is INTEGER range 1 to INTEGERHIGH;
--- -- predefined array types:
 -- type STRING is array (POSITIVE range o)
 -- of CHARACTER;
 -- type BIT-VECTOR is array (NATURAL range o)
 -- of BIT;
--- end STANDARD;
+
+functions :: FunctionStore
+functions =
+   [  ( Function
+         Designator_Identifier "NOW"
+         []
+         MapS.!! types "TIME"
+      , Nothing
+      ) -- ?? MUST BE DEALT WITH IN INTERMEDIARY CONVERSION
+   ]
