@@ -3,14 +3,14 @@
    Description : Implementation of bultin \\'standard\\' package
 -}
 module Netlister.Builtin.Standard 
-   ( standardPackage
+   ( --standardPackage
    ) where
 
 import Netlister.TypeData
-         ( TypeStore
-         )
+import Parser.ErrorTypes (getFloatBound)
 
 import qualified Data.Map.Strict as MapS
+import Data.Function ((&))
 
 types :: TypeStore
 types =
@@ -26,7 +26,7 @@ types =
          , Enum_Char '1'
          ]
       )
-   ,  ( "CHARACTER",
+   ,  ( "CHARACTER"
       , EnumerationType -- ?? Missing valid characters
          [ Enum_Char ' '
          , Enum_Char '!'
@@ -133,60 +133,66 @@ types =
          ]
       )
    ,  ( "INTEGER"
-      , IntegerType
+      , IntegerType $
          IntegerRange 
             minBound
             maxBound
             To
       )
    ,  ( "REAL"
-      , FloatingType
+      , FloatingType $
          FloatRange
-            minBound
-            maxBound
+            (-floatBound)
+            floatBound
             To
       )
    ,  ( "TIME"
       , PhysicalType
-         IntegerRange
+         ( IntegerRange
             minBound
             maxBound
             To
+         )
          "fs"
-         [ ("ps",1000)
-         , ("ns",10^6)
-         , ("us",10^9)
-         , ("ms",10^12)
-         , ("sec",10^15)
-         , ("min",60*10^15)
-         , ("hour",(60^2)*(10^15))
-         ] & MapS.fromList
+         (
+            [ ("ps",1000)
+            , ("ns",10^6)
+            , ("us",10^9)
+            , ("ms",10^12)
+            , ("sec",10^15)
+            , ("min",60*10^15)
+            , ("hour",(60^2)*(10^15))
+            ]
+            & MapS.fromList
+         )
       )
    ,  ( "NATURAL"
       , Subtype
          Nothing
-         Just
-            MapS.!! types "INTEGER"
-         Just
-            IntegerRangeConstraint
+         (types MapS.! "INTEGER")
+         ( Just $
+            IntegerRangeConstraint $
                IntegerRange
                   0
                   maxBound
                   To
+         )
       )
    ,  ( "POSITIVE"
       , Subtype
          Nothing
-         Just
-            MapS.!! types "INTEGER"
-         Just
-            IntegerRangeConstraint
+         (types MapS.! "INTEGER")
+         ( Just $
+            IntegerRangeConstraint $
                IntegerRange
                   1
                   maxBound
                   To
+         )
       )
    ]
+   & MapS.fromList
+   where floatBound = getFloatBound (0.0 :: Double)
 -- type STRING is array (POSITIVE range o)
 -- of CHARACTER;
 -- type BIT-VECTOR is array (NATURAL range o)
@@ -195,9 +201,10 @@ types =
 functions :: FunctionStore
 functions =
    [  ( Function
-         Designator_Identifier "NOW"
+         (Designator_Identifier "NOW")
          []
-         MapS.!! types "TIME"
+         (types MapS.! "TIME")
       , Nothing
       ) -- ?? MUST BE DEALT WITH IN INTERMEDIARY CONVERSION
    ]
+   & MapS.fromList

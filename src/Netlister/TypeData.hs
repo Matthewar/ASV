@@ -5,12 +5,15 @@
 module Netlister.TypeData where
 
 import qualified Data.Map.Strict as MapS
+import Data.Int (Int64)
+import Data.Char (toUpper)
+import Data.Function ((&))
 
 -- What is type, if enumerate what are valid values, how to map to actual values
 data NetlistUnit =
    Entity --{-- ports :: [Port], generics
    | Configuration
-   | Package PackageHeaderStore PackageBodyStore
+   -- | Package PackageHeaderStore -- ?? PackageBodyStore
    | Architecture
 
 -- |Type data
@@ -36,6 +39,7 @@ data Type =
    -- ?? Function or function body
    | Subtype (Maybe FunctionBody) Type (Maybe Constraint)
    -- | ArrayType ArrayBounds Type
+   deriving (Eq,Ord)
 
 type Enumerates = [Enumerate]
 
@@ -44,22 +48,27 @@ data Enumerate =
    Enum_Identifier String
    -- |Enumerate Character
    | Enum_Char Char
+   deriving (Eq,Ord)
 
 -- |Integer range
 -- Left direction right
-newtype IntegerRange = IntegerRange Int64 Int64 RangeDirection
+data IntegerRange = IntegerRange Int64 Int64 RangeDirection
+                  deriving (Eq,Ord)
 
 -- |Floating point range
 -- Left direction right
-newtype FloatRange = FloatRange Double Double RangeDirection
+data FloatRange = FloatRange Double Double RangeDirection
+                deriving (Eq,Ord)
 
 -- |Range direction
 data RangeDirection = To | Downto
+                    deriving (Eq,Ord)
 
 data Constraint =
    IntegerRangeConstraint IntegerRange
    | FloatingRangeConstraint FloatRange
    -- | IndexConstraint
+   deriving (Eq,Ord)
 
 data ArrayBounds =
    Constrained IntegerRange
@@ -67,11 +76,16 @@ data ArrayBounds =
 
 type TypeStore = MapS.Map String Type
 
-newtype Function = Function Designator [Interface] Type
+data Function = Function Designator [Interface] Type
+              deriving (Eq,Ord)
 
 data Designator =
    Designator_Identifier String
    | Designator_Operator Operator
+   deriving (Eq,Ord)
+
+data Interface = Interface -- ??
+               deriving (Eq,Ord)
 
 data Operator =
    And
@@ -95,9 +109,11 @@ data Operator =
    | DoubleStar -- ^ **
    | Abs
    | Not
+   deriving (Eq,Ord)
 
 readDesignator_Operator :: String -> Operator
-readDesignator_Operator = (MapS.!! designatorOperatorMap) . toUpper
+readDesignator_Operator =
+   (designatorOperatorMap MapS.!) . map toUpper
 
 designatorOperatorMap :: MapS.Map String Operator
 designatorOperatorMap =
@@ -121,31 +137,32 @@ designatorOperatorMap =
    , ("REM",Rem)
    , ("**",DoubleStar)
    , ("ABS",Abs)
-   , ("NOT",Not))
+   , ("NOT",Not)
    ]
    & MapS.fromList
 
-newtype FunctionBody = FunctionBody [FunctionDeclarative] [FunctionStatement]
+data FunctionBody = FunctionBody -- ?? [FunctionDeclarative] [FunctionStatement]
+                  deriving (Eq,Ord)
 
 type FunctionStore = MapS.Map Function (Maybe FunctionBody)
 
-newtype PackageHeaderStore =
-   PackageHeaderStore
-      -- |Subprogram declaration
-      SubprogramHeaderStore
-      TypeStore
-      ConstantStore
-      SignalStore
-      FileStore
-      AliasStore
-      ComponentStore
-      AttributeStore
-      DisconnectStore
-      UseStore
-
-      Subprogram
-      Type
-      Constant
-      File
-      Alias
-      Use
+-- newtype PackageHeaderStore =
+--    PackageHeaderStore
+--       -- |Subprogram declaration
+--       SubprogramHeaderStore
+--       TypeStore
+--       ConstantStore
+--       SignalStore
+--       FileStore
+--       AliasStore
+--       ComponentStore
+--       AttributeStore
+--       DisconnectStore
+--       UseStore
+-- 
+--       Subprogram
+--       Type
+--       Constant
+--       File
+--       Alias
+--       Use

@@ -3,6 +3,7 @@ module Parser.ErrorTypes
    ParserError(..)
    , WrappedParserError
    , printParserError
+   , getFloatBound
 )
 where
 
@@ -90,7 +91,7 @@ instance (Show ParserError) where
       ++ " to "
       ++ (show $ (maxBound :: Int64))
    show (LexErr_UniversalReal_OutOfBounds str) =
-      let maxVal = getFloatBound (0.0 :: Double)
+      let maxVal = show $ getFloatBound (0.0 :: Double)
       in "Lexer found out of bounds real value "
          ++ str
          ++ " note that integer range is "
@@ -115,7 +116,7 @@ instance (Show ParserError) where
       "Some parser error occurred"
 
 -- | Find largest (and by extension smallest) possible value of double
-getFloatBound :: RealFloat a => a -> String
+getFloatBound :: RealFloat a => a -> a
 getFloatBound val =
    let radix = floatRadix val
        maxExp = snd $ floatRange val
@@ -123,7 +124,6 @@ getFloatBound val =
        mantissa = (radix ^ numBitsSig) - 1
        exp = maxExp - numBitsSig
    in encodeFloat mantissa exp
-      & show
 
 type WrappedParserError = PosnWrapper ParserError
 
