@@ -32,3 +32,5 @@ genEmptyEntity entityName statementPart secondLabel = do
                return $ entityName ++ space6
             else return ""
    return $ part1 ++ part2 ++ part3 ++ part4 ++ part5
+
+--genEmptyConfiguration :: String -> 
