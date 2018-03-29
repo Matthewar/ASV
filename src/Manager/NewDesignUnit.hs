@@ -3,7 +3,6 @@ module Manager.NewDesignUnit where
 import Control.Monad.Trans.State
 
 import qualified Manager.Args as Args (Options)
-import qualified Netlister.Builtin.Netlist as InitialNetlist (netlist)
 import Netlister.TypeData (NetlistStore)
 import qualified Parser.Parser as Parser (v1987)
 import Parser.ErrorTypes (WrappedParserError)
@@ -12,7 +11,7 @@ import Parser.Alex.Functions (runAlex)
 
 createTop :: Args.Options -> StateT NetlistStore IO ()
 createTop options = do
-   put InitialNetlist.netlist
+   return ()
 -- Call create function for topmost file
 --
 -- Need state monad of current scoped and already parsed objects to be setup?

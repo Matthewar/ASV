@@ -31,6 +31,9 @@ library
                      , Netlister.Builtin.Standard
                      , Netlister.Builtin.Netlist
                      , Manager.NewDesignUnit
+                     , Manager.Args
+                     , Manager.Filing
+                     , Manager.Control
   build-depends:       base >= 4.7 && < 5
                      , array
                      , split
@@ -38,6 +41,7 @@ library
                      , containers
                      , optparse-applicative
                      , transformers
+                     , directory
   build-tools:         alex
                      , happy
   default-language:    Haskell2010
@@ -51,6 +55,7 @@ executable VHDL-Sim-exe
                      , VHDL-Sim
                      , array
                      , split
+                     , optparse-applicative
   default-language:    Haskell2010
 
 test-suite VHDL-Sim-test
