@@ -37,9 +37,13 @@ data Type =
    -- Secondary unit declarations
    | PhysicalType IntegerRange String (MapS.Map String Int64)
    -- ?? Function or function body
-   | Subtype (Maybe FunctionBody) Type (Maybe Constraint)
-   -- | ArrayType ArrayBounds Type
+   | Subtype SubtypeIndication
+   | ArrayType ArrayBounds SubtypeIndication -- ?? Does this need entire subtype indication
    deriving (Eq,Ord)
+
+-- |Essentially a type link
+data SubtypeIndication = SubtypeIndication (Maybe FunctionBody) Type (Maybe Constraint)
+                       deriving (Eq,Ord)
 
 type Enumerates = [Enumerate]
 
@@ -65,14 +69,22 @@ data RangeDirection = To | Downto
                     deriving (Eq,Ord)
 
 data Constraint =
-   IntegerRangeConstraint IntegerRange
-   | FloatingRangeConstraint FloatRange
-   -- | IndexConstraint
+   Constraint_IntegerRange IntegerRange
+   | Constraint_FloatingRange FloatRange
+   | Constraint_Index IndexConstraint
    deriving (Eq,Ord)
 
+type IndexConstraint = [DiscreteRange]
+
+data DiscreteRange = Discrete_SubtypeIndication SubtypeIndication
+                   | Discrete_IntegerRange IntegerRange
+                   | Discrete_FloatingRange FloatRange
+                   deriving (Eq,Ord)
+
 data ArrayBounds =
-   Constrained IntegerRange
-   | Unconstrained String
+   Constrained IndexConstraint
+   | Unconstrained [Type]
+   deriving (Eq,Ord)
 
 type TypeStore = MapS.Map String Type
 

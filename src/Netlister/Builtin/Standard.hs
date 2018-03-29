@@ -167,36 +167,56 @@ types =
          )
       )
    ,  ( "NATURAL"
-      , Subtype
-         Nothing
-         (types MapS.! "INTEGER")
-         ( Just $
-            IntegerRangeConstraint $
-               IntegerRange
-                  0
-                  maxBound
-                  To
-         )
+      , Subtype $
+         SubtypeIndication
+            Nothing
+            (types MapS.! "INTEGER")
+            ( Just $
+               Constraint_IntegerRange $
+                  IntegerRange
+                     0
+                     maxBound
+                     To
+            )
       )
    ,  ( "POSITIVE"
-      , Subtype
-         Nothing
-         (types MapS.! "INTEGER")
-         ( Just $
-            IntegerRangeConstraint $
-               IntegerRange
-                  1
-                  maxBound
-                  To
+      , Subtype $
+         SubtypeIndication
+            Nothing
+            (types MapS.! "INTEGER")
+            ( Just $
+               Constraint_IntegerRange $
+                  IntegerRange
+                     1
+                     maxBound
+                     To
+            )
+      )
+   ,  ( "STRING"
+      , ArrayType
+         ( Unconstrained
+            [ types MapS.! "POSITIVE" ]
+         )
+         ( SubtypeIndication
+            Nothing
+            (types MapS.! "CHARACTER")
+            Nothing
+         )
+      )
+   ,  ( "BIT_VECTOR"
+      , ArrayType
+         ( Unconstrained
+            [ types MapS.! "NATURAL" ]
+         )
+         ( SubtypeIndication
+            Nothing
+            (types MapS.! "BIT")
+            Nothing
          )
       )
    ]
    & MapS.fromList
    where floatBound = getFloatBound (0.0 :: Double)
--- type STRING is array (POSITIVE range o)
--- of CHARACTER;
--- type BIT-VECTOR is array (NATURAL range o)
--- of BIT;
 
 functions :: FunctionStore
 functions =
