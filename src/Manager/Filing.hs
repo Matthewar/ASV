@@ -1,4 +1,8 @@
-module Manager.Filing where
+module Manager.Filing
+   ( checkArguments
+   , Library(..)
+   , findDesignUnit
+   ) where
 
 import System.Directory (doesDirectoryExist,doesFileExist,findFile)
 import System.Exit (exitFailure)
@@ -23,7 +27,24 @@ checkArguments options = do
       putStrLn "Success: IEEE directory found"
    if not validDirectories then exitFailure else return ()
 
+data Library =
+   IEEELibrary
+   | WorkLibrary
+
 -- |Take name of module and library, if file exists then return path
-findDesignUnit :: FilePath -> FilePath -> String -> String -> IO (Maybe FilePath)
-findDesignUnit library unitName =
-   let fileName = 
+findDesignUnit :: FilePath -> FilePath -> Library -> String -> IO FilePath
+findDesignUnit workDir _ WorkLibrary unitName = findDesignUnit' workDir unitName
+findDesignUnit _ ieeeDir IEEELibrary unitName = findDesignUnit' ieeeDir unitName
+
+-- |Find unit within chosen directory
+-- ?? NOTE: Temporary hack is to force unit to be defined in unitName.vhd
+findDesignUnit' :: FilePath -> String -> IO FilePath
+findDesignUnit' libDir unitName = do
+   let fileName = libDir ++ unitName ++ ".vhd"
+   checkFile <- doesFileExist fileName
+   if checkFile then do
+      putStrLn $ "Info: Found file " ++ fileName
+      return fileName
+   else do
+      putStrLn $ "Error: Unable to find file: " ++ fileName
+      exitFailure

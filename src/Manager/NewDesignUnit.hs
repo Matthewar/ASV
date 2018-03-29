@@ -1,8 +1,14 @@
 module Manager.NewDesignUnit where
 
 import Control.Monad.Trans.State
+import Control.Monad.IO.Class
+import System.Exit (exitFailure)
 
-import qualified Manager.Args as Args (Options)
+import qualified Manager.Args as Args (Options(..))
+import Manager.Filing
+         ( Library(..)
+         , findDesignUnit
+         )
 import Netlister.TypeData (NetlistStore)
 import qualified Parser.Parser as Parser (v1987)
 import Parser.ErrorTypes (WrappedParserError)
@@ -10,14 +16,21 @@ import Parser.Happy.Types (DesignFile)
 import Parser.Alex.Functions (runAlex)
 
 createTop :: Args.Options -> StateT NetlistStore IO ()
-createTop options = do
-   return ()
+createTop (Args.Options workDir ieeeDir topModule) = do
+   let createNetlistUnit = create workDir ieeeDir
+   createNetlistUnit WorkLibrary topModule
 -- Call create function for topmost file
 --
 -- Need state monad of current scoped and already parsed objects to be setup?
 -- Need to use StateM or whatever to combine state with Either monad?
 
---create :: String -> StateT NetlistStore IO
+create :: FilePath -> FilePath -> Library -> String -> StateT NetlistStore IO ()
+create workPath ieeePath library unitName = do
+   filePath <- liftIO $ findDesignUnit workPath ieeePath library unitName
+   fileContents <- liftIO $ readFile filePath
+   let parseTree = parse fileContents
+   return ()
+   
 -- Confirm file name
 -- Parse file
 -- Check dependencies
