@@ -30,11 +30,14 @@ library
                      , Netlister.TypeData
                      , Netlister.Builtin.Standard
                      , Netlister.Builtin.Netlist
+                     , Manager.NewDesignUnit
   build-depends:       base >= 4.7 && < 5
                      , array
                      , split
                      , bytestring
                      , containers
+                     , optparse-applicative
+                     , transformers
   build-tools:         alex
                      , happy
   default-language:    Haskell2010
