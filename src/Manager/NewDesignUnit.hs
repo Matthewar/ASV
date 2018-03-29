@@ -14,6 +14,7 @@ import qualified Parser.Parser as Parser (v1987)
 import Parser.ErrorTypes (WrappedParserError)
 import Parser.Happy.Types (DesignFile)
 import Parser.Alex.Functions (runAlex)
+import Parser.ErrorTypes (printParserError)
 
 createTop :: Args.Options -> StateT NetlistStore IO ()
 createTop (Args.Options workDir ieeeDir topModule) = do
@@ -28,11 +29,13 @@ create :: FilePath -> FilePath -> Library -> String -> StateT NetlistStore IO ()
 create workPath ieeePath library unitName = do
    filePath <- liftIO $ findDesignUnit workPath ieeePath library unitName
    fileContents <- liftIO $ readFile filePath
-   let parseTree = parse fileContents
+   parseTree <- case parse fileContents of
+                  Left err -> liftIO $ do
+                     putStrLn $ printParserError err
+                     exitFailure
+                  Right result -> return result
    return ()
    
--- Confirm file name
--- Parse file
 -- Check dependencies
 -- Parse new files
 
