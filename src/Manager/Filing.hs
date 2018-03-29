@@ -1,6 +1,5 @@
 module Manager.Filing
    ( checkArguments
-   , Library(..)
    , findDesignUnit
    ) where
 
@@ -27,14 +26,10 @@ checkArguments options = do
       putStrLn "Success: IEEE directory found"
    if not validDirectories then exitFailure else return ()
 
-data Library =
-   IEEELibrary
-   | WorkLibrary
-
 -- |Take name of module and library, if file exists then return path
-findDesignUnit :: FilePath -> FilePath -> Library -> String -> IO FilePath
-findDesignUnit workDir _ WorkLibrary unitName = findDesignUnit' workDir unitName
-findDesignUnit _ ieeeDir IEEELibrary unitName = findDesignUnit' ieeeDir unitName
+findDesignUnit :: FilePath -> FilePath -> String -> String -> IO FilePath
+findDesignUnit workDir _ "WORK" unitName = findDesignUnit' workDir unitName
+findDesignUnit _ ieeeDir "IEEE" unitName = findDesignUnit' ieeeDir unitName
 
 -- |Find unit within chosen directory
 -- ?? NOTE: Temporary hack is to force unit to be defined in unitName.vhd

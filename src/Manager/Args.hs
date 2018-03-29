@@ -17,6 +17,7 @@ optionsGroup = Options
       <> showDefault
       <> value "work/"
       <> metavar "WORK_LIB_PATH"
+      <> action "directory"
        )
    <*> strOption
        ( long "ieee-dir"
@@ -24,6 +25,7 @@ optionsGroup = Options
       <> showDefault
       <> value "ieee/"
       <> metavar "IEEE_LIB_PATH"
+      <> action "directory"
        )
    <*> strOption
        ( long "top"

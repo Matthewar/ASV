@@ -10,15 +10,9 @@ import Data.Char (toUpper)
 import Data.Function ((&))
 
 -- What is type, if enumerate what are valid values, how to map to actual values
---data NetlistUnit =
---   Entity --{-- ports :: [Port], generics
---   | Configuration
---   Package PackageHeaderStore -- ?? (Maybe PackageBodyStore)
---   | Architecture
-
 data NetlistStore =
    NetlistStore
-      --{ entities :: MapS.Map [String] Entity
+      --{ entities :: MapS.Map [String] Entity -- ?? ports :: [Port], generics
       --, configurations :: MapS.Map [String] Configuration
       { packages :: MapS.Map [String] Package
       --, architectures :: MapS.Map [String] Architecture

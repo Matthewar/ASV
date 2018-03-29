@@ -7,8 +7,7 @@ import System.Exit (exitFailure)
 
 import qualified Manager.Args as Args (Options(..))
 import Manager.Filing
-         ( Library(..)
-         , findDesignUnit
+         ( findDesignUnit
          , checkArguments
          )
 import Netlister.TypeData (NetlistStore)
@@ -18,12 +17,13 @@ import Parser.Happy.Types (DesignFile)
 import Parser.Alex.Functions (runAlex)
 import Parser.ErrorTypes (printParserError)
 import qualified Netlister.Builtin.Netlist as InitialNetlist (netlist)
+--import Netlister.ParseTree (convertTree)
 
 createTop :: Args.Options -> IO ()
 createTop options = do
    checkArguments options
    let (Args.Options workDir ieeeDir topModule) = options
-       createNetlistUnit = create workDir ieeeDir WorkLibrary topModule
+       createNetlistUnit = create workDir ieeeDir "WORK" topModule
    finalNetlist <- execStateT createNetlistUnit InitialNetlist.netlist
    return ()
 -- Call create function for topmost file
@@ -31,7 +31,7 @@ createTop options = do
 -- Need state monad of current scoped and already parsed objects to be setup?
 -- Need to use StateM or whatever to combine state with Either monad?
 
-create :: FilePath -> FilePath -> Library -> String -> StateT NetlistStore IO ()
+create :: FilePath -> FilePath -> String -> String -> StateT NetlistStore IO ()
 create workPath ieeePath library unitName = do
    filePath <- liftIO $ findDesignUnit workPath ieeePath library unitName
    fileContents <- liftIO $ readFile filePath
@@ -40,6 +40,7 @@ create workPath ieeePath library unitName = do
                      putStrLn $ printParserError err
                      exitFailure
                   Right result -> return result
+   --convertTree (create workPath ieeePath) parseTree
    return ()
    
 -- Check dependencies

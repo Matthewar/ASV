@@ -30,6 +30,7 @@ library
                      , Netlister.TypeData
                      , Netlister.Builtin.Standard
                      , Netlister.Builtin.Netlist
+                     , Netlister.Types.Scope
                      , Manager.NewDesignUnit
                      , Manager.Args
                      , Manager.Filing
