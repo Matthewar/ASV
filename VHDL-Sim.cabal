@@ -29,6 +29,7 @@ library
                      , Parser.Happy.ParseFunctions
                      , Netlister.TypeData
                      , Netlister.Builtin.Standard
+                     , Netlister.Builtin.Netlist
   build-depends:       base >= 4.7 && < 5
                      , array
                      , split
