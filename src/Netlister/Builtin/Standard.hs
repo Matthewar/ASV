@@ -3,7 +3,7 @@
    Description : Implementation of bultin \\'standard\\' package
 -}
 module Netlister.Builtin.Standard 
-   ( --standardPackage
+   ( standardPackage
    ) where
 
 import Netlister.TypeData
@@ -228,3 +228,9 @@ functions =
       ) -- ?? MUST BE DEALT WITH IN INTERMEDIARY CONVERSION
    ]
    & MapS.fromList
+
+standardPackage :: Package
+standardPackage =
+   Package
+      functions
+      types

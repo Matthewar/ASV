@@ -10,11 +10,11 @@ import Data.Char (toUpper)
 import Data.Function ((&))
 
 -- What is type, if enumerate what are valid values, how to map to actual values
-data NetlistUnit =
-   Entity --{-- ports :: [Port], generics
-   | Configuration
-   -- | Package PackageHeaderStore -- ?? PackageBodyStore
-   | Architecture
+--data NetlistUnit =
+--   --Entity --{-- ports :: [Port], generics
+--   -- | Configuration
+--   Package PackageHeaderStore -- ?? (Maybe PackageBodyStore)
+--   -- | Architecture
 
 -- |Type data
 -- Name, Attributes
@@ -158,23 +158,28 @@ data FunctionBody = FunctionBody -- ?? [FunctionDeclarative] [FunctionStatement]
 
 type FunctionStore = MapS.Map Function (Maybe FunctionBody)
 
--- newtype PackageHeaderStore =
---    PackageHeaderStore
---       -- |Subprogram declaration
---       SubprogramHeaderStore
---       TypeStore
---       ConstantStore
---       SignalStore
---       FileStore
---       AliasStore
---       ComponentStore
---       AttributeStore
---       DisconnectStore
---       UseStore
--- 
---       Subprogram
---       Type
---       Constant
---       File
---       Alias
---       Use
+-- [String] provides selected names
+type PackageStore = MapS.Map [String] Package
+
+data Package =
+   Package
+      -- |Subprogram declaration
+      --SubprogramHeaderStore ?? Instead do separately
+      --ProcedureStore
+      FunctionStore
+      TypeStore
+      --ConstantStore
+      --SignalStore
+      --FileStore
+      --AliasStore
+      --ComponentStore
+      --AttributeStore
+      --DisconnectStore
+      --UseStore
+
+      --Subprogram
+      --Type
+      --Constant
+      --File
+      --Alias
+      --Use
