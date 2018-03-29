@@ -4,10 +4,10 @@ import Options.Applicative
 import Data.Semigroup ((<>))
 
 import Manager.Args
-import Manager.Control (control)
+import Manager.NewDesignUnit (createTop)
 
 main :: IO ()
-main = control =<< execParser opts
+main = createTop =<< execParser opts
    where opts = info (optionsGroup <**> helper)
              ( fullDesc
             <> progDesc "VHDL Simulator"
