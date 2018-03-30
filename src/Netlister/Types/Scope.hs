@@ -45,6 +45,7 @@ data DeclarationNames =
    Declare_Identifier String
    -- |Single operator declaration
    | Declare_Operator Operator
+   deriving (Eq)
 
 -- |New declaration to be added to scope
 data NewDeclarationScope =
