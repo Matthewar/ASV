@@ -9,6 +9,8 @@ import Data.Int (Int64)
 import Data.Char (toUpper)
 import Data.Function ((&))
 
+import Netlister.Types.Operators (Operator)
+
 -- What is type, if enumerate what are valid values, how to map to actual values
 data NetlistStore =
    NetlistStore
@@ -100,60 +102,6 @@ data Designator =
 
 data Interface = Interface -- ??
                deriving (Eq,Ord)
-
-data Operator =
-   And
-   | Or
-   | Nand
-   | Nor
-   | Xor
-   | Equal -- ^ =
-   | Inequality -- ^ /=
-   | LessThan -- ^ <
-   | Assign -- ^ <=
-   | GreaterThan -- ^ >
-   | GreaterThanOrEqual -- ^ >=
-   | Plus -- ^ +
-   | Hyphen -- ^ -
-   | Ampersand -- ^ &
-   | Star -- ^ *
-   | Slash -- ^ /
-   | Mod
-   | Rem
-   | DoubleStar -- ^ **
-   | Abs
-   | Not
-   deriving (Eq,Ord)
-
-readDesignator_Operator :: String -> Operator
-readDesignator_Operator =
-   (designatorOperatorMap MapS.!) . map toUpper
-
-designatorOperatorMap :: MapS.Map String Operator
-designatorOperatorMap =
-   [ ("AND",And)
-   , ("OR",Or)
-   , ("NAND",Nand)
-   , ("NOR",Nor)
-   , ("XOR",Xor)
-   , ("=",Equal)
-   , ("/=",Inequality)
-   , ("<",LessThan)
-   , ("<=",Assign)
-   , (">",GreaterThan)
-   , (">=",GreaterThanOrEqual)
-   , ("+",Plus)
-   , ("-",Hyphen)
-   , ("&",Ampersand)
-   , ("*",Star)
-   , ("/",Slash)
-   , ("MOD",Mod)
-   , ("REM",Rem)
-   , ("**",DoubleStar)
-   , ("ABS",Abs)
-   , ("NOT",Not)
-   ]
-   & MapS.fromList
 
 data FunctionBody = FunctionBody -- ?? [FunctionDeclarative] [FunctionStatement]
                   deriving (Eq,Ord)

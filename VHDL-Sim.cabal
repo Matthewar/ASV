@@ -31,6 +31,7 @@ library
                      , Netlister.Builtin.Standard
                      , Netlister.Builtin.Netlist
                      , Netlister.Types.Scope
+                     , Netlister.Types.Operators
                      , Manager.NewDesignUnit
                      , Manager.Args
                      , Manager.Filing
