@@ -10,7 +10,7 @@ import Manager.Filing
          ( findDesignUnit
          , checkArguments
          )
-import Netlister.TypeData (NetlistStore)
+import Netlister.Types.Stores (NetlistStore)
 import qualified Parser.Parser as Parser (v1987)
 import Parser.ErrorTypes (WrappedParserError)
 import Parser.Happy.Types (DesignFile)

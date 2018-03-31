@@ -27,11 +27,12 @@ library
                      , Parser.Happy.Types
                      , Parser.Happy.Functions
                      , Parser.Happy.ParseFunctions
-                     , Netlister.TypeData
                      , Netlister.Builtin.Standard
                      , Netlister.Builtin.Netlist
                      , Netlister.Types.Scope
                      , Netlister.Types.Operators
+                     , Netlister.Types.Stores
+                     , Netlister.Types.Representation
                      , Manager.NewDesignUnit
                      , Manager.Args
                      , Manager.Filing

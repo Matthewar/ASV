@@ -6,7 +6,23 @@ module Netlister.Builtin.Standard
    ( standardPackage
    ) where
 
-import Netlister.TypeData
+import Netlister.Types.Representation
+         ( Type(..)
+         , IntegerRange(..)
+         , FloatRange(..)
+         , Enumerate(..)
+         , RangeDirection(..)
+         , SubtypeIndication(..)
+         , ArrayBounds(..)
+         , Constraint(..)
+         , Function(..)
+         , Designator(..)
+         )
+import Netlister.Types.Stores
+         ( TypeStore
+         , FunctionStore
+         , Package(..)
+         )
 import Parser.ErrorTypes (getFloatBound)
 
 import qualified Data.Map.Strict as MapS

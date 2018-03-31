@@ -10,9 +10,10 @@ module Netlister.Builtin.Netlist
 import qualified Data.Map.Strict as MapS
 import Data.Function ((&))
 
-import Netlister.TypeData
+import Netlister.Types.Stores
          ( NetlistStore(..)
          , PackageStore(..)
+         , NetlistName(..)
          )
 import Netlister.Types.Scope
          ( Scope
@@ -23,10 +24,10 @@ import Netlister.Builtin.Standard
 
 builtinPackages :: PackageStore
 builtinPackages =
-   [  ( ["STD","STANDARD"]
+   [  ( NetlistName "STD" "STANDARD"
       , standardPackage
       )
-   --,  ( ["STD","TEXTIO"]
+   --,  ( NetlistName "STD" "TEXTIO"
    --   , textioPackage
    --   )
    ]
