@@ -17,6 +17,7 @@ import Parser.Happy.Types (DesignFile)
 import Parser.Alex.Functions (runAlex)
 import Parser.ErrorTypes (printParserError)
 import qualified Netlister.Builtin.Netlist as InitialNetlist (netlist)
+import Netlister.Types.Top (ConversionStack)
 --import Netlister.ParseTree (convertTree)
 
 createTop :: Args.Options -> IO ()
@@ -31,7 +32,7 @@ createTop options = do
 -- Need state monad of current scoped and already parsed objects to be setup?
 -- Need to use StateM or whatever to combine state with Either monad?
 
-create :: FilePath -> FilePath -> String -> String -> StateT NetlistStore IO ()
+create :: FilePath -> FilePath -> String -> String -> ConversionStack
 create workPath ieeePath library unitName = do
    filePath <- liftIO $ findDesignUnit workPath ieeePath library unitName
    fileContents <- liftIO $ readFile filePath

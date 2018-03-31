@@ -33,6 +33,7 @@ library
                      , Netlister.Types.Operators
                      , Netlister.Types.Stores
                      , Netlister.Types.Representation
+                     , Netlister.Types.Top
                      , Manager.NewDesignUnit
                      , Manager.Args
                      , Manager.Filing
