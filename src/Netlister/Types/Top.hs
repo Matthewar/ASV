@@ -43,5 +43,6 @@ instance (Show ConverterError) where
       "Parser: "
       ++ show parseErr
 
+-- |Wrap error type in its position and throw it as an error
 throwWrappedError :: AlexPosn -> a -> Either (PosnWrapper a) b
 throwWrappedError pos error = Left $ PosnWrapper { getPos = pos, unPos = error }

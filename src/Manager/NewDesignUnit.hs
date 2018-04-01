@@ -1,6 +1,5 @@
 module Manager.NewDesignUnit where
 
-import Control.Monad.Trans.State
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.State (execStateT)
 import Control.Monad.Except
@@ -32,7 +31,7 @@ createTop options = do
       withExceptT (ConverterError_Filing) $ checkArguments options
       let (Args.Options workDir ieeeDir topModule) = options
           createNetlistUnit = create workDir ieeeDir "WORK" topModule
-      finalNetlist <- runStateT createNetlistUnit InitialNetlist.netlist
+      finalNetlist <- execStateT createNetlistUnit InitialNetlist.netlist
 
       -- ?? Other steps
 

@@ -27,6 +27,8 @@ instance (Show FilingError) where
       "Unable to find file: "
       ++ fileName
 
+-- |Convert list of library names to human readable list
+-- Intersperse with commas
 listLibs :: [String] -> String
 listLibs = concat . (intersperse ", ") . (map (\lib -> "\"" ++ lib ++ "\""))
 
