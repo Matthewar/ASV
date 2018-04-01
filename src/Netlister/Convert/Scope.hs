@@ -35,6 +35,7 @@ import Netlister.Types.Scope
          )
 import Netlister.Types.Operators (convertOperator)
 import Netlister.Builtin.Netlist as InitialNetlist (scope)
+import Netlister.Types.Top (throwWrappedError)
 
 -- |Convert context items to scope
 -- Takes context items (library/use statements) to scope
@@ -64,7 +65,7 @@ addLibraries (PosnWrapper pos libName:libs) currentScope =
          if upperLibName == "IEEE" then
             addLibraries libs $ MapS.insert "IEEE" MapS.empty currentScope
          else -- ?? CURRENTLY DON'T ACCEPT CUSTOM LIBRARIES
-            Left $ PosnWrapper { getPos = pos, unPos = ScopeConverterError_InvalidLibrary upperLibName }
+            throwWrappedError pos $ ScopeConverterError_InvalidLibrary upperLibName
 addLibraries [] currentScope = Right currentScope
 
 -- |Add declarations to the scope
@@ -83,17 +84,17 @@ addDeclarations
    currentScope = do
       let upperLibName = map toUpper libName
       validLibName <- if upperLibName == "IEEE" then return "IEEE"
-                      else Left $ PosnWrapper libPos $ ScopeConverterError_InvalidLibrary upperLibName
+                      else throwWrappedError libPos $ ScopeConverterError_InvalidLibrary upperLibName
       let upperPackageName = map toUpper packageName
       declareContents <- case suffix of
                            PosnWrapper _ (Suffix_Name str) -> return $ NewDeclare_Identifier str
                            PosnWrapper pos (Suffix_Operator opStr) ->
                               case convertOperator opStr of
                                  Just op -> return $ NewDeclare_Operator op
-                                 Nothing -> Left $ PosnWrapper pos $ ScopeConverterError_InvalidOperator opStr
+                                 Nothing -> throwWrappedError pos $ ScopeConverterError_InvalidOperator opStr
                            PosnWrapper _ Suffix_All -> return NewDeclare_All
                            PosnWrapper pos (Suffix_Char chr) ->
-                              Left $ PosnWrapper pos $ ScopeConverterError_SuffixChar chr
+                              throwWrappedError pos $ ScopeConverterError_SuffixChar chr
       newScope <- case MapS.lookup validLibName currentScope of
                      Just unitScope ->
                         if MapS.member upperPackageName unitScope then
@@ -108,7 +109,7 @@ addDeclarations
                                           NewDeclare_All -> AllDeclares
                                addVal = MapS.insert upperPackageName newVal
                            in return $ MapS.adjust addVal validLibName currentScope
-                     Nothing -> Left $ PosnWrapper libPos $ ScopeConverterError_LibNoScope validLibName
+                     Nothing -> throwWrappedError libPos $ ScopeConverterError_LibNoScope validLibName
       addDeclarations otherNames newScope
    where combineDeclares :: NewDeclarationScope -> DeclarationScope -> DeclarationScope
          combineDeclares NewDeclare_All _ = AllDeclares
@@ -120,4 +121,4 @@ addDeclarations
             in IncludedDeclares $ nub (newVal:lst)
 addDeclarations [] scope = Right scope
 addDeclarations (PosnWrapper pos selectedName:_) _ =
-   Left $ PosnWrapper { getPos = pos, unPos = ScopeConverterError_UseClause selectedName }
+   throwWrappedError pos $ ScopeConverterError_UseClause selectedName

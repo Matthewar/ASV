@@ -1,45 +1,60 @@
 module Manager.Filing
    ( checkArguments
    , findDesignUnit
+   , FilingError(..)
    ) where
 
 import System.Directory (doesDirectoryExist,doesFileExist,findFile)
-import System.Exit (exitFailure)
+import Control.Monad.Except (ExceptT,throwError)
+import Control.Monad.Trans (liftIO)
+import Data.List (intersperse)
 
 import qualified Manager.Args as Args (Options(..))
 
+-- |Filing error
+-- Errors that occur from reading files
+data FilingError =
+   -- |Cannot find library directory
+   FilingError_InvalidLibDir [String]
+   -- |Cannot find file
+   | FilingError_NoFoundFile String
+
+instance (Show FilingError) where
+   show (FilingError_InvalidLibDir libs) =
+      "Invalid library directory: "
+      ++ listLibs libs
+   show (FilingError_NoFoundFile fileName) =
+      "Unable to find file: "
+      ++ fileName
+
+listLibs :: [String] -> String
+listLibs lib = concat $ intersperse ", " $ map (\lib -> "\"" ++ lib ++ "\"") lib
+
 -- |Check file arguments to ensure they are valid directories
-checkArguments :: Args.Options -> IO ()
+checkArguments :: Args.Options -> ExceptT FilingError IO ()
 checkArguments options = do
    let workDir = Args.workDir options
-   validWorkDir <- doesDirectoryExist workDir
+   validWorkDir <- liftIO $ doesDirectoryExist workDir
    let ieeeDir = Args.ieeeDir options
-   validIEEEDir <- doesDirectoryExist ieeeDir
-   let validDirectories = validWorkDir && validIEEEDir
-   if not validWorkDir then
-      putStrLn $ "Error: Invalid \"work\" library directory: " ++ workDir
-   else
-      putStrLn "Success: Work directory found"
-   if not validIEEEDir then
-      putStrLn $ "Error: Invalid \"ieee\" library directory: " ++ ieeeDir
-   else
-      putStrLn "Success: IEEE directory found"
-   if not validDirectories then exitFailure else return ()
+   validIEEEDir <- liftIO $ doesDirectoryExist ieeeDir
+   case (validWorkDir,validIEEEDir) of
+      (False,False) -> throwError $ FilingError_InvalidLibDir [workDir,ieeeDir]
+      (False,True) -> throwError $ FilingError_InvalidLibDir [workDir]
+      (True,False) -> throwError $ FilingError_InvalidLibDir [ieeeDir]
+      (True,True) -> liftIO $ putStrLn "Success: Library directories found"
 
 -- |Take name of module and library, if file exists then return path
-findDesignUnit :: FilePath -> FilePath -> String -> String -> IO FilePath
+findDesignUnit :: FilePath -> FilePath -> String -> String -> ExceptT FilingError IO FilePath
 findDesignUnit workDir _ "WORK" unitName = findDesignUnit' workDir unitName
 findDesignUnit _ ieeeDir "IEEE" unitName = findDesignUnit' ieeeDir unitName
 
 -- |Find unit within chosen directory
 -- ?? NOTE: Temporary hack is to force unit to be defined in unitName.vhd
-findDesignUnit' :: FilePath -> String -> IO FilePath
+findDesignUnit' :: FilePath -> String -> ExceptT FilingError IO FilePath
 findDesignUnit' libDir unitName = do
    let fileName = libDir ++ unitName ++ ".vhd"
-   checkFile <- doesFileExist fileName
+   checkFile <- liftIO $ doesFileExist fileName
    if checkFile then do
-      putStrLn $ "Info: Found file " ++ fileName
+      liftIO $ putStrLn $ "Info: Found file " ++ fileName
       return fileName
-   else do
-      putStrLn $ "Error: Unable to find file: " ++ fileName
-      exitFailure
+   else throwError $ FilingError_NoFoundFile fileName

@@ -12,6 +12,7 @@ module Netlister.Types.Scope
    , DeclarationNames(..)
    , NewDeclarationScope(..)
    , ScopeConverterError(..)
+   , WrappedScopeConverterError
    , ScopeReturn
    ) where
 
