@@ -23,7 +23,7 @@ import Parser.Alex.Functions (runAlex)
 import Parser.ErrorTypes (printParserError)
 import qualified Netlister.Builtin.Netlist as InitialNetlist (netlist)
 import Netlister.Types.Top (ConversionStack,ConverterError(..))
---import Netlister.ParseTree (convertTree)
+import Netlister.ParseTree (convertTree)
 
 createTop :: Args.Options -> IO ()
 createTop options = do
@@ -57,7 +57,8 @@ create workPath ieeePath library unitName = do
    filePath <- lift $ withExceptT (ConverterError_Filing) $ findDesignUnit workPath ieeePath library unitName
    fileContents <- liftIO $ readFile filePath
    parseTree <- lift $ withExceptT (ConverterError_Parse) $ liftEither $ parse fileContents
-   --convertTree (create workPath ieeePath) parseTree
+   convertTree (create workPath ieeePath) library parseTree
+   -- ?? Build simulation files
    return ()
    
 -- Check dependencies

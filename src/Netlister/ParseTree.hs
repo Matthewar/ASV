@@ -36,13 +36,14 @@ import Parser.Happy.Types
 import Parser.PositionWrapper (PosnWrapper(unPos))
 import Netlister.Convert.Scope (convertScope)
 
-convertTree :: (String -> String -> ConversionStack ()) -> DesignFile -> ConversionStack ()
-convertTree create (DesignFile designUnits) =
+convertTree :: (String -> String -> ConversionStack ()) -> String -> DesignFile -> ConversionStack ()
+convertTree create library (DesignFile designUnits) =
    let convertTree' :: [WrappedDesignUnit] -> ConversionStack ()
        convertTree' (designUnit:otherUnits) = do
          (scope,library) <- lift $ withExceptT (ConverterError_Scope) $ liftEither $ getScopeAndLibraryUnit designUnit
          evalScope $ MapS.toList scope
-         
+
+
          -- ?? Link scope, parse library
          convertTree' otherUnits
        convertTree' [] = return ()

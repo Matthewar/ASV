@@ -248,5 +248,6 @@ functions =
 standardPackage :: Package
 standardPackage =
    Package
+      MapS.empty
       functions
       types

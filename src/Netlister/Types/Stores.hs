@@ -18,6 +18,7 @@ import Netlister.Types.Representation
          , Function(..)
          , FunctionBody(..)
          )
+import Netlister.Types.Scope (Scope)
 
 -- |Netlist name representation
 -- Made up of the library the unit is in and its name
@@ -49,6 +50,7 @@ type PackageStore = MapS.Map NetlistName Package
 -- All declares held in a package
 data Package =
    Package
+      Scope -- ^ Used to link package header scope to package body
       -- |Subprogram declaration
       --SubprogramHeaderStore ?? Instead do separately
       --ProcedureStore
