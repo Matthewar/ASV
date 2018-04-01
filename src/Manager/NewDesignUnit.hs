@@ -33,13 +33,25 @@ createTop options = do
       let (Args.Options workDir ieeeDir topModule) = options
           createNetlistUnit = create workDir ieeeDir "WORK" topModule
       finalNetlist <- runStateT createNetlistUnit InitialNetlist.netlist
-      return ()
-   --case result of
-   return ()
+
+      -- ?? Other steps
+
+      return finalNetlist
+   case result of
+      Left err -> printError err
+      Right result -> return ()
 -- Call create function for topmost file
 --
 -- Need state monad of current scoped and already parsed objects to be setup?
 -- Need to use StateM or whatever to combine state with Either monad?
+
+printError :: ConverterError -> IO ()
+printError error = do
+   let genericMessage = "Error: "
+       customMessage = show error
+       fullMessage = genericMessage ++ customMessage
+   putStrLn fullMessage
+   exitFailure
 
 create :: FilePath -> FilePath -> String -> String -> ConversionStack ()
 create workPath ieeePath library unitName = do

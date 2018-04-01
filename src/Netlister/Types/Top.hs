@@ -32,5 +32,16 @@ data ConverterError =
    -- |Error in parser
    | ConverterError_Parse WrappedParserError
 
+instance (Show ConverterError) where
+   show (ConverterError_Filing fileErr) =
+      "Filer: "
+      ++ show fileErr
+   show (ConverterError_Scope scopeErr) =
+      "Scope Conversion: "
+      ++ show scopeErr
+   show (ConverterError_Parse parseErr) =
+      "Parser: "
+      ++ show parseErr
+
 throwWrappedError :: AlexPosn -> a -> Either (PosnWrapper a) b
 throwWrappedError pos error = Left $ PosnWrapper { getPos = pos, unPos = error }
