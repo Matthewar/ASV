@@ -28,7 +28,7 @@ instance (Show FilingError) where
       ++ fileName
 
 listLibs :: [String] -> String
-listLibs lib = concat $ intersperse ", " $ map (\lib -> "\"" ++ lib ++ "\"") lib
+listLibs = concat . (intersperse ", ") . (map (\lib -> "\"" ++ lib ++ "\""))
 
 -- |Check file arguments to ensure they are valid directories
 checkArguments :: Args.Options -> ExceptT FilingError IO ()
