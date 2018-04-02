@@ -4,6 +4,7 @@ module Parser.ErrorTypes
    , WrappedParserError
    , printParserError
    , getFloatBound
+   , getLineAndColErrStr
 )
 where
 

@@ -37,7 +37,7 @@ import Parser.PositionWrapper (PosnWrapper(unPos))
 import Netlister.Convert.Scope (convertScope)
 
 convertTree :: (String -> String -> ConversionStack ()) -> String -> DesignFile -> ConversionStack ()
-convertTree create library (DesignFile designUnits) =
+convertTree create libraryName (DesignFile designUnits) =
    let convertTree' :: [WrappedDesignUnit] -> ConversionStack ()
        convertTree' (designUnit:otherUnits) = do
          (scope,library) <- lift $ withExceptT (ConverterError_Scope) $ liftEither $ getScopeAndLibraryUnit designUnit
