@@ -7,12 +7,15 @@
 module Netlister.Types.Top
          ( ConversionStack
          , ConverterError(..)
-         , throwWrappedError
          , NetlistError(..)
          ) where
 
 import Control.Monad.Trans.State (StateT)
-import Control.Monad.Except (ExceptT)
+import Control.Monad.Except
+         ( ExceptT
+         , MonadError
+         , throwError
+         )
 
 import Netlister.Types.Stores (NetlistStore)
 import Netlister.Types.Scope (WrappedScopeConverterError)
@@ -59,10 +62,6 @@ instance (Show ConverterError) where
       "Not implemented: "
       ++ info
       ++ getLineAndColErrStr pos
-
--- |Wrap error type in its position and throw it as an error
-throwWrappedError :: AlexPosn -> a -> Either (PosnWrapper a) b
-throwWrappedError pos error = Left $ PosnWrapper { getPos = pos, unPos = error }
 
 -- |Errors in the netlist converter
 data NetlistError =

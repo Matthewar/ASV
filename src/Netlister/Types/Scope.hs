@@ -23,6 +23,7 @@ import Parser.Happy.Types
          )
 
 import qualified Data.Map.Strict as MapS
+import Control.Monad.Trans.State (StateT)
 
 -- |Current scope
 -- Library Name, Included Objects
@@ -92,4 +93,4 @@ instance (Show ScopeConverterError) where
 
 type WrappedScopeConverterError = PosnWrapper ScopeConverterError
 
-type ScopeReturn = Either WrappedScopeConverterError Scope
+type ScopeReturn a = StateT Scope (Either WrappedScopeConverterError) a

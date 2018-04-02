@@ -11,6 +11,14 @@ module Netlister.Convert.Scope
 import qualified Data.Map.Strict as MapS
 import Data.List (nub)
 import Data.Char (toUpper)
+import Control.Monad (unless)
+import Control.Monad.Trans.State
+         ( StateT
+         , execStateT
+         , modify
+         , gets
+         )
+import Control.Monad.Except (throwError)
 
 import Parser.Happy.Types
          ( WrappedContextItem
@@ -32,93 +40,112 @@ import Netlister.Types.Scope
          , DeclarationNames(..)
          , NewDeclarationScope(..)
          , ScopeConverterError(..)
+         , WrappedScopeConverterError
          )
 import Netlister.Types.Operators (convertOperator)
 import Netlister.Builtin.Netlist as InitialNetlist (scope)
-import Netlister.Types.Top (throwWrappedError)
 
 -- |Convert context items to scope
 -- Takes context items (library/use statements) to scope
-convertScope :: [WrappedContextItem] -> ScopeReturn
-convertScope contextItems = convertScope' contextItems InitialNetlist.scope
+convertScope :: [WrappedContextItem] -> Either WrappedScopeConverterError Scope
+convertScope contextItems = let contextOrder = reverse contextItems
+                                conversion = convertScope' contextOrder
+                            in execStateT conversion InitialNetlist.scope
 
 -- |Internal: Convert context items to scope
 -- Takes context items, initial scope and build scope
-convertScope' :: [WrappedContextItem] -> Scope -> ScopeReturn
-convertScope' (contextItem:otherItems) currentScope = do
-   let itemInfo = unPos contextItem
-   newScope <- case itemInfo of
-                  Context_LibraryClause (LibraryClause libNames) ->
-                     addLibraries libNames currentScope
-                  Context_UseClause (UseClause selectedNames) ->
-                     addDeclarations selectedNames currentScope
-   convertScope' otherItems newScope
-convertScope' [] currentScope = Right currentScope
+convertScope' :: [WrappedContextItem] -> ScopeReturn ()
+convertScope' (PosnWrapper _ contextItem:otherContext) = do
+   case contextItem of
+      Context_LibraryClause (LibraryClause libNames) -> addLibraries $ reverse libNames
+      Context_UseClause (UseClause selectedNames) -> addDeclarations $ reverse selectedNames
+   convertScope' otherContext
+convertScope' [] = return ()
 
 -- |Add library to the scope
 -- Take library names, initial scope and return updated scope
-addLibraries :: [WrappedSimpleName] -> Scope -> ScopeReturn
-addLibraries (PosnWrapper pos libName:libs) currentScope =
+addLibraries :: [WrappedSimpleName] -> ScopeReturn ()
+addLibraries (PosnWrapper pos libName:libs) = do
    let upperLibName = map toUpper libName
-   in if MapS.member upperLibName currentScope then addLibraries libs currentScope
-      else
-         if upperLibName == "IEEE" then
-            addLibraries libs $ MapS.insert "IEEE" MapS.empty currentScope
-         else -- ?? CURRENTLY DON'T ACCEPT CUSTOM LIBRARIES
-            throwWrappedError pos $ ScopeConverterError_InvalidLibrary upperLibName
-addLibraries [] currentScope = Right currentScope
+   unless (elem upperLibName ["IEEE","WORK","STD"]) $ throwError $ PosnWrapper pos $ ScopeConverterError_InvalidLibrary upperLibName -- ?? CURRENTLY DON'T ACCEPT CUSTOM LIBRARIES
+   libInScope <- gets $ MapS.member upperLibName
+   unless libInScope $ modify $ MapS.insert upperLibName MapS.empty
+   addLibraries libs
+addLibraries [] = return ()
 
 -- |Add declarations to the scope
 -- Takes selected names, initial scope and return updated scope
-addDeclarations :: [WrappedSelectedName] -> Scope -> ScopeReturn
+addDeclarations :: [WrappedSelectedName] -> ScopeReturn ()
 addDeclarations
    (  (PosnWrapper _ (SelectedName
          (PosnWrapper _ (Prefix_Name (Name_Selected (SelectedName
             (PosnWrapper libPos (Prefix_Name (Name_Simple libName)))
             (PosnWrapper packagePos (Suffix_Name packageName))
          ))))
-         suffix
+         (PosnWrapper suffixPos suffix)
       ))
       :otherNames
-   )
-   currentScope = do
+   ) = do
       let upperLibName = map toUpper libName
-      validLibName <- if upperLibName == "IEEE" then return "IEEE"
-                      else throwWrappedError libPos $ ScopeConverterError_InvalidLibrary upperLibName
+      unless (elem upperLibName ["IEEE","WORK","STD"]) $ throwError $ PosnWrapper libPos $ ScopeConverterError_InvalidLibrary upperLibName -- ?? CURRENTLY DON'T ACCEPT CUSTOM LIBRARIES
       let upperPackageName = map toUpper packageName
       declareContents <- case suffix of
-                           PosnWrapper _ (Suffix_Name str) -> return $ NewDeclare_Identifier str
-                           PosnWrapper pos (Suffix_Operator opStr) ->
-                              case convertOperator opStr of
-                                 Just op -> return $ NewDeclare_Operator op
-                                 Nothing -> throwWrappedError pos $ ScopeConverterError_InvalidOperator opStr
-                           PosnWrapper _ Suffix_All -> return NewDeclare_All
-                           PosnWrapper pos (Suffix_Char chr) ->
-                              throwWrappedError pos $ ScopeConverterError_SuffixChar chr
-      newScope <- case MapS.lookup validLibName currentScope of
-                     Just unitScope ->
-                        if MapS.member upperPackageName unitScope then
-                           let updateVal = MapS.adjust (combineDeclares declareContents) upperPackageName
-                           in return $ MapS.adjust updateVal validLibName currentScope
-                        else
-                           let newVal = case declareContents of
-                                          NewDeclare_Identifier str ->
-                                             IncludedDeclares [Declare_Identifier str]
-                                          NewDeclare_Operator op -> 
-                                             IncludedDeclares [Declare_Operator op]
-                                          NewDeclare_All -> AllDeclares
-                               addVal = MapS.insert upperPackageName newVal
-                           in return $ MapS.adjust addVal validLibName currentScope
-                     Nothing -> throwWrappedError libPos $ ScopeConverterError_LibNoScope validLibName
-      addDeclarations otherNames newScope
-   where combineDeclares :: NewDeclarationScope -> DeclarationScope -> DeclarationScope
-         combineDeclares NewDeclare_All _ = AllDeclares
-         combineDeclares _ AllDeclares = AllDeclares
-         combineDeclares newDeclare (IncludedDeclares lst) =
-            let newVal = case newDeclare of
-                           NewDeclare_Identifier str -> Declare_Identifier str
-                           NewDeclare_Operator op -> Declare_Operator op
-            in IncludedDeclares $ nub (newVal:lst)
-addDeclarations [] scope = Right scope
-addDeclarations (PosnWrapper pos selectedName:_) _ =
-   throwWrappedError pos $ ScopeConverterError_UseClause selectedName
+         Suffix_Name str -> return $ NewDeclare_Identifier str
+         Suffix_Operator opStr -> case convertOperator opStr of
+            Just op -> return $ NewDeclare_Operator op
+            Nothing -> throwError $ PosnWrapper suffixPos $ ScopeConverterError_InvalidOperator opStr
+         Suffix_All -> return NewDeclare_All
+         Suffix_Char chr -> throwError $ PosnWrapper suffixPos $ ScopeConverterError_SuffixChar chr
+      newScope <- gets $ MapS.lookup upperLibName
+      unitScope <- case newScope of
+         Just unitScope -> return unitScope
+         Nothing -> throwError $ PosnWrapper libPos $ ScopeConverterError_LibNoScope upperLibName
+      unitInScope <- gets $ MapS.member upperPackageName
+      let innerUpdate = if unitInScope
+                           then MapS.adjust (combineDeclares declareContents) upperPackageName
+                           else MapS.insert upperPackageName $
+                                 case declareContents of
+                                    NewDeclare_Identifier str ->
+                                       IncludedDeclares [Declare_Identifier str]
+                                    NewDeclare_Operator op -> 
+                                       IncludedDeclares [Declare_Operator op]
+                                    NewDeclare_All -> AllDeclares
+      modify $ MapS.adjust innerUpdate upperLibName
+      addDeclarations otherNames
+addDeclarations [] = return ()
+addDeclarations (PosnWrapper pos selectedName:_) =
+   throwError $ PosnWrapper pos $ ScopeConverterError_UseClause selectedName
+
+-- |Combine declarations in declaration scope
+combineDeclares :: NewDeclarationScope -> DeclarationScope -> DeclarationScope
+combineDeclares NewDeclare_All _ = AllDeclares
+combineDeclares _ AllDeclares = AllDeclares
+combineDeclares newDeclare (IncludedDeclares lst) =
+   let newVal = case newDeclare of
+                  NewDeclare_Identifier str -> Declare_Identifier str
+                  NewDeclare_Operator op -> Declare_Operator op
+   in IncludedDeclares $ nub (newVal:lst)
+
+{-
+-- |Evaluate scope
+-- Take the scope, which is a list of names, and convert it to a readable store
+evalScope :: Scope -> ConversionStack NetlistStore
+evalScope scope =
+   let scopeList = MapS.toList scope
+       emptyNetlist (NetlistStore _) = NetlistStore MapS.empty -- ?? Keep entities, just empty packages
+   in do
+      initialNetlist <- gets emptyNetlist
+      evalScope' scopeList initialNetlist
+   where evalScope' :: [(String,UnitScope)] -> NetlistStore -> ConversionStack NetlistStore
+         evalScope' ((libName,unitScope):scopes) netlistStore =
+            let newNetlistStore = evalUnitScope libName (MapS.toList unitScope) netlistStore
+            in evalScope' scopes newNetlistStore
+         evalScope' [] netlistStore = return netlistStore
+         evalUnitScope :: String -> [(String,DeclarationScope)] -> NetlistStore -> ConversionStack NetlistStore
+         evalUnitScope libName ((unitName,AllDeclares):declares) netlistStore = do
+            let name = NetlistName libName unitName
+                getAll (NetlistStore packages) = packages MapS.! name
+            newPackage <- gets getAll
+            evalUnitScope libName declares $ MapS.insert name newPackage netlistStore
+         evalUnitScope 
+-}
