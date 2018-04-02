@@ -6,6 +6,7 @@
 -}
 module Netlister.Convert.Scope
          ( convertScope
+         , evalScope
          ) where
 
 import qualified Data.Map.Strict as MapS
@@ -43,6 +44,11 @@ import Netlister.Types.Scope
          , WrappedScopeConverterError
          )
 import Netlister.Types.Operators (convertOperator)
+import Netlister.Types.Top (ConversionStack)
+import Netlister.Types.Stores
+         ( NetlistStore(..)
+         , NetlistName(..)
+         )
 import Netlister.Builtin.Netlist as InitialNetlist (scope)
 
 -- |Convert context items to scope
@@ -126,11 +132,36 @@ combineDeclares newDeclare (IncludedDeclares lst) =
                   NewDeclare_Operator op -> Declare_Operator op
    in IncludedDeclares $ nub (newVal:lst)
 
-{-
 -- |Evaluate scope
+-- Run through scope, evaluating (IE converting) any modules not yet parsed/converted
+evalScope :: (String -> String -> ConversionStack()) -> Scope -> ConversionStack ()
+evalScope create =
+   let evalScope' ((libName,unitScope):libScope) =
+         let createUnit :: String -> ConversionStack ()
+             createUnit = create libName
+             createNetlistName :: String -> NetlistName
+             createNetlistName = NetlistName libName
+             evalUnitScope :: [String] -> ConversionStack ()
+             evalUnitScope (unitName:otherUnitNames) = do
+               let netlistName = createNetlistName unitName
+                   isInScope :: NetlistStore -> Bool
+                   isInScope = (MapS.member netlistName) . packages
+                   -- ?? Add other checks
+               inScope <- gets isInScope
+               unless inScope $ createUnit unitName
+               evalUnitScope otherUnitNames
+             evalUnitScope [] = return ()
+         in do
+               evalUnitScope $ MapS.keys unitScope
+               evalScope' libScope
+       evalScope' [] = return ()
+   in evalScope' . MapS.toList
+
+{-
+-- |Convert scope
 -- Take the scope, which is a list of names, and convert it to a readable store
-evalScope :: Scope -> ConversionStack NetlistStore
-evalScope scope =
+buildRealScope :: Scope -> ConversionStack NetlistStore
+buildRealScope scope =
    let scopeList = MapS.toList scope
        emptyNetlist (NetlistStore _) = NetlistStore MapS.empty -- ?? Keep entities, just empty packages
    in do

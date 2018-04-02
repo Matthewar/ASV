@@ -23,10 +23,6 @@ import Netlister.Types.Top
          ( ConversionStack
          , ConverterError(ConverterError_Scope)
          )
-import Netlister.Types.Stores
-         ( NetlistStore(..)
-         , NetlistName(..)
-         )
 import Parser.Happy.Types
          ( DesignFile(..)
          , DesignUnit(..)
@@ -34,38 +30,22 @@ import Parser.Happy.Types
          , WrappedLibraryUnit
          )
 import Parser.PositionWrapper (PosnWrapper(unPos))
-import Netlister.Convert.Scope (convertScope)
+import Netlister.Convert.Scope
+         ( convertScope
+         , evalScope
+         )
 
 convertTree :: (String -> String -> ConversionStack ()) -> String -> DesignFile -> ConversionStack ()
 convertTree create libraryName (DesignFile designUnits) =
    let convertTree' :: [WrappedDesignUnit] -> ConversionStack ()
        convertTree' (designUnit:otherUnits) = do
          (scope,library) <- lift $ withExceptT (ConverterError_Scope) $ liftEither $ getScopeAndLibraryUnit designUnit
-         evalScope $ MapS.toList scope
+         evalScope create scope
 
 
          -- ?? Link scope, parse library
          convertTree' otherUnits
        convertTree' [] = return ()
-       evalScope :: [(String,UnitScope)] -> ConversionStack ()
-       evalScope ((libName,unitScope):libScope) =
-         let evalUnitScope :: [String] -> ConversionStack ()
-             evalUnitScope (unitName:otherUnitNames) = do
-               let isInScope :: NetlistStore -> Bool
-                   isInScope store = let netlistName = NetlistName libName unitName
-                                     in MapS.member netlistName $ packages store
-                                     -- ?? Add other checks
-               inScope <- gets isInScope
-               if not inScope then do
-                  create libName unitName
-                  evalUnitScope otherUnitNames
-               else
-                  evalUnitScope otherUnitNames -- ?? How to write this more concisely
-             evalUnitScope [] = return ()
-         in do
-               evalUnitScope $ MapS.keys unitScope
-               evalScope libScope
-       evalScope [] = return ()
    in convertTree' designUnits
 
 getScopeAndLibraryUnit :: WrappedDesignUnit -> Either WrappedScopeConverterError (Scope,WrappedLibraryUnit)
