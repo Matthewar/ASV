@@ -80,3 +80,10 @@ data ScopeStore =
       { scopeFunctions :: FunctionStore
       , scopeTypes :: TypeStore
       }
+
+-- |Empty real scope store
+emptyScopeStore :: ScopeStore
+emptyScopeStore =
+   ScopeStore
+      MapS.empty
+      MapS.empty

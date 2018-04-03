@@ -249,6 +249,6 @@ functions =
 standardPackage :: Package
 standardPackage =
    Package
-      (ScopeStore MapS.empty MapS.empty)
+      emptyScopeStore
       functions
       types

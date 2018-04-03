@@ -67,6 +67,7 @@ import Netlister.Types.Stores
          , FunctionStore
          , ScopeStore(..)
          , ScopeStore(..)
+         , emptyScopeStore
          )
 import Netlister.Types.Representation
          ( Function(..)
@@ -171,7 +172,7 @@ evalScope create scope = do
    let evalScope' :: [(String,UnitScope)] -> BuildScope
        evalScope' = evalScopeList create
    -- initialScope <- gets $ \(NetlistStore _) -> NetlistStore MapS.empty -- ?? Keep entities, just empty packages
-   execStateT (evalScope' $ MapS.toList scope) $ ScopeStore MapS.empty MapS.empty -- ?? Need to order scope correctly
+   execStateT (evalScope' $ MapS.toList scope) emptyScopeStore -- ?? Need to order scope correctly
    -- ?? Combine entities from original scope -- is this even needed
 
 -- |Evaluate scope list
@@ -212,8 +213,7 @@ getPackageParts name declareScope netlistStore =
                   { scopeFunctions = packageFunctions package
                   , scopeTypes = packageTypes package
                   }
-         IncludedDeclares declares -> execStateT (getPackageDeclares package declares) emptyScope
-   where emptyScope = ScopeStore MapS.empty MapS.empty
+         IncludedDeclares declares -> execStateT (getPackageDeclares package declares) emptyScopeStore
 
 -- |Get scoped declares from package
 -- Take relevant parts of package and put into scope
