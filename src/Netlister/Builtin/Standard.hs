@@ -23,6 +23,7 @@ import Netlister.Types.Stores
          , FunctionStore
          , Package(..)
          , ScopeStore(..)
+         , emptyScopeStore
          )
 import Parser.ErrorTypes (getFloatBound)
 

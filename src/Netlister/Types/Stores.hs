@@ -10,6 +10,7 @@ module Netlister.Types.Stores
    , PackageStore
    , Package(..)
    , ScopeStore(..)
+   , emptyScopeStore
    ) where
 
 import qualified Data.Map.Strict as MapS
