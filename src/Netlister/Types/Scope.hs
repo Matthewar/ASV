@@ -11,6 +11,7 @@ module Netlister.Types.Scope
    , DeclarationScope(..)
    , DeclarationNames(..)
    , NewDeclarationScope(..)
+   , WrappedNewDeclarationScope
    , ScopeConverterError(..)
    , WrappedScopeConverterError
    , ScopeReturn
@@ -18,6 +19,7 @@ module Netlister.Types.Scope
 
 import Netlister.Types.Operators (Operator)
 import Parser.PositionWrapper
+import Parser.Alex.BaseTypes (AlexPosn)
 import Parser.Happy.Types
          ( SelectedName
          )
@@ -37,7 +39,8 @@ type UnitScope = MapS.Map String DeclarationScope
 -- Declarations to be included from the package
 data DeclarationScope =
    -- |List of declarations included from unit
-   IncludedDeclares [DeclarationNames]
+   -- Also information on positioning used for error messages
+   IncludedDeclares [(DeclarationNames,AlexPosn)]
    -- |All declares included from unit
    | AllDeclares
 
@@ -58,6 +61,9 @@ data NewDeclarationScope =
    -- |Add all declarations to scope
    | NewDeclare_All
 
+-- |Wrapped new declaration
+type WrappedNewDeclarationScope = PosnWrapper NewDeclarationScope
+
 data ScopeConverterError =
    -- |Invalid library
    -- Currently only IEEE is supported
@@ -74,6 +80,12 @@ data ScopeConverterError =
    | ScopeConverterError_InvalidOperator String
    -- |Library is not in current scope
    | ScopeConverterError_LibNoScope String
+   -- |Declare is not in included package
+   -- ?? Need package name in this error as well
+   | ScopeConverterError_InvalidDeclare String
+   -- |Operator declare is not in included package
+   -- ?? Need package name in this error as well
+   | ScopeConverterError_InvalidOpDeclare Operator
 
 instance (Show ScopeConverterError) where
    show (ScopeConverterError_InvalidLibrary libName) =
@@ -90,7 +102,21 @@ instance (Show ScopeConverterError) where
    show (ScopeConverterError_LibNoScope libName) =
       "the library is not in the current scope: "
       ++ libName
+   show (ScopeConverterError_InvalidDeclare declareName) =
+      "the declare: \""
+      ++ declareName
+      ++ "\" can not be found in the package: \""
+      -- ?? Insert package name here
+      ++ "\""
+   show (ScopeConverterError_InvalidOpDeclare op) =
+      "the operator declare: \""
+      ++ show op
+      ++ "\" can not be found in the package: \""
+      -- ?? Insert package name here
+      ++ "\""
 
+-- |'ScopeConverterError' with position
 type WrappedScopeConverterError = PosnWrapper ScopeConverterError
 
+-- |Scope return type
 type ScopeReturn a = StateT Scope (Either WrappedScopeConverterError) a

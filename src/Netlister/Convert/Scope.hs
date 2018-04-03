@@ -19,8 +19,15 @@ import Control.Monad.Trans.State
          , modify
          , gets
          )
-import Control.Monad.Except (throwError)
+import Control.Monad.Except
+         ( ExceptT
+         , throwError
+         , lift
+         , liftEither
+         , withExceptT
+         )
 
+import Parser.Alex.BaseTypes (AlexPosn)
 import Parser.Happy.Types
          ( WrappedContextItem
          , ContextItem(..)
@@ -36,18 +43,35 @@ import Parser.Happy.Types
 import Parser.PositionWrapper
 import Netlister.Types.Scope
          ( Scope
+         , UnitScope
          , ScopeReturn
          , DeclarationScope(..)
          , DeclarationNames(..)
          , NewDeclarationScope(..)
+         , WrappedNewDeclarationScope
          , ScopeConverterError(..)
          , WrappedScopeConverterError
          )
-import Netlister.Types.Operators (convertOperator)
-import Netlister.Types.Top (ConversionStack)
+import Netlister.Types.Operators
+         ( Operator
+         , convertOperator
+         )
+import Netlister.Types.Top
+         ( ConverterError(ConverterError_Scope)
+         , ConversionStack
+         )
 import Netlister.Types.Stores
          ( NetlistStore(..)
          , NetlistName(..)
+         , Package(..)
+         , FunctionStore
+         , ScopeStore(..)
+         , ScopeStore(..)
+         )
+import Netlister.Types.Representation
+         ( Function(..)
+         , FunctionBody
+         , Designator(..)
          )
 import Netlister.Builtin.Netlist as InitialNetlist (scope)
 
@@ -102,19 +126,20 @@ addDeclarations
             Nothing -> throwError $ PosnWrapper suffixPos $ ScopeConverterError_InvalidOperator opStr
          Suffix_All -> return NewDeclare_All
          Suffix_Char chr -> throwError $ PosnWrapper suffixPos $ ScopeConverterError_SuffixChar chr
+      let wrappedDeclareContents = PosnWrapper suffixPos declareContents
       newScope <- gets $ MapS.lookup upperLibName
       unitScope <- case newScope of
          Just unitScope -> return unitScope
          Nothing -> throwError $ PosnWrapper libPos $ ScopeConverterError_LibNoScope upperLibName
       unitInScope <- gets $ MapS.member upperPackageName
       let innerUpdate = if unitInScope
-                           then MapS.adjust (combineDeclares declareContents) upperPackageName
+                           then MapS.adjust (combineDeclares wrappedDeclareContents) upperPackageName
                            else MapS.insert upperPackageName $
                                  case declareContents of
                                     NewDeclare_Identifier str ->
-                                       IncludedDeclares [Declare_Identifier str]
-                                    NewDeclare_Operator op -> 
-                                       IncludedDeclares [Declare_Operator op]
+                                       IncludedDeclares [(Declare_Identifier str,suffixPos)]
+                                    NewDeclare_Operator op ->
+                                       IncludedDeclares [(Declare_Operator op,suffixPos)]
                                     NewDeclare_All -> AllDeclares
       modify $ MapS.adjust innerUpdate upperLibName
       addDeclarations otherNames
@@ -123,60 +148,133 @@ addDeclarations (PosnWrapper pos selectedName:_) =
    throwError $ PosnWrapper pos $ ScopeConverterError_UseClause selectedName
 
 -- |Combine declarations in declaration scope
-combineDeclares :: NewDeclarationScope -> DeclarationScope -> DeclarationScope
-combineDeclares NewDeclare_All _ = AllDeclares
+combineDeclares :: WrappedNewDeclarationScope -> DeclarationScope -> DeclarationScope
+combineDeclares (PosnWrapper _ NewDeclare_All) _ = AllDeclares
 combineDeclares _ AllDeclares = AllDeclares
-combineDeclares newDeclare (IncludedDeclares lst) =
+combineDeclares (PosnWrapper pos newDeclare) (IncludedDeclares lst) =
    let newVal = case newDeclare of
                   NewDeclare_Identifier str -> Declare_Identifier str
                   NewDeclare_Operator op -> Declare_Operator op
-   in IncludedDeclares $ nub (newVal:lst)
+   in IncludedDeclares $
+         if any (\(val,_) -> val == newVal) lst
+            then lst
+            else ((newVal,pos):lst)
+
+-- |Secondary state stores scoped conversions
+-- Scoped conversions are converted modules required by the scope
+type BuildScope = StateT ScopeStore (StateT NetlistStore (ExceptT ConverterError IO)) ()
 
 -- |Evaluate scope
 -- Run through scope, evaluating (IE converting) any modules not yet parsed/converted
-evalScope :: (String -> String -> ConversionStack()) -> Scope -> ConversionStack ()
-evalScope create =
-   let evalScope' ((libName,unitScope):libScope) =
-         let createUnit :: String -> ConversionStack ()
-             createUnit = create libName
-             createNetlistName :: String -> NetlistName
-             createNetlistName = NetlistName libName
-             evalUnitScope :: [String] -> ConversionStack ()
-             evalUnitScope (unitName:otherUnitNames) = do
-               let netlistName = createNetlistName unitName
-                   isInScope :: NetlistStore -> Bool
-                   isInScope = (MapS.member netlistName) . packages
-                   -- ?? Add other checks
-               inScope <- gets isInScope
-               unless inScope $ createUnit unitName
-               evalUnitScope otherUnitNames
-             evalUnitScope [] = return ()
-         in do
-               evalUnitScope $ MapS.keys unitScope
-               evalScope' libScope
-       evalScope' [] = return ()
-   in evalScope' . MapS.toList
+evalScope :: (String -> String -> ConversionStack()) -> Scope -> ConversionStack ScopeStore
+evalScope create scope = do
+   let evalScope' :: [(String,UnitScope)] -> BuildScope
+       evalScope' = evalScopeList create
+   -- initialScope <- gets $ \(NetlistStore _) -> NetlistStore MapS.empty -- ?? Keep entities, just empty packages
+   execStateT (evalScope' $ MapS.toList scope) $ ScopeStore MapS.empty MapS.empty -- ?? Need to order scope correctly
+   -- ?? Combine entities from original scope -- is this even needed
 
-{-
--- |Convert scope
--- Take the scope, which is a list of names, and convert it to a readable store
-buildRealScope :: Scope -> ConversionStack NetlistStore
-buildRealScope scope =
-   let scopeList = MapS.toList scope
-       emptyNetlist (NetlistStore _) = NetlistStore MapS.empty -- ?? Keep entities, just empty packages
-   in do
-      initialNetlist <- gets emptyNetlist
-      evalScope' scopeList initialNetlist
-   where evalScope' :: [(String,UnitScope)] -> NetlistStore -> ConversionStack NetlistStore
-         evalScope' ((libName,unitScope):scopes) netlistStore =
-            let newNetlistStore = evalUnitScope libName (MapS.toList unitScope) netlistStore
-            in evalScope' scopes newNetlistStore
-         evalScope' [] netlistStore = return netlistStore
-         evalUnitScope :: String -> [(String,DeclarationScope)] -> NetlistStore -> ConversionStack NetlistStore
-         evalUnitScope libName ((unitName,AllDeclares):declares) netlistStore = do
-            let name = NetlistName libName unitName
-                getAll (NetlistStore packages) = packages MapS.! name
-            newPackage <- gets getAll
-            evalUnitScope libName declares $ MapS.insert name newPackage netlistStore
-         evalUnitScope 
--}
+-- |Evaluate scope list
+-- Run through scope list, evaluating any units not yet parsed/converted
+evalScopeList :: (String -> String -> ConversionStack ()) -> [(String,UnitScope)] -> BuildScope
+evalScopeList create ((libName,unitScope):libScope) = do
+  let evalUnitScope' :: [(String,DeclarationScope)] -> BuildScope
+      evalUnitScope' = evalUnitScope create libName
+  evalUnitScope' $ MapS.toList unitScope
+  evalScopeList create libScope
+evalScopeList _ [] = return ()
+
+-- |Evaluate unit scope
+-- Run through unit scope, evaluating any units not yet parsed/converted
+evalUnitScope :: (String -> String -> ConversionStack ()) -> String -> [(String,DeclarationScope)] -> BuildScope
+evalUnitScope create libName ((unitName,scope):otherUnits) = do
+   let netlistName = NetlistName libName unitName
+       isInScope :: NetlistStore -> Bool
+       isInScope = (MapS.member netlistName) . packages
+   -- ?? Add other checks
+   inScope <- lift $ gets isInScope
+   unless inScope $ lift $ create libName unitName
+   newWrappedScope <- lift $ gets $ getPackageParts netlistName scope
+   newScope <- lift $ lift $ withExceptT (ConverterError_Scope) $ liftEither newWrappedScope
+   mergeScope newScope
+   evalUnitScope create libName otherUnits
+evalUnitScope _ _ [] = return ()
+
+-- |Get scoped declares from stored netlist
+-- Take relevant parts of included packages and put into scope
+getPackageParts :: NetlistName -> DeclarationScope -> NetlistStore -> Either WrappedScopeConverterError ScopeStore
+getPackageParts name declareScope netlistStore =
+   let package = (packages netlistStore) MapS.! name
+   in case declareScope of
+         AllDeclares ->
+            return $
+               ScopeStore
+                  { scopeFunctions = packageFunctions package
+                  , scopeTypes = packageTypes package
+                  }
+         IncludedDeclares declares -> execStateT (getPackageDeclares package declares) emptyScope
+   where emptyScope = ScopeStore MapS.empty MapS.empty
+
+-- |Get scoped declares from package
+-- Take relevant parts of package and put into scope
+getPackageDeclares :: Package -> [(DeclarationNames,AlexPosn)] -> StateT ScopeStore (Either WrappedScopeConverterError) ()
+getPackageDeclares exportPackage ((Declare_Operator op,pos):declares) = do
+   let functions = packageFunctions exportPackage
+       newFunctions = findPackageFunctionsByOperator op functions
+       modifyScope newScope = newScope { scopeFunctions = MapS.union newFunctions $ scopeFunctions newScope }
+   if MapS.null newFunctions
+      then modify modifyScope
+      else throwError $ PosnWrapper pos $ ScopeConverterError_InvalidOpDeclare op
+   getPackageDeclares exportPackage declares
+getPackageDeclares exportPackage ((Declare_Identifier name,pos):declares) = do
+   checkTypes exportPackage name pos
+   getPackageDeclares exportPackage declares
+getPackageDeclares _ [] = return ()
+
+-- |Get scoped declares from stored types
+-- Check types of package and if relevant, put into scope
+-- If not, check functions
+checkTypes :: Package -> String -> AlexPosn -> StateT ScopeStore (Either WrappedScopeConverterError) ()
+checkTypes exportPackage name pos =
+   let modifyScope foundType newScope = newScope { scopeTypes = MapS.insert name foundType $ scopeTypes newScope }
+   in case MapS.lookup name $ packageTypes exportPackage of
+         Just foundType -> modify $ modifyScope foundType
+         Nothing -> checkFunctions exportPackage name pos
+
+-- |Get scoped declares from stored functions
+-- Check functions of package and if relevant, put into scope
+-- If not, throw error
+-- ?? If not, check <next declares type>
+checkFunctions :: Package -> String -> AlexPosn -> StateT ScopeStore (Either WrappedScopeConverterError) ()
+checkFunctions exportPackage name pos =
+   let newFunctions = findPackageFunctionsByIdentifier name $ packageFunctions exportPackage
+       modifyScope newScope = newScope { scopeFunctions = MapS.union newFunctions $ scopeFunctions newScope }
+   in if not $ MapS.null newFunctions
+         then modify modifyScope
+         else throwError $ PosnWrapper pos $ ScopeConverterError_InvalidDeclare name -- ?? Continue from here once expand package/scope definition
+
+-- |Find an operator function
+findPackageFunctionsByOperator :: Operator -> FunctionStore -> FunctionStore
+findPackageFunctionsByOperator expectedOp =
+   let functionFind :: Function -> (Maybe FunctionBody) -> Bool
+       functionFind (Function (Designator_Operator op) _ _) _ = op == expectedOp
+       functionFind _ _ = False
+   in MapS.filterWithKey functionFind
+
+-- |Find a (non-operator) function
+findPackageFunctionsByIdentifier :: String -> FunctionStore -> FunctionStore
+findPackageFunctionsByIdentifier expectedName =
+   let functionFind :: Function -> (Maybe FunctionBody) -> Bool
+       functionFind (Function (Designator_Identifier name) _ _) _ = name == expectedName
+       functionFind _ _ = False
+   in MapS.filterWithKey functionFind
+
+-- ?? Loss of order may cause package to overwrite parts
+-- | Merge scope from current unit with total scope
+mergeScope :: ScopeStore -> BuildScope
+mergeScope (ScopeStore newFuncs newTypes) =
+   let modifyScope (ScopeStore oldFuncs oldTypes) =
+         ScopeStore
+            (MapS.union newFuncs oldFuncs)
+            (MapS.union newTypes oldTypes)
+   in modify modifyScope

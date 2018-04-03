@@ -9,6 +9,7 @@ module Netlister.Types.Stores
    , FunctionStore
    , PackageStore
    , Package(..)
+   , ScopeStore(..)
    ) where
 
 import qualified Data.Map.Strict as MapS
@@ -18,7 +19,6 @@ import Netlister.Types.Representation
          , Function(..)
          , FunctionBody(..)
          )
-import Netlister.Types.Scope (Scope)
 
 -- |Netlist name representation
 -- Made up of the library the unit is in and its name
@@ -50,12 +50,12 @@ type PackageStore = MapS.Map NetlistName Package
 -- All declares held in a package
 data Package =
    Package
-      Scope -- ^ Used to link package header scope to package body
+      { packageScope :: ScopeStore -- ^ Used to link package header scope to package body
       -- |Subprogram declaration
       --SubprogramHeaderStore ?? Instead do separately
       --ProcedureStore
-      FunctionStore
-      TypeStore
+      , packageFunctions :: FunctionStore
+      , packageTypes :: TypeStore
       --ConstantStore
       --SignalStore
       --FileStore
@@ -72,3 +72,11 @@ data Package =
       --File
       --Alias
       --Use
+      }
+
+-- |Store of scoped declarations
+data ScopeStore =
+   ScopeStore
+      { scopeFunctions :: FunctionStore
+      , scopeTypes :: TypeStore
+      }

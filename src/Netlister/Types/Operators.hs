@@ -9,7 +9,7 @@ module Netlister.Types.Operators
          , convertOperator
          ) where
 
-import qualified Data.Map.Strict as MapS
+import qualified Data.Bimap as Bimap
 import Data.Char (toUpper)
 import Data.Function ((&))
 
@@ -66,10 +66,10 @@ data Operator =
 -- - If doesn't exist: return 'Nothing'
 -- - If exists: return 'Just' 'Operator'
 convertOperator :: ParserTypes.OperatorSymbol -> Maybe Operator
-convertOperator op = MapS.lookup (map toUpper op) operatorMap
+convertOperator op = Bimap.lookup (map toUpper op) operatorMap
 
 -- |Map of operators and associated string names
-operatorMap :: MapS.Map String Operator
+operatorMap :: Bimap.Bimap String Operator
 operatorMap =
    [ ("AND",And)
    , ("OR",Or)
@@ -93,4 +93,7 @@ operatorMap =
    , ("ABS",Abs)
    , ("NOT",Not)
    ]
-   & MapS.fromList
+   & Bimap.fromList
+
+instance (Show Operator) where
+   show op = operatorMap Bimap.!> op

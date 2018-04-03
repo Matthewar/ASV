@@ -22,6 +22,7 @@ import Netlister.Types.Stores
          ( TypeStore
          , FunctionStore
          , Package(..)
+         , ScopeStore(..)
          )
 import Parser.ErrorTypes (getFloatBound)
 
@@ -248,6 +249,6 @@ functions =
 standardPackage :: Package
 standardPackage =
    Package
-      MapS.empty
+      (ScopeStore MapS.empty MapS.empty)
       functions
       types

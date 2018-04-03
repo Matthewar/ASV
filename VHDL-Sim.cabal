@@ -48,6 +48,7 @@ library
                      , transformers
                      , directory
                      , mtl >= 2.2.2
+                     , bimap
   build-tools:         alex
                      , happy
   default-language:    Haskell2010
