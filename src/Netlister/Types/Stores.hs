@@ -9,6 +9,7 @@ module Netlister.Types.Stores
    , FunctionStore
    , PackageStore
    , Package(..)
+   , newPackage
    , ScopeStore(..)
    , emptyScopeStore
    ) where
@@ -77,6 +78,10 @@ data Package =
       --Alias
       --Use
       }
+
+-- |New package with scope
+newPackage :: ScopeStore -> Package
+newPackage scope = Package scope MapS.empty MapS.empty
 
 -- |Store of scoped declarations
 data ScopeStore =

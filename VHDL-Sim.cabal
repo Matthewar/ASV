@@ -39,6 +39,8 @@ library
                      , Manager.Filing
                      , Netlister.Convert.Scope
                      , Netlister.ParseTree
+                     , Netlister.Parse.Library
+                     , Netlister.Parse.Package
   build-depends:       base >= 4.7 && < 5
                      , array
                      , split

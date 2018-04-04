@@ -41,7 +41,7 @@ data ConverterError =
    | ConverterError_Parse WrappedParserError
    -- |Error in converter
    -- When reading the parse tree to convert it to netlist
-   | ConverterError_Netlist NetlistError
+   | ConverterError_Netlist WrappedNetlistError
    -- |Error for not implemented features
    | ConverterError_NotImplemented WrappedSimpleName
 
@@ -63,22 +63,26 @@ instance (Show ConverterError) where
       ++ info
       ++ getLineAndColErrStr pos
 
+-- |Wrapped netlist error
+-- ?? Want to have file name along with position for better error messages
+type WrappedNetlistError = PosnWrapper NetlistError
+
 -- |Errors in the netlist converter
 data NetlistError =
    -- |Different identifiers in package declaration
-   NetlistError_UnmatchedPackageName AlexPosn WrappedSimpleName WrappedSimpleName
+   NetlistError_UnmatchedPackageName WrappedSimpleName WrappedSimpleName
 
 instance (Show NetlistError) where
    show  (NetlistError_UnmatchedPackageName
-            pos
             (PosnWrapper namePos1 name1)
             (PosnWrapper namePos2 name2)
          ) =
-      "Package declaration "
-      ++ getLineAndColErrStr pos
-      ++ ". Second identifier "
-      ++ name2
-      ++ getLineAndColErrStr namePos2
-      ++ ". Doesn't match expected identifier "
+      "second identifier: \""
       ++ name1
+      ++ "\""
       ++ getLineAndColErrStr namePos1
+      ++ ", does not match first identifier: \""
+      ++ name2
+      ++ "\""
+      ++ getLineAndColErrStr namePos2
+      ++ " in package"

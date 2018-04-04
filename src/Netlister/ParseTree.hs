@@ -35,13 +35,15 @@ import Netlister.Convert.Scope
          ( convertScope
          , evalScope
          )
+import Netlister.Parse.Library (convertLibrary)
 
-convertTree :: (String -> String -> ConversionStack ()) -> NetlistName -> [NetlistName] -> DesignFile -> ConversionStack ()
-convertTree create (NetlistName libraryName unitName) dependencies (DesignFile designUnits) =
+convertTree :: (String -> String -> ConversionStack ()) -> String -> [NetlistName] -> DesignFile -> ConversionStack ()
+convertTree create libraryName dependencies (DesignFile designUnits) =
    let convertTree' :: [WrappedDesignUnit] -> ConversionStack ()
        convertTree' (designUnit:otherUnits) = do
          (scope,library) <- lift $ withExceptT (ConverterError_Scope) $ liftEither $ getScopeAndLibraryUnit designUnit
          realScope <- evalScope create scope dependencies
+         convertLibrary realScope libraryName library
 
 
          -- ?? Link scope, parse library

@@ -60,7 +60,7 @@ create workPath ieeePath dependencies library unitName = do
    fileContents <- liftIO $ readFile filePath
    parseTree <- lift $ withExceptT (ConverterError_Parse) $ liftEither $ parse fileContents
    let netlistName = NetlistName library unitName
-   convertTree (create workPath ieeePath (netlistName:dependencies)) netlistName dependencies parseTree
+   convertTree (create workPath ieeePath (netlistName:dependencies)) library dependencies parseTree
    -- ?? Build simulation files
    return ()
    
