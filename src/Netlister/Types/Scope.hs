@@ -84,11 +84,9 @@ data ScopeConverterError =
    -- |Library is not in current scope
    | ScopeConverterError_LibNoScope String
    -- |Declare is not in included package
-   -- ?? Need package name in this error as well
-   | ScopeConverterError_InvalidDeclare String
+   | ScopeConverterError_InvalidDeclare String NetlistName
    -- |Operator declare is not in included package
-   -- ?? Need package name in this error as well
-   | ScopeConverterError_InvalidOpDeclare Operator
+   | ScopeConverterError_InvalidOpDeclare Operator NetlistName
    -- |Cyclic dependency between two (or more) modules
    -- Module that is already in chain, module chain
    | ScopeConverterError_CyclicDependency NetlistName [NetlistName]
@@ -108,17 +106,17 @@ instance (Show ScopeConverterError) where
    show (ScopeConverterError_LibNoScope libName) =
       "the library is not in the current scope: "
       ++ libName
-   show (ScopeConverterError_InvalidDeclare declareName) =
+   show (ScopeConverterError_InvalidDeclare declareName packageName) =
       "the declare: \""
       ++ declareName
       ++ "\" can not be found in the package: \""
-      -- ?? Insert package name here
+      ++ show packageName
       ++ "\""
-   show (ScopeConverterError_InvalidOpDeclare op) =
+   show (ScopeConverterError_InvalidOpDeclare op packageName) =
       "the operator declare: \""
       ++ show op
       ++ "\" can not be found in the package: \""
-      -- ?? Insert package name here
+      ++ show packageName
       ++ "\""
    show (ScopeConverterError_CyclicDependency inCycle cycle) =
       "a cyclic dependency was detected, "

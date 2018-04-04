@@ -193,8 +193,8 @@ evalScopeList _ _ [] = return ()
 -- |Get scoped declares from stored netlist
 -- Take relevant parts of included packages and put into scope
 getPackageParts :: NetlistName -> WrappedDeclarationScopeItem -> NetlistStore -> Either WrappedScopeConverterError WrappedNewScopeDeclares
-getPackageParts name scopeItem netlistStore =
-   let package = (packages netlistStore) MapS.! name
+getPackageParts packageName scopeItem netlistStore =
+   let package = (packages netlistStore) MapS.! packageName
    in case scopeItem of
          PosnWrapper pos Declare_All ->
             return $ PosnWrapper pos $ NewScopeDeclare_Package $
@@ -206,28 +206,28 @@ getPackageParts name scopeItem netlistStore =
             let newFunctions = findPackageFunctionsByOperator op $ packageFunctions package
             in if MapS.null newFunctions
                   then return $ PosnWrapper pos $ NewScopeDeclare_Functions newFunctions
-                  else throwError $ PosnWrapper pos $ ScopeConverterError_InvalidOpDeclare op
-         PosnWrapper pos (Declare_Identifier name) -> checkTypes package name pos
+                  else throwError $ PosnWrapper pos $ ScopeConverterError_InvalidOpDeclare op packageName
+         PosnWrapper pos (Declare_Identifier name) -> checkTypes packageName package name pos
 
 -- |Get scoped declares from stored types
 -- Check types of package and if relevant, put into scope
 -- If not, check functions
-checkTypes :: Package -> String -> AlexPosn -> Either WrappedScopeConverterError WrappedNewScopeDeclares
-checkTypes package name pos =
+checkTypes :: NetlistName -> Package -> String -> AlexPosn -> Either WrappedScopeConverterError WrappedNewScopeDeclares
+checkTypes packageName package name pos =
    case MapS.lookup name $ packageTypes package of
       Just foundType -> return $ PosnWrapper pos $ NewScopeDeclare_Type name foundType
-      Nothing -> checkFunctions package name pos
+      Nothing -> checkFunctions packageName package name pos
 
 -- |Get scoped declares from stored functions
 -- Check functions of package and if relevant, put into scope
 -- If not, throw error
 -- ?? If not, check <next declares type>
-checkFunctions :: Package -> String -> AlexPosn -> Either WrappedScopeConverterError WrappedNewScopeDeclares
-checkFunctions package name pos =
+checkFunctions :: NetlistName -> Package -> String -> AlexPosn -> Either WrappedScopeConverterError WrappedNewScopeDeclares
+checkFunctions packageName package name pos =
    let newFunctions = findPackageFunctionsByIdentifier name $ packageFunctions package
    in if not $ MapS.null newFunctions
          then return $ PosnWrapper pos $ NewScopeDeclare_Functions newFunctions
-         else throwError $ PosnWrapper pos $ ScopeConverterError_InvalidDeclare name -- ?? Continue from here once expand package/scope definition
+         else throwError $ PosnWrapper pos $ ScopeConverterError_InvalidDeclare name packageName -- ?? Continue from here once expand package/scope definition
 
 -- |Find an operator function
 findPackageFunctionsByOperator :: Operator -> FunctionStore -> FunctionStore
