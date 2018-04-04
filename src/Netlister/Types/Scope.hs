@@ -10,6 +10,8 @@ module Netlister.Types.Scope
    , UnitScope
    , DeclarationScopeItem(..)
    , WrappedDeclarationScopeItem
+   , NewScopeDeclares(..)
+   , WrappedNewScopeDeclares
    , ScopeConverterError(..)
    , WrappedScopeConverterError
    , ScopeReturn
@@ -21,7 +23,12 @@ import Parser.Alex.BaseTypes (AlexPosn)
 import Parser.Happy.Types
          ( SelectedName
          )
-import Netlister.Types.Stores (NetlistName)
+import Netlister.Types.Stores
+         ( NetlistName
+         , FunctionStore
+         , ScopeStore
+         )
+import Netlister.Types.Representation (Type)
 
 import qualified Data.Map.Strict as MapS
 import Control.Monad.Trans.State (StateT)
@@ -46,6 +53,18 @@ data DeclarationScopeItem =
    -- |All declares included from unit
    | Declare_All
    deriving (Eq)
+
+-- |Declaration(s) to be added to the scope
+data NewScopeDeclares =
+   -- |Functions to be added
+   NewScopeDeclare_Functions FunctionStore
+   -- |Type to be added
+   | NewScopeDeclare_Type String Type
+   -- |Entire package ('Declare_All' has occured) to be added
+   | NewScopeDeclare_Package ScopeStore
+
+-- |Wrapped new scope declarations
+type WrappedNewScopeDeclares = PosnWrapper NewScopeDeclares
 
 data ScopeConverterError =
    -- |Invalid library

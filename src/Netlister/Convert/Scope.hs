@@ -46,6 +46,8 @@ import Netlister.Types.Scope
          , UnitScope
          , WrappedDeclarationScopeItem
          , DeclarationScopeItem(..)
+         , NewScopeDeclares(..)
+         , WrappedNewScopeDeclares
          , ScopeReturn
          , ScopeConverterError(..)
          , WrappedScopeConverterError
@@ -71,6 +73,7 @@ import Netlister.Types.Representation
          ( Function(..)
          , FunctionBody
          , Designator(..)
+         , Type
          )
 import Netlister.Builtin.Netlist as InitialNetlist (scope)
 
@@ -177,20 +180,20 @@ evalScopeList create ((NetlistName libName unitName,scopeItem):otherUnits) = do
    -- ?? Add other checks
    inScope <- lift $ gets isInScope
    unless inScope $ lift $ create libName unitName
-   newWrappedScope <- lift $ gets $ getPackageParts netlistName scopeItem
-   newScope <- lift $ lift $ withExceptT (ConverterError_Scope) $ liftEither newWrappedScope
-   mergeScope newScope
+   newWrappedScopeDeclare <- lift $ gets $ getPackageParts netlistName scopeItem
+   newScopeDeclare <- lift $ lift $ withExceptT (ConverterError_Scope) $ liftEither newWrappedScopeDeclare
+   mergeScope newScopeDeclare
    evalScopeList create otherUnits
 evalScopeList _ [] = return ()
 
 -- |Get scoped declares from stored netlist
 -- Take relevant parts of included packages and put into scope
-getPackageParts :: NetlistName -> WrappedDeclarationScopeItem -> NetlistStore -> Either WrappedScopeConverterError ScopeStore
+getPackageParts :: NetlistName -> WrappedDeclarationScopeItem -> NetlistStore -> Either WrappedScopeConverterError WrappedNewScopeDeclares
 getPackageParts name scopeItem netlistStore =
    let package = (packages netlistStore) MapS.! name
    in case scopeItem of
-         PosnWrapper _ Declare_All ->
-            return $
+         PosnWrapper pos Declare_All ->
+            return $ PosnWrapper pos $ NewScopeDeclare_Package $
                ScopeStore
                   { scopeFunctions = packageFunctions package
                   , scopeTypes = packageTypes package
@@ -198,28 +201,28 @@ getPackageParts name scopeItem netlistStore =
          PosnWrapper pos (Declare_Operator op) ->
             let newFunctions = findPackageFunctionsByOperator op $ packageFunctions package
             in if MapS.null newFunctions
-                  then return $ ScopeStore newFunctions MapS.empty
+                  then return $ PosnWrapper pos $ NewScopeDeclare_Functions newFunctions
                   else throwError $ PosnWrapper pos $ ScopeConverterError_InvalidOpDeclare op
          PosnWrapper pos (Declare_Identifier name) -> checkTypes package name pos
 
 -- |Get scoped declares from stored types
 -- Check types of package and if relevant, put into scope
 -- If not, check functions
-checkTypes :: Package -> String -> AlexPosn -> Either WrappedScopeConverterError ScopeStore
+checkTypes :: Package -> String -> AlexPosn -> Either WrappedScopeConverterError WrappedNewScopeDeclares
 checkTypes package name pos =
    case MapS.lookup name $ packageTypes package of
-      Just foundType -> return $ ScopeStore MapS.empty $ MapS.fromList [(name,foundType)]
+      Just foundType -> return $ PosnWrapper pos $ NewScopeDeclare_Type name foundType
       Nothing -> checkFunctions package name pos
 
 -- |Get scoped declares from stored functions
 -- Check functions of package and if relevant, put into scope
 -- If not, throw error
 -- ?? If not, check <next declares type>
-checkFunctions :: Package -> String -> AlexPosn -> Either WrappedScopeConverterError ScopeStore
+checkFunctions :: Package -> String -> AlexPosn -> Either WrappedScopeConverterError WrappedNewScopeDeclares
 checkFunctions package name pos =
    let newFunctions = findPackageFunctionsByIdentifier name $ packageFunctions package
    in if not $ MapS.null newFunctions
-         then return $ ScopeStore newFunctions MapS.empty
+         then return $ PosnWrapper pos $ NewScopeDeclare_Functions newFunctions
          else throwError $ PosnWrapper pos $ ScopeConverterError_InvalidDeclare name -- ?? Continue from here once expand package/scope definition
 
 -- |Find an operator function
@@ -238,12 +241,34 @@ findPackageFunctionsByIdentifier expectedName =
        functionFind _ _ = False
    in MapS.filterWithKey functionFind
 
--- ?? Loss of order may cause package to overwrite parts
 -- | Merge scope from current unit with total scope
-mergeScope :: ScopeStore -> BuildScope
-mergeScope (ScopeStore newFuncs newTypes) =
+mergeScope :: WrappedNewScopeDeclares -> BuildScope
+mergeScope (PosnWrapper pos (NewScopeDeclare_Package (ScopeStore newFuncs newTypes))) =
+   -- ?? Should be checking for overlaps and warning
    let modifyScope (ScopeStore oldFuncs oldTypes) =
          ScopeStore
             (MapS.union newFuncs oldFuncs)
             (MapS.union newTypes oldTypes)
    in modify modifyScope
+mergeScope (PosnWrapper pos (NewScopeDeclare_Functions newFuncs)) = mergeScopeFuncs $ PosnWrapper pos newFuncs
+mergeScope (PosnWrapper pos (NewScopeDeclare_Type typeName typeDeclare)) = mergeScopeType $ PosnWrapper pos (typeName,typeDeclare)
+
+-- |Merge a single type into the scope
+mergeScopeFuncs :: PosnWrapper FunctionStore -> BuildScope
+mergeScopeFuncs (PosnWrapper pos newFuncs) =
+   -- ?? Should be checking for overlaps and warning
+   let modifyScope (ScopeStore oldFuncs oldTypes) =
+         ScopeStore
+            (MapS.union newFuncs oldFuncs)
+            oldTypes
+   in modify modifyScope
+
+-- |Merge a single type into the scope
+mergeScopeType :: PosnWrapper (String,Type) -> BuildScope
+mergeScopeType (PosnWrapper pos (name,declare)) = do
+   let readScopeTypes (ScopeStore _ types) = types
+   isInScope <- gets ((MapS.member name) . readScopeTypes)
+   -- ?? when isInScope $ ?? Warning?
+   let modifyScope (ScopeStore oldFuncs oldTypes) =
+         ScopeStore oldFuncs $ MapS.insert name declare oldTypes
+   modify modifyScope
