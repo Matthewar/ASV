@@ -6,12 +6,10 @@
    Used for includes (library and use statements).
 -}
 module Netlister.Types.Scope
-   ( Scope
+   ( Scope(..)
    , UnitScope
-   , DeclarationScope(..)
-   , DeclarationNames(..)
-   , NewDeclarationScope(..)
-   , WrappedNewDeclarationScope
+   , DeclarationScopeItem(..)
+   , WrappedDeclarationScopeItem
    , ScopeConverterError(..)
    , WrappedScopeConverterError
    , ScopeReturn
@@ -23,46 +21,31 @@ import Parser.Alex.BaseTypes (AlexPosn)
 import Parser.Happy.Types
          ( SelectedName
          )
+import Netlister.Types.Stores (NetlistName)
 
 import qualified Data.Map.Strict as MapS
 import Control.Monad.Trans.State (StateT)
 
 -- |Current scope
 -- Library Name, Included Objects
-type Scope = MapS.Map String UnitScope
+data Scope = Scope { scopeLibraries :: [String], scopeDeclarations :: [UnitScope] }
 
 -- |Unit scope
--- Unit name, included elements
-type UnitScope = MapS.Map String DeclarationScope
+-- Unit name, included element(s)
+type UnitScope = (NetlistName,WrappedDeclarationScopeItem)
 
--- |Declaration scope
--- Declarations to be included from the package
-data DeclarationScope =
-   -- |List of declarations included from unit
-   -- Also information on positioning used for error messages
-   IncludedDeclares [(DeclarationNames,AlexPosn)]
-   -- |All declares included from unit
-   | AllDeclares
+-- |Wrapped declaration
+type WrappedDeclarationScopeItem = PosnWrapper DeclarationScopeItem
 
 -- |Single declaration to be included from the package
-data DeclarationNames =
+data DeclarationScopeItem =
    -- |Single named declaration
    Declare_Identifier String
    -- |Single operator declaration
    | Declare_Operator Operator
+   -- |All declares included from unit
+   | Declare_All
    deriving (Eq)
-
--- |New declaration to be added to scope
-data NewDeclarationScope =
-   -- |Add named declaration to scope
-   NewDeclare_Identifier String
-   -- |Add operator declaration to scope
-   | NewDeclare_Operator Operator
-   -- |Add all declarations to scope
-   | NewDeclare_All
-
--- |Wrapped new declaration
-type WrappedNewDeclarationScope = PosnWrapper NewDeclarationScope
 
 data ScopeConverterError =
    -- |Invalid library

@@ -10,14 +10,16 @@ module Netlister.Builtin.Netlist
 import qualified Data.Map.Strict as MapS
 import Data.Function ((&))
 
+import Parser.Alex.BaseTypes (AlexPosn(..))
+import Parser.PositionWrapper (PosnWrapper(..))
 import Netlister.Types.Stores
          ( NetlistStore(..)
          , PackageStore(..)
          , NetlistName(..)
          )
 import Netlister.Types.Scope
-         ( Scope
-         , DeclarationScope(..)
+         ( Scope(..)
+         , DeclarationScopeItem(Declare_All)
          )
 import Netlister.Builtin.Standard
 --import Netlister.Builtin.TextIO
@@ -41,15 +43,9 @@ netlist =
 
 scope :: Scope
 scope =
-   [  ( "STD"
-      ,  [  ( "STANDARD"
-            , AllDeclares
-            )
-         ]
-         & MapS.fromList
-      )
-   ,  ( "WORK"
-      , MapS.empty
-      )
-   ]
-   & MapS.fromList
+   Scope
+      [ "STD", "WORK" ]
+      [  ( NetlistName "STD" "STANDARD"
+         , PosnWrapper (AlexPn 0 0 0) Declare_All
+         )
+      ]
