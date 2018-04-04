@@ -9,6 +9,7 @@ import Control.Monad.Except
          , lift
          )
 import System.Exit (exitFailure)
+import Data.Char (toUpper)
 
 import qualified Manager.Args as Args (Options(..))
 import Manager.Filing
@@ -16,6 +17,7 @@ import Manager.Filing
          , checkArguments
          )
 import Netlister.Types.Stores (NetlistStore)
+import Netlister.Types.Stores (NetlistName(..))
 import qualified Parser.Parser as Parser (v1987)
 import Parser.ErrorTypes (WrappedParserError)
 import Parser.Happy.Types (DesignFile)
@@ -30,7 +32,7 @@ createTop options = do
    result <- runExceptT $ do
       withExceptT (ConverterError_Filing) $ checkArguments options
       let (Args.Options workDir ieeeDir topModule) = options
-          createNetlistUnit = create workDir ieeeDir "WORK" topModule
+          createNetlistUnit = create workDir ieeeDir [] "WORK" $ map toUpper topModule
       finalNetlist <- execStateT createNetlistUnit InitialNetlist.netlist
 
       -- ?? Other steps
@@ -52,12 +54,13 @@ printError error = do
    putStrLn fullMessage
    exitFailure
 
-create :: FilePath -> FilePath -> String -> String -> ConversionStack ()
-create workPath ieeePath library unitName = do
+create :: FilePath -> FilePath -> [NetlistName] -> String -> String -> ConversionStack ()
+create workPath ieeePath dependencies library unitName = do
    filePath <- lift $ withExceptT (ConverterError_Filing) $ findDesignUnit workPath ieeePath library unitName
    fileContents <- liftIO $ readFile filePath
    parseTree <- lift $ withExceptT (ConverterError_Parse) $ liftEither $ parse fileContents
-   convertTree (create workPath ieeePath) library parseTree
+   let netlistName = NetlistName library unitName
+   convertTree (create workPath ieeePath (netlistName:dependencies)) netlistName dependencies parseTree
    -- ?? Build simulation files
    return ()
    

@@ -19,6 +19,7 @@ import Netlister.Types.Scope
          , WrappedScopeConverterError
          , UnitScope
          )
+import Netlister.Types.Stores (NetlistName(..))
 import Netlister.Types.Top
          ( ConversionStack
          , ConverterError(ConverterError_Scope)
@@ -35,12 +36,12 @@ import Netlister.Convert.Scope
          , evalScope
          )
 
-convertTree :: (String -> String -> ConversionStack ()) -> String -> DesignFile -> ConversionStack ()
-convertTree create libraryName (DesignFile designUnits) =
+convertTree :: (String -> String -> ConversionStack ()) -> NetlistName -> [NetlistName] -> DesignFile -> ConversionStack ()
+convertTree create (NetlistName libraryName unitName) dependencies (DesignFile designUnits) =
    let convertTree' :: [WrappedDesignUnit] -> ConversionStack ()
        convertTree' (designUnit:otherUnits) = do
          (scope,library) <- lift $ withExceptT (ConverterError_Scope) $ liftEither $ getScopeAndLibraryUnit designUnit
-         realScope <- evalScope create scope
+         realScope <- evalScope create scope dependencies
 
 
          -- ?? Link scope, parse library

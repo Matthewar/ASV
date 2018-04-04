@@ -12,7 +12,10 @@ module Netlister.Convert.Scope
 import qualified Data.Map.Strict as MapS
 import Data.List (nub)
 import Data.Char (toUpper)
-import Control.Monad (unless)
+import Control.Monad
+         ( unless
+         , when
+         )
 import Control.Monad.Trans.State
          ( StateT
          , execStateT
@@ -162,29 +165,30 @@ type BuildScope = StateT ScopeStore (StateT NetlistStore (ExceptT ConverterError
 
 -- |Evaluate scope
 -- Run through scope, evaluating (IE converting) any modules not yet parsed/converted
-evalScope :: (String -> String -> ConversionStack()) -> Scope -> ConversionStack ScopeStore
-evalScope create scope = do
+evalScope :: (String -> String -> ConversionStack()) -> Scope -> [NetlistName] -> ConversionStack ScopeStore
+evalScope create scope dependencies = do
    let evalScope' :: [UnitScope] -> BuildScope
-       evalScope' = evalScopeList create
+       evalScope' = evalScopeList create dependencies
    -- initialScope <- gets $ \(NetlistStore _) -> NetlistStore MapS.empty -- ?? Keep entities, just empty packages
    execStateT (evalScope' $ scopeDeclarations scope) emptyScopeStore
    -- ?? Combine entities from original scope -- is this even needed
 
 -- |Evaluate scope list
 -- Run through scope list, evaluating any units not yet parsed/converted
-evalScopeList :: (String -> String -> ConversionStack ()) -> [UnitScope] -> BuildScope
-evalScopeList create ((NetlistName libName unitName,scopeItem):otherUnits) = do
+evalScopeList :: (String -> String -> ConversionStack ()) -> [NetlistName] -> [UnitScope] -> BuildScope
+evalScopeList create dependencies ((NetlistName libName unitName,scopeItem):otherUnits) = do
    let netlistName = NetlistName libName unitName
        isInScope :: NetlistStore -> Bool
        isInScope = (MapS.member netlistName) . packages
-   -- ?? Add other checks
+       isDependency = elem netlistName dependencies
+   when isDependency $ throwError $ ConverterError_Scope $ PosnWrapper (getPos scopeItem) $ ScopeConverterError_CyclicDependency netlistName dependencies
    inScope <- lift $ gets isInScope
    unless inScope $ lift $ create libName unitName
    newWrappedScopeDeclare <- lift $ gets $ getPackageParts netlistName scopeItem
    newScopeDeclare <- lift $ lift $ withExceptT (ConverterError_Scope) $ liftEither newWrappedScopeDeclare
    mergeScope newScopeDeclare
-   evalScopeList create otherUnits
-evalScopeList _ [] = return ()
+   evalScopeList create dependencies otherUnits
+evalScopeList _ _ [] = return ()
 
 -- |Get scoped declares from stored netlist
 -- Take relevant parts of included packages and put into scope

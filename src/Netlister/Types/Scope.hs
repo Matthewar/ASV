@@ -32,6 +32,7 @@ import Netlister.Types.Representation (Type)
 
 import qualified Data.Map.Strict as MapS
 import Control.Monad.Trans.State (StateT)
+import Data.List (intersperse)
 
 -- |Current scope
 -- Library Name, Included Objects
@@ -88,6 +89,9 @@ data ScopeConverterError =
    -- |Operator declare is not in included package
    -- ?? Need package name in this error as well
    | ScopeConverterError_InvalidOpDeclare Operator
+   -- |Cyclic dependency between two (or more) modules
+   -- Module that is already in chain, module chain
+   | ScopeConverterError_CyclicDependency NetlistName [NetlistName]
 
 instance (Show ScopeConverterError) where
    show (ScopeConverterError_InvalidLibrary libName) =
@@ -116,6 +120,23 @@ instance (Show ScopeConverterError) where
       ++ "\" can not be found in the package: \""
       -- ?? Insert package name here
       ++ "\""
+   show (ScopeConverterError_CyclicDependency inCycle cycle) =
+      "a cyclic dependency was detected, "
+      ++ show (head cycle)
+      ++ " tried to import "
+      ++ show inCycle
+      ++ ". But the dependency chain prevents this: "
+      ++ (getChain inCycle cycle)
+
+getChain :: NetlistName -> [NetlistName] -> String
+getChain inCycle = (findStart inCycle) . reverse
+   where findStart inCycle (lib:libs) =
+            if lib == inCycle
+               then printCycle (lib:libs)
+               else findStart inCycle libs
+         findStart _ [] = "ERROR (THIS SHOULDN'T BE HERE): Somehow getChain has gone wrong, please report."
+         printCycle = concat . (intersperse " -> ") . (map show)
+
 
 -- |'ScopeConverterError' with position
 type WrappedScopeConverterError = PosnWrapper ScopeConverterError

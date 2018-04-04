@@ -26,6 +26,9 @@ import Netlister.Types.Representation
 data NetlistName = NetlistName { libraryName :: String, unitName :: String }
                  deriving (Eq,Ord)
 
+instance (Show NetlistName) where
+   show (NetlistName lib unit) = lib ++ "." ++ unit
+
 -- |Store of all netlisted data
 -- Parse tree is converted into netlist
 data NetlistStore =
