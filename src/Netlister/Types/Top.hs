@@ -16,6 +16,8 @@ import Control.Monad.Except
          , MonadError
          , throwError
          )
+import Data.Char (toUpper)
+import Data.List (intersperse)
 
 import Netlister.Types.Stores (NetlistStore)
 import Netlister.Types.Scope (WrappedScopeConverterError)
@@ -29,6 +31,7 @@ import Parser.ErrorTypes
 import Parser.Happy.Types
          ( WrappedSimpleName
          , WrappedEnumerationLiteral
+         , EnumerationLiteral(..)
          )
 
 -- |Monads required for conversion
@@ -96,4 +99,22 @@ instance (Show NetlistError) where
    show (NetlistError_DuplicateTypes typeName) =
       "duplicate type name within unit: "
       ++ typeName
-   --show (NetlistError_DuplicateEnums
+   show (NetlistError_DuplicateEnums enums) =
+      "at least one set of duplicate enums have occurred: "
+      ++ (concat $ intersperse "; " $ map printEnumGroup enums)
+
+printEnumGroup :: [WrappedEnumerationLiteral] -> String
+printEnumGroup =
+   let convToString :: WrappedEnumerationLiteral -> String
+       convToString (PosnWrapper pos enum) =
+         case enum of
+            EnumerationLiteral_Identifier iden ->
+               "identifier \""
+               ++ (map toUpper iden)
+               ++ "\""
+            EnumerationLiteral_Char char ->
+               "character '"
+               ++ [char]
+               ++ "'"
+         ++ getLineAndColErrStr pos
+   in concat . (intersperse ", ") . (map convToString)
