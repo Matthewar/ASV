@@ -2925,7 +2925,7 @@ data EnumerationLiteral =
    EnumerationLiteral_Identifier String
    -- |Enumerated character
    | EnumerationLiteral_Char Char
-   deriving(Show)
+   deriving(Eq,Ord,Show)
 
 -- |String literal type
 -- Contains 'String' (with no quotation marks)

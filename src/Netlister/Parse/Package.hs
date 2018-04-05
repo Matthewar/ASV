@@ -9,11 +9,13 @@ module Netlister.Parse.Package
 import Control.Monad.Except
          ( ExceptT
          , throwError
+         , lift
          )
 import Control.Monad.Trans.State
          ( StateT
          , execStateT
          , modify
+         , gets
          )
 import qualified Data.Map.Strict as MapS
 
@@ -37,10 +39,11 @@ import Netlister.Types.Scope (Scope)
 import Netlister.Types.Stores
          ( NetlistStore(..)
          , NetlistName(..)
-         , ScopeStore
-         , Package
+         , ScopeStore(..)
+         , Package(..)
          , newPackage
          )
+import Netlister.Parse.Type (convertType)
 
 -- |Convert package header unit
 convertPackage :: ScopeStore -> String -> WrappedPackageDeclaration -> ConversionStack ()
@@ -58,7 +61,14 @@ convertPackageDeclares :: PackageDeclarativePart -> StateT Package (StateT Netli
 convertPackageDeclares (PosnWrapper declarePos declare:packageDeclares) =
    case declare of
       PackageDeclarativeItem_SubprogramDeclaration _ -> throwError $ ConverterError_NotImplemented $ PosnWrapper declarePos "Subprogram declaration"
-      PackageDeclarativeItem_TypeDeclaration _ -> throwError $ ConverterError_NotImplemented $ PosnWrapper declarePos "Type declaration"
+      PackageDeclarativeItem_TypeDeclaration typeDeclare -> do
+         let getPackageTypesAndFunctions package =
+               let scope = packageScope package
+               in (scopeTypes scope,scopeFunctions scope,packageTypes package,packageFunctions package)
+         (scopeTypes,scopeFunctions,packageTypes,packageFunctions) <- gets getPackageTypesAndFunctions
+         (typeName,newType) <- lift $ convertType scopeTypes scopeFunctions packageTypes packageFunctions $ PosnWrapper declarePos typeDeclare
+         let insertPackageType package = package { packageTypes = MapS.insert typeName newType $ packageTypes }
+         modify insertPackageType
       PackageDeclarativeItem_SubtypeDeclaration _ -> throwError $ ConverterError_NotImplemented $ PosnWrapper declarePos "Subtype declaration"
       PackageDeclarativeItem_ConstantDeclaration _ -> throwError $ ConverterError_NotImplemented $ PosnWrapper declarePos "Constant declaration"
       PackageDeclarativeItem_SignalDeclaration _ -> throwError $ ConverterError_NotImplemented $ PosnWrapper declarePos "Signal declaration"

@@ -26,7 +26,10 @@ import Parser.ErrorTypes
          ( WrappedParserError
          , getLineAndColErrStr
          )
-import Parser.Happy.Types (WrappedSimpleName)
+import Parser.Happy.Types
+         ( WrappedSimpleName
+         , WrappedEnumerationLiteral
+         )
 
 -- |Monads required for conversion
 type ConversionStack a = StateT NetlistStore (ExceptT ConverterError IO) a
@@ -71,6 +74,10 @@ type WrappedNetlistError = PosnWrapper NetlistError
 data NetlistError =
    -- |Different identifiers in package declaration
    NetlistError_UnmatchedPackageName WrappedSimpleName WrappedSimpleName
+   -- |Type name deplaced in two places
+   | NetlistError_DuplicateTypes String
+   -- |Duplicate enumeration literals in a type declaration
+   | NetlistError_DuplicateEnums [[WrappedEnumerationLiteral]]
 
 instance (Show NetlistError) where
    show  (NetlistError_UnmatchedPackageName
@@ -86,3 +93,7 @@ instance (Show NetlistError) where
       ++ "\""
       ++ getLineAndColErrStr namePos2
       ++ " in package"
+   show (NetlistError_DuplicateTypes typeName) =
+      "duplicate type name within unit: "
+      ++ typeName
+   --show (NetlistError_DuplicateEnums
