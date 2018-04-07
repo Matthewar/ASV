@@ -29,7 +29,7 @@ import Parser.Happy.Types
 import Parser.PositionWrapper
 import Netlister.Types.Top
          ( ConversionStack
-         , ConverterError 
+         , ConverterError
             ( ConverterError_Netlist
             , ConverterError_NotImplemented
             )
@@ -47,6 +47,7 @@ import Netlister.Convert.Stores
          , convertPackageToGenericUnit
          )
 import Netlister.Parse.Type (convertType)
+import Netlister.Parse.Objects (convertConstant)
 
 -- |Convert package header unit
 convertPackage :: ScopeStore -> String -> WrappedPackageDeclaration -> ConversionStack ()
@@ -61,16 +62,19 @@ convertPackage scope libraryName (PosnWrapper packagePos (PackageDeclaration (Po
 
 -- |Convert package declares
 convertPackageDeclares :: PackageDeclarativePart -> StateT Package (StateT NetlistStore (ExceptT ConverterError IO)) ()
-convertPackageDeclares (PosnWrapper declarePos declare:packageDeclares) =
+convertPackageDeclares (PosnWrapper declarePos declare:packageDeclares) = do
+   (scopeStore,unitStore) <- gets convertPackageToGenericUnit
    case declare of
       PackageDeclarativeItem_SubprogramDeclaration _ -> throwError $ ConverterError_NotImplemented $ PosnWrapper declarePos "Subprogram declaration"
       PackageDeclarativeItem_TypeDeclaration typeDeclare -> do
-         (scopeStore,unitStore) <- gets convertPackageToGenericUnit
          (typeName,newType) <- lift $ convertType scopeStore unitStore $ PosnWrapper declarePos typeDeclare
          let insertPackageType package = package { packageTypes = MapS.insert typeName newType $ packageTypes package }
          modify insertPackageType
       PackageDeclarativeItem_SubtypeDeclaration _ -> throwError $ ConverterError_NotImplemented $ PosnWrapper declarePos "Subtype declaration"
-      PackageDeclarativeItem_ConstantDeclaration _ -> throwError $ ConverterError_NotImplemented $ PosnWrapper declarePos "Constant declaration"
+      PackageDeclarativeItem_ConstantDeclaration constDeclare -> do
+         constStore <- lift $ convertConstant scopeStore unitStore $ PosnWrapper declarePos constDeclare
+         let insertPackageConsts package = package { packageConstants = MapS.union constStore $ packageConstants package }
+         modify insertPackageConsts
       PackageDeclarativeItem_SignalDeclaration _ -> throwError $ ConverterError_NotImplemented $ PosnWrapper declarePos "Signal declaration"
       PackageDeclarativeItem_FileDeclaration _ -> throwError $ ConverterError_NotImplemented $ PosnWrapper declarePos "File declaration"
       PackageDeclarativeItem_AliasDeclaration _ -> throwError $ ConverterError_NotImplemented $ PosnWrapper declarePos "Alias"
