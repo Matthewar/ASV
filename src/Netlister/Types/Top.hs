@@ -89,6 +89,8 @@ data NetlistError =
    | NetlistError_ConstantConstraint
    -- |Cannot find the type being referred to
    | NetlistError_TypeNotFound String
+   -- |Type name cannot be an operator
+   | NetlistError_InvalidTypeName_Operator
 
 instance (Show NetlistError) where
    show  (NetlistError_UnmatchedPackageName
@@ -121,6 +123,8 @@ instance (Show NetlistError) where
    show (NetlistError_TypeNotFound typeName) =
       "cannot find type named: "
       ++ typeName
+   show NetlistError_InvalidTypeName_Operator =
+      "type name referred to cannot be an operator "
 
 -- |Print group of enum literals
 printEnumGroup :: [WrappedEnumerationLiteral] -> String
