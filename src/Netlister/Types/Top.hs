@@ -81,6 +81,14 @@ data NetlistError =
    | NetlistError_DuplicateTypes String
    -- |Duplicate enumeration literals in a type declaration
    | NetlistError_DuplicateEnums [[WrappedEnumerationLiteral]]
+   -- |Constant names are duplicates of already defined in unit
+   | NetlistError_DuplicateConstantNames [WrappedSimpleName]
+   -- |Constant declaration has a resolution function specified
+   | NetlistError_ConstantResolutionFunction
+   -- |Constant declaration has a constraint specified
+   | NetlistError_ConstantConstraint
+   -- |Cannot find the type being referred to
+   | NetlistError_TypeNotFound String
 
 instance (Show NetlistError) where
    show  (NetlistError_UnmatchedPackageName
@@ -102,7 +110,19 @@ instance (Show NetlistError) where
    show (NetlistError_DuplicateEnums enums) =
       "at least one set of duplicate enums have occurred: "
       ++ (concat $ intersperse "; " $ map printEnumGroup enums)
+   show (NetlistError_DuplicateConstantNames names) =
+      "duplicate constant name within unit: "
+      ++ printNames names
+      ++ ";"
+   show NetlistError_ConstantResolutionFunction =
+      "constants do not support resolution functions"
+   show NetlistError_ConstantConstraint =
+      "constants do not support constraints"
+   show (NetlistError_TypeNotFound typeName) =
+      "cannot find type named: "
+      ++ typeName
 
+-- |Print group of enum literals
 printEnumGroup :: [WrappedEnumerationLiteral] -> String
 printEnumGroup =
    let convToString :: WrappedEnumerationLiteral -> String
@@ -118,3 +138,7 @@ printEnumGroup =
                ++ "'"
          ++ getLineAndColErrStr pos
    in concat . (intersperse ", ") . (map convToString)
+
+-- |Print list of wrapped names
+printNames :: [WrappedSimpleName] -> String
+printNames = concat . (intersperse ", ") . (map show)

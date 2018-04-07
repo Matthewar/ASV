@@ -72,6 +72,7 @@ import Netlister.Types.Stores
          , ScopeStore(..)
          , emptyScopeStore
          )
+import Netlister.Convert.Stores (convertPackageToScope)
 import Netlister.Types.Representation
          ( Function(..)
          , FunctionBody
@@ -197,11 +198,7 @@ getPackageParts packageName scopeItem netlistStore =
    let package = (packages netlistStore) MapS.! packageName
    in case scopeItem of
          PosnWrapper pos Declare_All ->
-            return $ PosnWrapper pos $ NewScopeDeclare_Package $
-               ScopeStore
-                  { scopeFunctions = packageFunctions package
-                  , scopeTypes = packageTypes package
-                  }
+            return $ PosnWrapper pos $ NewScopeDeclare_Package $ convertPackageToScope package
          PosnWrapper pos (Declare_Operator op) ->
             let newFunctions = findPackageFunctionsByOperator op $ packageFunctions package
             in if MapS.null newFunctions
@@ -247,12 +244,15 @@ findPackageFunctionsByIdentifier expectedName =
 
 -- | Merge scope from current unit with total scope
 mergeScope :: WrappedNewScopeDeclares -> BuildScope
-mergeScope (PosnWrapper pos (NewScopeDeclare_Package (ScopeStore newFuncs newTypes))) =
+mergeScope (PosnWrapper pos (NewScopeDeclare_Package newScope)) =
    -- ?? Should be checking for overlaps and warning
-   let modifyScope (ScopeStore oldFuncs oldTypes) =
+   let modifyScope oldScope =
          ScopeStore
-            (MapS.union newFuncs oldFuncs)
-            (MapS.union newTypes oldTypes)
+            (MapS.union (scopeFunctions newScope) (scopeFunctions oldScope))
+            (MapS.union (scopeTypes newScope) (scopeTypes oldScope))
+            (MapS.union (scopeSubtypes newScope) (scopeSubtypes oldScope))
+            (MapS.union (scopeConstants newScope) (scopeConstants oldScope))
+            (MapS.union (scopeSignals newScope) (scopeSignals oldScope))
    in modify modifyScope
 mergeScope (PosnWrapper pos (NewScopeDeclare_Functions newFuncs)) = mergeScopeFuncs $ PosnWrapper pos newFuncs
 mergeScope (PosnWrapper pos (NewScopeDeclare_Type typeName typeDeclare)) = mergeScopeType $ PosnWrapper pos (typeName,typeDeclare)
@@ -261,18 +261,14 @@ mergeScope (PosnWrapper pos (NewScopeDeclare_Type typeName typeDeclare)) = merge
 mergeScopeFuncs :: PosnWrapper FunctionStore -> BuildScope
 mergeScopeFuncs (PosnWrapper pos newFuncs) =
    -- ?? Should be checking for overlaps and warning
-   let modifyScope (ScopeStore oldFuncs oldTypes) =
-         ScopeStore
-            (MapS.union newFuncs oldFuncs)
-            oldTypes
+   let modifyScope oldScope = oldScope { scopeFunctions = MapS.union newFuncs $ scopeFunctions oldScope }
    in modify modifyScope
 
 -- |Merge a single type into the scope
 mergeScopeType :: PosnWrapper (String,Type) -> BuildScope
 mergeScopeType (PosnWrapper pos (name,declare)) = do
-   let readScopeTypes (ScopeStore _ types) = types
+   let readScopeTypes = scopeTypes
    isInScope <- gets ((MapS.member name) . readScopeTypes)
    -- ?? when isInScope $ ?? Warning?
-   let modifyScope (ScopeStore oldFuncs oldTypes) =
-         ScopeStore oldFuncs $ MapS.insert name declare oldTypes
+   let modifyScope oldScope = oldScope { scopeTypes = MapS.insert name declare $ scopeTypes oldScope }
    modify modifyScope

@@ -12,7 +12,7 @@ import Netlister.Types.Representation
          , FloatRange(..)
          , Enumerate(..)
          , RangeDirection(..)
-         , SubtypeIndication(..)
+         , Subtype(..)
          , ArrayBounds(..)
          , Constraint(..)
          , Function(..)
@@ -20,8 +20,10 @@ import Netlister.Types.Representation
          )
 import Netlister.Types.Stores
          ( TypeStore
+         , SubtypeStore
          , FunctionStore
          , Package(..)
+         , emptyPackage
          , ScopeStore(..)
          , emptyScopeStore
          )
@@ -184,38 +186,12 @@ types =
             & MapS.fromList
          )
       )
-   ,  ( "NATURAL"
-      , Subtype $
-         SubtypeIndication
-            Nothing
-            (types MapS.! "INTEGER")
-            ( Just $
-               Constraint_IntegerRange $
-                  IntegerRange
-                     0
-                     maxBound
-                     To
-            )
-      )
-   ,  ( "POSITIVE"
-      , Subtype $
-         SubtypeIndication
-            Nothing
-            (types MapS.! "INTEGER")
-            ( Just $
-               Constraint_IntegerRange $
-                  IntegerRange
-                     1
-                     maxBound
-                     To
-            )
-      )
    ,  ( "STRING"
       , ArrayType
          ( Unconstrained
             [ types MapS.! "POSITIVE" ]
          )
-         ( SubtypeIndication
+         ( Subtype
             Nothing
             (types MapS.! "CHARACTER")
             Nothing
@@ -226,7 +202,7 @@ types =
          ( Unconstrained
             [ types MapS.! "NATURAL" ]
          )
-         ( SubtypeIndication
+         ( Subtype
             Nothing
             (types MapS.! "BIT")
             Nothing
@@ -236,6 +212,35 @@ types =
    & MapS.fromList
    where floatBound = getFloatBound (0.0 :: Double)
 
+subtypes :: SubtypeStore
+subtypes =
+   [  ( "NATURAL"
+      , Subtype
+         Nothing
+         (types MapS.! "INTEGER")
+         ( Just $
+            Constraint_IntegerRange $
+               IntegerRange
+                  0
+                  maxBound
+                  To
+         )
+      )
+   ,  ( "POSITIVE"
+      , Subtype
+         Nothing
+         (types MapS.! "INTEGER")
+         ( Just $
+            Constraint_IntegerRange $
+               IntegerRange
+                  1
+                  maxBound
+                  To
+         )
+      )
+   ]
+   & MapS.fromList
+
 functions :: FunctionStore
 functions =
    [  ( Function
@@ -244,12 +249,21 @@ functions =
          (types MapS.! "TIME")
       , Nothing
       ) -- ?? MUST BE DEALT WITH IN INTERMEDIARY CONVERSION
+--   ,  ( Function
+--         (Designator_Operator And)
+--         [ FunctionInterface FunctionInterfaceType_Constant "L" (SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
+--         , FunctionInterface FunctionInterfaceType_Constant "R" (SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
+--         ]
+--         (types MapS.! "BOOLEAN")
+--      ,
+--      )
    ]
    & MapS.fromList
 
 standardPackage :: Package
 standardPackage =
-   Package
-      emptyScopeStore
-      functions
-      types
+   emptyPackage
+      { packageFunctions = functions
+      , packageTypes = types
+      , packageSubtypes = subtypes
+      }

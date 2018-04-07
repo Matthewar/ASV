@@ -6,20 +6,29 @@ module Netlister.Types.Stores
    ( NetlistName(..)
    , NetlistStore(..)
    , TypeStore
+   , SubtypeStore
    , FunctionStore
+   , ConstantStore
+   , SignalStore
    , PackageStore
    , Package(..)
-   , newPackage
+   , emptyPackage
    , ScopeStore(..)
    , emptyScopeStore
+   , UnitStore(..)
    ) where
 
 import qualified Data.Map.Strict as MapS
 
 import Netlister.Types.Representation
          ( Type
+         , Subtype
          , Function(..)
          , FunctionBody(..)
+         )
+import Netlister.Types.Objects
+         ( Constant
+         , Signal
          )
 
 -- |Netlist name representation
@@ -43,10 +52,19 @@ data NetlistStore =
 -- |Store of type data
 type TypeStore = MapS.Map String Type
 
+-- |Store of subtype data
+type SubtypeStore = MapS.Map String Subtype
+
 -- |Store of function data
 -- Reference using name, input types and output type
 -- Contains potential body (if defined)
 type FunctionStore = MapS.Map Function (Maybe FunctionBody)
+
+-- |Store of constant data
+type ConstantStore = MapS.Map String Constant
+
+-- |Store of signal data
+type SignalStore = MapS.Map String Signal
 
 -- |Store of package data
 type PackageStore = MapS.Map NetlistName Package
@@ -61,8 +79,9 @@ data Package =
       --ProcedureStore
       , packageFunctions :: FunctionStore
       , packageTypes :: TypeStore
-      --ConstantStore
-      --SignalStore
+      , packageSubtypes :: SubtypeStore
+      , packageConstants :: ConstantStore
+      , packageSignals :: SignalStore
       --FileStore
       --AliasStore
       --ComponentStore
@@ -73,21 +92,32 @@ data Package =
    -- ?? Maybe PackageBodyStore
       --Subprogram
       --Type
+      --Subtype
       --Constant
       --File
       --Alias
       --Use
       }
 
--- |New package with scope
-newPackage :: ScopeStore -> Package
-newPackage scope = Package scope MapS.empty MapS.empty
+-- |Empty package
+emptyPackage :: Package
+emptyPackage =
+   Package
+      emptyScopeStore
+      MapS.empty
+      MapS.empty
+      MapS.empty
+      MapS.empty
+      MapS.empty
 
 -- |Store of scoped declarations
 data ScopeStore =
    ScopeStore
       { scopeFunctions :: FunctionStore
       , scopeTypes :: TypeStore
+      , scopeSubtypes :: SubtypeStore
+      , scopeConstants :: ConstantStore
+      , scopeSignals :: SignalStore
       }
 
 -- |Empty real scope store
@@ -96,3 +126,16 @@ emptyScopeStore =
    ScopeStore
       MapS.empty
       MapS.empty
+      MapS.empty
+      MapS.empty
+      MapS.empty
+
+-- |Store of unit declarations
+data UnitStore =
+   UnitStore
+      { unitFunctions :: FunctionStore
+      , unitTypes :: TypeStore
+      , unitSubtypes :: SubtypeStore
+      , unitConstants :: ConstantStore
+      , unitSignals :: SignalStore
+      }

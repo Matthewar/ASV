@@ -28,7 +28,10 @@ import Netlister.Types.Representation
 import Netlister.Types.Stores
          ( TypeStore
          , FunctionStore
+         , ScopeStore
+         , UnitStore
          )
+import Netlister.Convert.Stores (isNameDeclaredInUnit)
 import Netlister.Types.Top
          ( ConversionStack
          , ConverterError
@@ -41,51 +44,44 @@ import Netlister.Types.Top
             )
          )
 
-convertType :: TypeStore -> FunctionStore -> TypeStore -> FunctionStore -> WrappedTypeDeclaration -> ConversionStack (String,Type)
-convertType _ _ _ _ (PosnWrapper typePos (IncompleteTypeDefinition _)) =
+convertType :: ScopeStore -> UnitStore -> WrappedTypeDeclaration -> ConversionStack (String,Type)
+convertType _ _ (PosnWrapper typePos (IncompleteTypeDefinition _)) =
    throwError $ ConverterError_NotImplemented $ PosnWrapper typePos "incomplete type definition"
-convertType scopeTypes scopeFunctions packageTypes packageFunctions (PosnWrapper typePos (FullTypeDeclaration (PosnWrapper namePos typeName) typeDef)) = do
+convertType scope unit (PosnWrapper typePos (FullTypeDeclaration (PosnWrapper namePos typeName) typeDef)) = do
    -- If name is in scope, that is okay, but if name is in package, this is an error
    let upperTypeName = map toUpper typeName
-   when (MapS.member upperTypeName packageTypes) $ throwError $ ConverterError_Netlist $ PosnWrapper typePos $ NetlistError_DuplicateTypes typeName
+   when (isNameDeclaredInUnit unit upperTypeName) $ throwError $ ConverterError_Netlist $ PosnWrapper typePos $ NetlistError_DuplicateTypes typeName
    newType <- convertTypeDefinition typeDef
    return (typeName,newType)
 
-
-
-
-
 -- |Convert type definition
 convertTypeDefinition :: WrappedTypeDefinition -> ConversionStack Type
-convertTypeDefinition (PosnWrapper definePos define) =
-   let convertTypeDefinition' :: TypeDefinition -> ConversionStack Type
-       convertTypeDefinition' (EnumerationTypeDefinition enumerates) =
-         case convertEnumerationLiterals enumerates [] of
-            Left invalidEnums ->
-               let sortFunction :: WrappedEnumerationLiteral -> WrappedEnumerationLiteral -> Ordering
-                   sortFunction a b = compare (unPos a) (unPos b)
-                   filterFunction :: WrappedEnumerationLiteral -> [WrappedEnumerationLiteral] -> [[WrappedEnumerationLiteral]] -> [[WrappedEnumerationLiteral]]
-                   filterFunction compareEnum (enum:enums) (currentErrEnum:otherErrEnums) =
-                     if unPos enum == unPos compareEnum
-                        then filterFunction enum enums $
-                              if null currentErrEnum
-                                 then (enum:compareEnum:currentErrEnum):otherErrEnums
-                                 else if head currentErrEnum == compareEnum
-                                          then (enum:currentErrEnum):otherErrEnums
-                                          else ([enum,compareEnum]):currentErrEnum:otherErrEnums
-                        else filterFunction enum enums (currentErrEnum:otherErrEnums)
-                   filterFunction _ [] errEnums = errEnums
-                   (fstErrEnum:otherErrEnums) = sortBy sortFunction invalidEnums
-               in throwError $ ConverterError_Netlist $ PosnWrapper definePos $ NetlistError_DuplicateEnums $ filterFunction fstErrEnum otherErrEnums [[]]
-            Right newEnums -> return $ EnumerationType newEnums
-       --convertTypeDefinition' (UniversalTypeDefinition range) =
-       --convertTypeDefinition' (PhysicalTypeDefinition range name units) =
-       --convertTypeDefinition' (UnconstrainedArrayTypeDefinition names subtypeIndication) =
-       --convertTypeDefinition' (ConstrainedArrayTypeDefinition constraint subtypeIndication) =
-       --convertTypeDefinition' (RecordTypeDefinition elementDeclares) =
-       --convertTypeDefinition' (AccessTypeDefinition subtypeIndication) =
-       --convertTypeDefinition' (FileTypeDefinition typeName) =
-   in convertTypeDefinition' define
+convertTypeDefinition (PosnWrapper definePos (EnumerationTypeDefinition enumerates)) =
+   case convertEnumerationLiterals enumerates [] of
+      Left invalidEnums ->
+         let sortFunction :: WrappedEnumerationLiteral -> WrappedEnumerationLiteral -> Ordering
+             sortFunction a b = compare (unPos a) (unPos b)
+             filterFunction :: WrappedEnumerationLiteral -> [WrappedEnumerationLiteral] -> [[WrappedEnumerationLiteral]] -> [[WrappedEnumerationLiteral]]
+             filterFunction compareEnum (enum:enums) (currentErrEnum:otherErrEnums) =
+               if unPos enum == unPos compareEnum
+                  then filterFunction enum enums $
+                        if null currentErrEnum
+                           then (enum:compareEnum:currentErrEnum):otherErrEnums
+                           else if head currentErrEnum == compareEnum
+                                    then (enum:currentErrEnum):otherErrEnums
+                                    else ([enum,compareEnum]):currentErrEnum:otherErrEnums
+                  else filterFunction enum enums (currentErrEnum:otherErrEnums)
+             filterFunction _ [] errEnums = errEnums
+             (fstErrEnum:otherErrEnums) = sortBy sortFunction invalidEnums
+         in throwError $ ConverterError_Netlist $ PosnWrapper definePos $ NetlistError_DuplicateEnums $ filterFunction fstErrEnum otherErrEnums [[]]
+      Right newEnums -> return $ EnumerationType newEnums
+--convertTypeDefinition (PosnWrapper definePos (UniversalTypeDefinition range)) =
+--convertTypeDefinition (PosnWrapper definePos (PhysicalTypeDefinition range name units)) =
+--convertTypeDefinition (PosnWrapper definePos (UnconstrainedArrayTypeDefinition names subtypeIndication)) =
+--convertTypeDefinition (PosnWrapper definePos (ConstrainedArrayTypeDefinition constraint subtypeIndication)) =
+--convertTypeDefinition (PosnWrapper definePos (RecordTypeDefinition elementDeclares)) =
+--convertTypeDefinition (PosnWrapper definePos (AccessTypeDefinition subtypeIndication)) =
+--convertTypeDefinition (PosnWrapper definePos (FileTypeDefinition typeName)) =
 
 -- |Convert enumeration literals
 -- Return converted enumerates or list of non-converted literals if error occurs

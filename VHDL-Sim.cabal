@@ -31,13 +31,15 @@ library
                      , Netlister.Builtin.Netlist
                      , Netlister.Types.Scope
                      , Netlister.Types.Operators
+                     , Netlister.Types.Objects
                      , Netlister.Types.Stores
                      , Netlister.Types.Representation
                      , Netlister.Types.Top
+                     , Netlister.Convert.Scope
+                     , Netlister.Convert.Stores
                      , Manager.NewDesignUnit
                      , Manager.Args
                      , Manager.Filing
-                     , Netlister.Convert.Scope
                      , Netlister.ParseTree
                      , Netlister.Parse.Library
                      , Netlister.Parse.Package

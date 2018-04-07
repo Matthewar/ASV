@@ -10,7 +10,7 @@ module Netlister.Types.Representation
    , IntegerRange(..)
    , FloatRange(..)
    , RangeDirection(..)
-   , SubtypeIndication(..)
+   , Subtype(..)
    , ArrayBounds(..)
    , FunctionBody(..)
    , Constraint(..)
@@ -18,7 +18,7 @@ module Netlister.Types.Representation
    , DiscreteRange(..)
    , Function(..)
    , Designator(..)
-   , Interface(..)
+   , Calculation(..)
    ) where
 
 import Data.Int (Int64)
@@ -56,13 +56,10 @@ data Type =
    -- Name of base unit
    -- Secondary unit declarations
    | PhysicalType IntegerRange String (MapS.Map String Int64)
-   -- |Subtype
-   -- Type built on another type
-   | Subtype SubtypeIndication
    -- |Array type
    -- Array of another type
    -- ?? Does this need entire subtype indication, not sure if need function and/or constraint
-   | ArrayType ArrayBounds SubtypeIndication
+   | ArrayType ArrayBounds Subtype--Indication
    deriving (Eq,Ord)
 
 -- |Enumerate
@@ -96,11 +93,13 @@ data RangeDirection =
    | Downto
    deriving (Eq,Ord)
 
--- |Essentially a type link
+-- |Subtype
+-- Type built on another type
+-- Essentially a type link
 -- Includes resolution function, type, constraint
 -- ?? Link to Function name or function body
-data SubtypeIndication = SubtypeIndication (Maybe FunctionBody) Type (Maybe Constraint)
-                       deriving (Eq,Ord)
+data Subtype = Subtype (Maybe FunctionBody) Type (Maybe Constraint)
+               deriving (Eq,Ord)
 
 -- |Array bounds
 -- Range/dimensions of the array type specified
@@ -133,14 +132,14 @@ type IndexConstraint = [DiscreteRange]
 
 -- |Discrete range
 -- ?? Can floating point be discrete, should make custom subtype indication for discrete
-data DiscreteRange = Discrete_SubtypeIndication SubtypeIndication
+data DiscreteRange = Discrete_SubtypeIndication Subtype--Indication
                    | Discrete_IntegerRange IntegerRange
                    | Discrete_FloatingRange FloatRange
                    deriving (Eq,Ord)
 
 -- |Function header information
 -- Designator (name/operator reference), interface (inputs), return type
-data Function = Function Designator [Interface] Type
+data Function = Function Designator [FunctionInterface] Type
               deriving (Eq,Ord)
 
 -- |Function designators
@@ -151,6 +150,13 @@ data Designator =
    deriving (Eq,Ord)
 
 -- |Interface to function
--- Need to define
-data Interface = Interface -- ??
+-- ?? Need to define
+data FunctionInterface = FunctionInterface FunctionInterfaceType String Subtype--Indication
                deriving (Eq,Ord)
+
+data FunctionInterfaceType =
+   FunctionInterfaceType_Constant
+   | FunctionInterfaceType_Signal --SignalBus
+   deriving (Eq,Ord)
+
+data Calculation = Calculation
