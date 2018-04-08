@@ -18,6 +18,7 @@ import Control.Monad.Trans.State
          , gets
          )
 import qualified Data.Map.Strict as MapS
+import Data.Char (toUpper)
 
 import Parser.Alex.BaseTypes (AlexPosn)
 import Parser.Happy.Types
@@ -42,7 +43,7 @@ import Netlister.Types.Stores
          , ScopeStore(..)
          , Package(..)
          )
-import Netlister.Convert.Stores
+import Netlister.Functions.Stores
          ( newPackage
          , convertPackageToGenericUnit
          )
@@ -52,9 +53,10 @@ import Netlister.Parse.Objects (convertConstant)
 -- |Convert package header unit
 convertPackage :: ScopeStore -> String -> WrappedPackageDeclaration -> ConversionStack ()
 convertPackage _ _ (PosnWrapper pos (PackageDeclaration name1 _ (Just name2)))
-   | (unPos name1) /= (unPos name2) = throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_UnmatchedPackageName name1 name2
+   | (map toUpper $ unPos name1) /= (map toUpper $ unPos name2) =
+      throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_UnmatchedPackageName name1 name2
 convertPackage scope libraryName (PosnWrapper packagePos (PackageDeclaration (PosnWrapper namePos packageName) packageDeclares _)) = do
-   let netlistName = NetlistName libraryName packageName
+   let netlistName = NetlistName libraryName $ map toUpper packageName
        basePackage = newPackage scope
    newPackage <- execStateT (convertPackageDeclares $ reverse packageDeclares) basePackage
    let addPackage scope = scope { packages = MapS.insert netlistName newPackage $ packages scope }

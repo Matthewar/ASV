@@ -79,6 +79,10 @@ data NetlistError =
    NetlistError_UnmatchedPackageName WrappedSimpleName WrappedSimpleName
    -- |Type name deplaced in two places
    | NetlistError_DuplicateTypes String
+   -- |Enum literal has same name as its own type declaration name
+   | NetlistError_EnumLitIsTypeName String
+   -- |Enum name is in use for a different declaration in the unit
+   | NetlistError_InvalidEnumName String
    -- |Duplicate enumeration literals in a type declaration
    | NetlistError_DuplicateEnums [[WrappedEnumerationLiteral]]
    -- |Constant names are duplicates of already defined in unit
@@ -109,6 +113,12 @@ instance (Show NetlistError) where
    show (NetlistError_DuplicateTypes typeName) =
       "duplicate type name within unit: "
       ++ typeName
+   show (NetlistError_EnumLitIsTypeName enum) =
+      "enum literal is the same as its type declaration name "
+      ++ enum
+   show (NetlistError_InvalidEnumName name) =
+      "enum name is already declared in this unit "
+      ++ name
    show (NetlistError_DuplicateEnums enums) =
       "at least one set of duplicate enums have occurred: "
       ++ (concat $ intersperse "; " $ map printEnumGroup enums)

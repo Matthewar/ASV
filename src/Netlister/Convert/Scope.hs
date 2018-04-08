@@ -72,7 +72,7 @@ import Netlister.Types.Stores
          , ScopeStore(..)
          , emptyScopeStore
          )
-import Netlister.Convert.Stores (convertPackageToScope)
+import Netlister.Functions.Stores (convertPackageToScope)
 import Netlister.Types.Representation
          ( Function(..)
          , FunctionBody

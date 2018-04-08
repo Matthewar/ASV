@@ -9,6 +9,7 @@ module Netlister.Parse.Objects
 
 import qualified Data.Map.Strict as MapS
 import Control.Monad.Except (throwError)
+import Data.Char (toUpper)
 
 import Parser.Happy.Types
             ( ConstantDeclaration(..)
@@ -23,7 +24,7 @@ import Netlister.Types.Stores
             , ScopeStore(..)
             , UnitStore(..)
             )
-import Netlister.Convert.Stores (isNameDeclaredInUnit)
+import Netlister.Functions.Stores (isNameInUnit)
 import Netlister.Types.Objects
             ( Constant(..)
             )
@@ -37,15 +38,15 @@ convertConstant :: ScopeStore -> UnitStore -> WrappedConstantDeclaration -> Conv
 convertConstant _ _ (PosnWrapper pos (ConstantDeclaration _ _ (Just _))) =
    throwError $ ConverterError_NotImplemented $ PosnWrapper pos "expression in constant declaration"
 convertConstant scope unit (PosnWrapper constPos (ConstantDeclaration names subtypeIndication Nothing)) = do
-   case checkNames unit names of
-      Nothing -> return ()
-      Just errNames -> throwError $ ConverterError_Netlist $ PosnWrapper constPos $ NetlistError_DuplicateConstantNames errNames
+   constNames <- case checkNames unit names of
+                     Right constNames -> return constNames
+                     Left errNames -> throwError $ ConverterError_Netlist $ PosnWrapper constPos $ NetlistError_DuplicateConstantNames errNames
    (typePos,typeName) <- case subtypeIndication of
                            PosnWrapper _ (SubtypeIndication (Just (PosnWrapper pos _)) _ _) -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_ConstantResolutionFunction
                            PosnWrapper _ (SubtypeIndication _ _ (Just (PosnWrapper pos _))) -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_ConstantConstraint
                            PosnWrapper _ (SubtypeIndication Nothing (PosnWrapper typePos typeName) Nothing) -> return (typePos,typeName)
    checkedTypeName <- case typeName of
-                        Name_Simple name -> return name
+                        Name_Simple name -> return $ map toUpper name
                         Name_Operator _ -> throwError $ ConverterError_Netlist $ PosnWrapper typePos $ NetlistError_InvalidTypeName_Operator
                         _ -> throwError $ ConverterError_NotImplemented  $ PosnWrapper typePos "Other name type in constant declaration"
    typeVal <- case MapS.lookup checkedTypeName $ unitTypes unit of
@@ -56,18 +57,18 @@ convertConstant scope unit (PosnWrapper constPos (ConstantDeclaration names subt
    -- ?? Add calculation/expression
    return $ MapS.fromList $ map (\(PosnWrapper _ constName) -> (constName,Constant typeVal Nothing)) names
 
-checkNames :: UnitStore -> [WrappedSimpleName] -> Maybe [WrappedSimpleName]
+checkNames :: UnitStore -> [WrappedSimpleName] -> Either [WrappedSimpleName] [String]
 checkNames unit names =
-   let checkNames' :: [WrappedSimpleName] -> [WrappedSimpleName] -> [WrappedSimpleName]
-       checkNames' (wrappedName:otherNames) errNames =
-         let name = unPos wrappedName
-         in checkNames' otherNames $
-               if isNameDeclaredInUnit unit name
-                  then (wrappedName:errNames)
-                  else errNames
-   in case checkNames' names [] of
-         [] -> Nothing
-         errNames -> Just errNames
+   let checkNames' :: [WrappedSimpleName] -> [WrappedSimpleName] -> [String] -> Either [WrappedSimpleName] [String]
+       checkNames' (wrappedName:otherNames) errNames successNames =
+         let name = map toUpper $ unPos wrappedName
+             continueCheck = checkNames' otherNames
+         in if isNameInUnit unit name
+               then continueCheck (wrappedName:errNames) successNames
+               else continueCheck errNames (name:successNames)
+       checkNames' [] [] successNames = Right successNames
+       checkNames' [] errNames _ = Left errNames
+   in checkNames' names [] []
 
 --convertSignal :: TypeStore -> TypeStore -> FunctionStore -> ConstantStore -> WrappedConstantDeclaration -> ConversionStack ConstantStore
 

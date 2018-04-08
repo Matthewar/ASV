@@ -33,10 +33,10 @@ library
                      , Netlister.Types.Operators
                      , Netlister.Types.Objects
                      , Netlister.Types.Stores
+                     , Netlister.Functions.Stores
                      , Netlister.Types.Representation
                      , Netlister.Types.Top
                      , Netlister.Convert.Scope
-                     , Netlister.Convert.Stores
                      , Manager.NewDesignUnit
                      , Manager.Args
                      , Manager.Filing
