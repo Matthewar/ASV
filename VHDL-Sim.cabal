@@ -32,6 +32,8 @@ library
                      , split
                      , bytestring
                      , containers
+                     , transformers
+                     , mtl
   build-tools:         alex
                      , happy
   default-language:    Haskell2010

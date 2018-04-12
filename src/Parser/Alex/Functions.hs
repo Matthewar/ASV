@@ -9,6 +9,12 @@ module Parser.Alex.Functions where
 
 import Data.Char (ord)
 import qualified Data.Bits
+import Control.Monad.Trans.State
+         ( evalStateT
+         , gets
+         , modify
+         )
+import Control.Monad.Except (throwError)
 
 import Parser.ErrorTypes
 import Parser.Alex.BaseTypes
@@ -71,34 +77,31 @@ alexMove (AlexPn a l c) _    = AlexPn (a+1)  l     (c+1)
 
 -- | Take in input a string and run the lexer on it
 runAlex :: String -> Alex a -> Either WrappedParserError a
-runAlex input__ (Alex f)
-   = case f (AlexState {alex_pos = alexStartPos,
-                        alex_inp = input__,
-                        alex_chr = '\n',
-                        alex_bytes = [],
-                        alex_scd = 0}) of Left err -> Left err
-                                          Right ( _, a ) -> Right a
+runAlex input__ f =
+   evalStateT f $
+      (AlexState {alex_pos = alexStartPos,
+                  alex_inp = input__,
+                  alex_chr = '\n',
+                  alex_bytes = [],
+                  alex_scd = 0})
 
 -- | Get lexer input state
 alexGetInput :: Alex AlexInput
-alexGetInput
- = Alex $ \s@AlexState{alex_pos=pos,alex_chr=c,alex_bytes=bs,alex_inp=inp__} ->
-        Right (s, (pos,c,bs,inp__))
+alexGetInput = gets $ \s@AlexState{alex_pos=pos,alex_chr=c,alex_bytes=bs,alex_inp=inp__} -> (pos,c,bs,inp__)
 
 -- | Get the state of the lexer
 alexSetInput :: AlexInput -> Alex ()
-alexSetInput (pos,c,bs,inp__)
- = Alex $ \s -> case s{alex_pos=pos,alex_chr=c,alex_bytes=bs,alex_inp=inp__} of
-                  state__@(AlexState{}) -> Right (state__, ())
+alexSetInput (pos,c,bs,inp__) =
+   modify $ \s -> s{alex_pos=pos,alex_chr=c,alex_bytes=bs,alex_inp=inp__}
 
 -- | Return lexer error
 alexError :: WrappedParserError -> Alex a
-alexError err = Alex $ const $ Left err
+alexError err = throwError err
 
 -- | Get lexer current startcode
 alexGetStartCode :: Alex Int
-alexGetStartCode = Alex $ \s@AlexState{alex_scd=sc} -> Right (s, sc)
+alexGetStartCode = gets $ \s@AlexState{alex_scd=sc} -> sc
 
 -- | Set lexer startcode
 alexSetStartCode :: Int -> Alex ()
-alexSetStartCode sc = Alex $ \s -> Right (s{alex_scd=sc}, ())
+alexSetStartCode sc = modify $ \s -> s{alex_scd=sc}
