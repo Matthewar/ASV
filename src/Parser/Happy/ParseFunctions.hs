@@ -7,9 +7,9 @@ module Parser.Happy.ParseFunctions where
 import Data.Int (Int64)
 import Data.ByteString.Char8 (ByteString)
 
-import qualified Parser.TokenTypes as Tokens
-import Parser.TokenTypes (Token, WrappedToken)
-import Parser.PositionWrapper
+import qualified Lexer.Types.Token as Tokens
+import Lexer.Types.Token (Token, WrappedToken)
+import Lexer.Types.PositionWrapper
 import Parser.Happy.Types
 
 ------------------------------------------

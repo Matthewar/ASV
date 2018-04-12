@@ -5,7 +5,7 @@
    Adapted from Alex default wrapper file.
    See [Alex](https://www.haskell.org/alex/)
 |-}
-module Parser.Alex.Functions where
+module Lexer.Alex.Functions where
 
 import Data.Char (ord)
 import qualified Data.Bits
@@ -14,11 +14,14 @@ import Control.Monad.Trans.State
          , gets
          , modify
          )
-import Control.Monad.Except (throwError)
+import Control.Monad.Except
+         ( ExceptT
+         , throwError
+         )
 
-import Parser.ErrorTypes
-import Parser.Alex.BaseTypes
-import Parser.Alex.Monad (Alex(..))
+import Lexer.Types.Error
+import Lexer.Types.Monad (Alex(..))
+import Lexer.Alex.Types
 
 -- | Encode a Haskell String to a list of Byte values, in UTF8 format.
 utf8Encode :: Char -> [Byte]

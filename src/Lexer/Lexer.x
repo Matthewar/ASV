@@ -1,15 +1,19 @@
 {
-module Parser.Lexer where
+module Lexer.Lexer where
 
 import Data.Function ((&))
+import Control.Monad.Except
+         ( ExceptT
+         , runExceptT
+         )
 
-import Parser.TokenTypes
-import Parser.ErrorTypes
-import Parser.PositionWrapper
-import Parser.Alex.BaseTypes
-import Parser.Alex.Monad
-import Parser.Alex.Functions
-import Parser.Alex.LexFunctions
+import Lexer.Types.Token
+import Lexer.Types.Error
+import Lexer.Types.Monad
+import Lexer.Types.PositionWrapper
+import Lexer.Functions.Lex
+import Lexer.Alex.Types
+import Lexer.Alex.Functions
 }
 
 $upper_case_letter = [A-Z]
@@ -373,12 +377,12 @@ lexer cont = do
 -- Can be used for debug
 -- Returns either error or list of tokens
 lexerList :: String -> Either WrappedParserError [Token]
-lexerList str = runAlex str $ do
+lexerList str = runAlex str $
    let loop tknLst = do token <- alexMonadScan
                         case unPos token of
                            EOF -> return $ reverse tknLst
                            unPosToken -> loop (unPosToken:tknLst)
-   loop []
+   in loop []
 
 -- |Lexer scan
 alexMonadScan = do

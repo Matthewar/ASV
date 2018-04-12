@@ -16,13 +16,12 @@ import Manager.Filing
          ( findDesignUnit
          , checkArguments
          )
+import Lexer.Types.Error (WrappedParserError)
+import Lexer.Alex.Functions (runAlex)
+import qualified Parser.Parser as Parser (v1987)
+import Parser.Happy.Types (DesignFile)
 import Netlister.Types.Stores (NetlistStore)
 import Netlister.Types.Stores (NetlistName(..))
-import qualified Parser.Parser as Parser (v1987)
-import Parser.ErrorTypes (WrappedParserError)
-import Parser.Happy.Types (DesignFile)
-import Parser.Alex.Functions (runAlex)
-import Parser.ErrorTypes (printParserError)
 import qualified Netlister.Builtin.Netlist as InitialNetlist (netlist)
 import Netlister.Types.Top (ConversionStack,ConverterError(..))
 import Netlister.ParseTree (convertTree)

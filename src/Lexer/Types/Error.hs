@@ -1,4 +1,4 @@
-module Parser.ErrorTypes
+module Lexer.Types.Error
 ( 
    ParserError(..)
    , WrappedParserError
@@ -12,8 +12,8 @@ import Data.Char as Char
 import Data.Int (Int64)
 import Data.Function ((&))
 
-import Parser.Alex.BaseTypes (AlexPosn(..))
-import Parser.PositionWrapper
+import Lexer.Types.PositionWrapper
+import Lexer.Alex.Types (AlexPosn(..))
 
 -- |Errors that the parser and lexer can output
 -- All errors contain the position where the error occurred.

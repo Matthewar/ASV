@@ -5,14 +5,17 @@
    Adapted from Alex default wrapper file.
    See [Alex](https://www.haskell.org/alex/)
 |-}
-module Parser.Alex.Monad where
+module Lexer.Types.Monad where
 
-import qualified Control.Applicative as App (Applicative (..))
 import Control.Monad.Trans.State (StateT)
+import Control.Monad.Except (ExceptT)
 
-import Parser.Alex.BaseTypes
-import Parser.ErrorTypes (WrappedParserError)
-import Parser.TokenTypes (WrappedToken)
+import Lexer.Types.Error (WrappedParserError)
+import Lexer.Types.Token (WrappedToken)
+import Lexer.Alex.Types
+         ( AlexState
+         , AlexInput
+         )
 
 type Alex a = StateT AlexState (Either WrappedParserError) a
 

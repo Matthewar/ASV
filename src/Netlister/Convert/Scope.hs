@@ -30,7 +30,8 @@ import Control.Monad.Except
          , withExceptT
          )
 
-import Parser.Alex.BaseTypes (AlexPosn)
+import Lexer.Types.PositionWrapper
+import Lexer.Alex.Types (AlexPosn)
 import Parser.Happy.Types
          ( WrappedContextItem
          , ContextItem(..)
@@ -43,7 +44,6 @@ import Parser.Happy.Types
          , Suffix(..)
          , Name(..)
          )
-import Parser.PositionWrapper
 import Netlister.Types.Scope
          ( Scope(..)
          , UnitScope

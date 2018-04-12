@@ -19,20 +19,20 @@ import Control.Monad.Except
 import Data.Char (toUpper)
 import Data.List (intersperse)
 
-import Netlister.Types.Stores (NetlistStore)
-import Netlister.Types.Scope (WrappedScopeConverterError)
-import Parser.Alex.BaseTypes (AlexPosn)
-import Parser.PositionWrapper (PosnWrapper(..))
-import Manager.Filing (FilingError)
-import Parser.ErrorTypes
+import Lexer.Types.PositionWrapper (PosnWrapper(..))
+import Lexer.Types.Error
          ( WrappedParserError
          , getLineAndColErrStr
          )
+import Lexer.Alex.Types (AlexPosn)
 import Parser.Happy.Types
          ( WrappedSimpleName
          , WrappedEnumerationLiteral
          , EnumerationLiteral(..)
          )
+import Netlister.Types.Stores (NetlistStore)
+import Netlister.Types.Scope (WrappedScopeConverterError)
+import Manager.Filing (FilingError)
 
 -- |Monads required for conversion
 type ConversionStack a = StateT NetlistStore (ExceptT ConverterError IO) a

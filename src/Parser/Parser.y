@@ -1,13 +1,13 @@
 {
 module Parser.Parser where
 
+import qualified Lexer.Lexer as Lex
+import Lexer.Types.PositionWrapper
+import Lexer.Types.Monad (Alex)
+import qualified Lexer.Types.Token as Tokens
 import Parser.Happy.Types
 import Parser.Happy.Functions
 import Parser.Happy.ParseFunctions
-import Parser.Alex.Monad (Alex)
-import qualified Parser.Lexer as Lex
-import qualified Parser.TokenTypes as Tokens
-import Parser.PositionWrapper
 }
 
 %name v1987

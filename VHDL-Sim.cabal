@@ -15,14 +15,14 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Parser.Lexer
-                     , Parser.TokenTypes
-                     , Parser.ErrorTypes
-                     , Parser.PositionWrapper
-                     , Parser.Alex.BaseTypes
-                     , Parser.Alex.Monad
-                     , Parser.Alex.Functions
-                     , Parser.Alex.LexFunctions
+  exposed-modules:     Lexer.Lexer
+                     , Lexer.Alex.Types
+                     , Lexer.Alex.Functions
+                     , Lexer.Types.Token
+                     , Lexer.Types.Monad
+                     , Lexer.Types.PositionWrapper
+                     , Lexer.Types.Error
+                     , Lexer.Functions.Lex
                      , Parser.Parser
                      , Parser.Happy.Types
                      , Parser.Happy.Functions

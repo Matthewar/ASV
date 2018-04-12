@@ -15,6 +15,7 @@ import Data.List
          , find
          )
 
+import Lexer.Types.PositionWrapper
 import Parser.Happy.Types
          ( TypeDeclaration(..)
          , WrappedTypeDeclaration
@@ -24,7 +25,6 @@ import Parser.Happy.Types
          , WrappedEnumerationLiteral
          , WrappedSimpleName
          )
-import Parser.PositionWrapper
 import Netlister.Types.Representation
          ( Type(..)
          , Enumerate(..)

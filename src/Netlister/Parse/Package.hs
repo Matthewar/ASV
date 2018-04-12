@@ -20,14 +20,14 @@ import Control.Monad.Trans.State
 import qualified Data.Map.Strict as MapS
 import Data.Char (toUpper)
 
-import Parser.Alex.BaseTypes (AlexPosn)
+import Lexer.Types.PositionWrapper
+import Lexer.Alex.Types (AlexPosn)
 import Parser.Happy.Types
          ( PackageDeclaration(..)
          , WrappedPackageDeclaration
          , PackageDeclarativePart
          , PackageDeclarativeItem(..)
          )
-import Parser.PositionWrapper
 import Netlister.Types.Top
          ( ConversionStack
          , ConverterError

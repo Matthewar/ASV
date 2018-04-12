@@ -14,6 +14,13 @@ import Control.Monad.Except
 import Control.Monad.Trans.State (gets)
 import qualified Data.Map.Strict as MapS
 
+import Lexer.Types.PositionWrapper (PosnWrapper(unPos))
+import Parser.Happy.Types
+         ( DesignFile(..)
+         , DesignUnit(..)
+         , WrappedDesignUnit
+         , WrappedLibraryUnit
+         )
 import Netlister.Types.Scope
          ( Scope
          , WrappedScopeConverterError
@@ -24,13 +31,6 @@ import Netlister.Types.Top
          ( ConversionStack
          , ConverterError(ConverterError_Scope)
          )
-import Parser.Happy.Types
-         ( DesignFile(..)
-         , DesignUnit(..)
-         , WrappedDesignUnit
-         , WrappedLibraryUnit
-         )
-import Parser.PositionWrapper (PosnWrapper(unPos))
 import Netlister.Convert.Scope
          ( convertScope
          , evalScope

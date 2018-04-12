@@ -3,11 +3,11 @@ module Parser.Happy.Functions
    )
 where
 
-import Parser.Alex.Monad (Alex)
-import Parser.Alex.Functions (alexError)
-import Parser.TokenTypes (WrappedToken)
-import Parser.PositionWrapper
-import Parser.ErrorTypes
+import Lexer.Types.Monad (Alex)
+import Lexer.Types.Token (WrappedToken)
+import Lexer.Types.PositionWrapper
+import Lexer.Types.Error
+import Lexer.Alex.Functions (alexError)
 
 -- |Generate a parser error using current position
 parseError :: WrappedToken -> Alex a

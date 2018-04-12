@@ -10,8 +10,8 @@ module Netlister.Builtin.Netlist
 import qualified Data.Map.Strict as MapS
 import Data.Function ((&))
 
-import Parser.Alex.BaseTypes (AlexPosn(..))
-import Parser.PositionWrapper (PosnWrapper(..))
+import Lexer.Types.PositionWrapper (PosnWrapper(..))
+import Lexer.Alex.Types (AlexPosn(..))
 import Netlister.Types.Stores
          ( NetlistStore(..)
          , PackageStore(..)

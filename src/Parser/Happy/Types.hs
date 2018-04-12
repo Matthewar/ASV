@@ -3,8 +3,8 @@ module Parser.Happy.Types where
 import Data.Int (Int64)
 import Data.ByteString.Char8 (ByteString)
 
-import qualified Parser.TokenTypes as TokenTypes
-import Parser.PositionWrapper
+import qualified Lexer.Types.Token as TokenTypes
+import Lexer.Types.PositionWrapper
 
 ------------------------------------------
 -- Design Units

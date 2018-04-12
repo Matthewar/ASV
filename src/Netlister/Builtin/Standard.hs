@@ -27,7 +27,7 @@ import Netlister.Types.Stores
          , ScopeStore(..)
          , emptyScopeStore
          )
-import Parser.ErrorTypes (getFloatBound)
+import Lexer.Types.Error (getFloatBound)
 
 import qualified Data.Map.Strict as MapS
 import Data.Function ((&))

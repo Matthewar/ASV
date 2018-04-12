@@ -17,18 +17,18 @@ module Netlister.Types.Scope
    , ScopeReturn
    ) where
 
-import Netlister.Types.Operators (Operator)
-import Parser.PositionWrapper
-import Parser.Alex.BaseTypes (AlexPosn)
+import Lexer.Types.PositionWrapper
+import Lexer.Alex.Types (AlexPosn)
 import Parser.Happy.Types
          ( SelectedName
          )
+import Netlister.Types.Representation (Type)
+import Netlister.Types.Operators (Operator)
 import Netlister.Types.Stores
          ( NetlistName
          , FunctionStore
          , ScopeStore
          )
-import Netlister.Types.Representation (Type)
 
 import qualified Data.Map.Strict as MapS
 import Control.Monad.Trans.State (StateT)

@@ -1,10 +1,10 @@
 module LexerSpec (tests) where
 
-import Parser.Alex.BaseTypes (AlexPosn(..))
-import Parser.Lexer (lexerList)
-import Parser.ErrorTypes
-import Parser.TokenTypes
-import Parser.PositionWrapper
+import Lexer.Lexer (lexerList)
+import Lexer.Types.Token
+import Lexer.Types.Error
+import Lexer.Types.PositionWrapper
+import Lexer.Alex.Types (AlexPosn(..))
 
 import Test.Tasty
 import Test.Tasty.HUnit

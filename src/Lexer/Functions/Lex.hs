@@ -1,13 +1,13 @@
 {-|
-   Module      : Parser.Alex.LexFunctions
+   Module      : Lexer.Functions.Lex
    Description : Custom lexer functions
 |-}
-module Parser.Alex.LexFunctions where
+module Lexer.Functions.Lex where
 
-import Parser.Alex.BaseTypes
-import Parser.Alex.Monad
-import Parser.TokenTypes
-import Parser.ErrorTypes
+import Lexer.Types.Monad
+import Lexer.Types.Token
+import Lexer.Types.Error
+import Lexer.Alex.Types
 
 import qualified Data.ByteString.Char8 as ByteString (pack)
 import Data.List.Split (splitOn)

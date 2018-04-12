@@ -8,6 +8,12 @@ module Netlister.Parse.Library
 
 import Control.Monad.Except (throwError)
 
+import Lexer.Types.PositionWrapper (PosnWrapper(..))
+import Parser.Happy.Types
+         ( WrappedLibraryUnit
+         , LibraryUnit(..)
+         , PrimaryUnit(..)
+         )
 import Netlister.Types.Top
          ( ConversionStack
          , ConverterError(ConverterError_NotImplemented)
@@ -16,12 +22,6 @@ import Netlister.Types.Stores
          ( ScopeStore
          , NetlistName
          )
-import Parser.Happy.Types
-         ( WrappedLibraryUnit
-         , LibraryUnit(..)
-         , PrimaryUnit(..)
-         )
-import Parser.PositionWrapper (PosnWrapper(..))
 import Netlister.Parse.Package (convertPackage)
 
 convertLibrary :: ScopeStore -> String -> WrappedLibraryUnit -> ConversionStack ()

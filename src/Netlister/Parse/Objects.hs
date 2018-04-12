@@ -11,6 +11,7 @@ import qualified Data.Map.Strict as MapS
 import Control.Monad.Except (throwError)
 import Data.Char (toUpper)
 
+import Lexer.Types.PositionWrapper
 import Parser.Happy.Types
             ( ConstantDeclaration(..)
             , WrappedConstantDeclaration
@@ -18,7 +19,6 @@ import Parser.Happy.Types
             , Name(..)
             , WrappedSimpleName
             )
-import Parser.PositionWrapper
 import Netlister.Types.Stores
             ( ConstantStore
             , ScopeStore(..)

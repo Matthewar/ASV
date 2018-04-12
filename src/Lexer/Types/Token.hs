@@ -1,6 +1,6 @@
-module Parser.TokenTypes where
+module Lexer.Types.Token where
 
-import Parser.PositionWrapper
+import Lexer.Types.PositionWrapper
 
 import Data.Char as Char
 import Data.Int (Int64)

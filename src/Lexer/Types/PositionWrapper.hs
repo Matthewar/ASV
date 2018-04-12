@@ -1,6 +1,6 @@
-module Parser.PositionWrapper where
+module Lexer.Types.PositionWrapper where
 
-import Parser.Alex.BaseTypes (AlexPosn)
+import Lexer.Alex.Types (AlexPosn)
 
 -- |Basic wrapper type to store position information with data
 -- Typically used for nodes and tokens
