@@ -27,13 +27,34 @@ library
                      , Parser.Happy.Types
                      , Parser.Happy.Functions
                      , Parser.Happy.ParseFunctions
+                     , Netlister.Builtin.Standard
+                     , Netlister.Builtin.Netlist
+                     , Netlister.Types.Scope
+                     , Netlister.Types.Operators
+                     , Netlister.Types.Objects
+                     , Netlister.Types.Stores
+                     , Netlister.Functions.Stores
+                     , Netlister.Types.Representation
+                     , Netlister.Types.Top
+                     , Netlister.Convert.Scope
+                     , Manager.NewDesignUnit
+                     , Manager.Args
+                     , Manager.Filing
+                     , Netlister.ParseTree
+                     , Netlister.Parse.Library
+                     , Netlister.Parse.Package
+                     , Netlister.Parse.Type
+                     , Netlister.Parse.Objects
   build-depends:       base >= 4.7 && < 5
                      , array
                      , split
                      , bytestring
                      , containers
+                     , optparse-applicative
                      , transformers
-                     , mtl
+                     , directory
+                     , mtl >= 2.2.2
+                     , bimap
   build-tools:         alex
                      , happy
   default-language:    Haskell2010
@@ -47,6 +68,7 @@ executable VHDL-Sim-exe
                      , VHDL-Sim
                      , array
                      , split
+                     , optparse-applicative
   default-language:    Haskell2010
 
 test-suite VHDL-Sim-test
