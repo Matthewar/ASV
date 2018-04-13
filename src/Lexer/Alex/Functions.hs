@@ -79,7 +79,7 @@ alexMove (AlexPn a l c) _    = AlexPn (a+1)  l     (c+1)
 -- ?? Compile with -funbox-strict-fields for best results!
 
 -- | Take in input a string and run the lexer on it
-runAlex :: String -> Alex a -> Either WrappedParserError a
+runAlex :: String -> Alex a -> ExceptT WrappedParserError IO a
 runAlex input__ f =
    evalStateT f $
       (AlexState {alex_pos = alexStartPos,

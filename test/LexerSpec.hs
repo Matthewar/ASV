@@ -1,15 +1,10 @@
 module LexerSpec (tests) where
 
-import Lexer.Lexer (lexerList)
-import Lexer.Types.Token
-import Lexer.Types.Error
-import Lexer.Types.PositionWrapper
-import Lexer.Alex.Types (AlexPosn(..))
-
 import Test.Tasty
 import Test.Tasty.HUnit
 import qualified Test.Tasty.QuickCheck as QC
 import Control.Monad
+import Control.Monad.Except (runExceptT)
 import Data.Function ((&))
 import qualified Data.Map.Strict as MapS
 import Data.List.Split (splitOneOf,splitOn)
@@ -17,6 +12,12 @@ import qualified Data.ByteString.Char8 as ByteString (pack)
 import Data.Char (toUpper,digitToInt)
 import Data.List (findIndex)
 import Numeric (readInt)
+
+import Lexer.Lexer (lexerList)
+import Lexer.Types.Token
+import Lexer.Types.Error
+import Lexer.Types.PositionWrapper
+import Lexer.Alex.Types (AlexPosn(..))
 
 -- |All lexer tests
 tests :: TestTree
@@ -30,181 +31,190 @@ singleWords = testGroup "Single word tests for lexer"
    [ singleKeywords
    , singleOperators
    , singleLiterals
-   , singleIdentifiers ]
+   , singleIdentifiers
+   ]
 
 -- |Single keyword lexer tests
 -- A single string that lexes to a keyword token
 singleKeywords :: TestTree
 singleKeywords = testGroup "Single keyword tests for lexer"
    [ singleKeywordsUpper
-   , singleKeywordsLower ]
+   , singleKeywordsLower
+   ]
+
+-- |Compare a single unit input
+compareBasicUnit :: String -> Token -> Assertion
+compareBasicUnit input output = do
+   result <- runExceptT $ lexerList input
+   let expectedOutput = Right [output]
+   result @?= expectedOutput
 
 -- |Single upper case keyword lexer unit tests
 -- Unit tests with single upper case strings that lex to keyword tokens
 singleKeywordsUpper :: TestTree
 singleKeywordsUpper = testGroup "Single upper case keywords"
    [ testCase "\"ABS\" == Keyword Abs" $
-         lexerList "ABS" @?= Right [Keyword Abs]
+         compareBasicUnit "ABS" $ Keyword Abs
    , testCase "\"ACCESS\" == Keyword Access" $
-         lexerList "ACCESS" @?= Right [Keyword Access]
+         compareBasicUnit "ACCESS" $ Keyword Access
    , testCase "\"AFTER\" == Keyword After" $
-         lexerList "AFTER" @?= Right [Keyword After]
+         compareBasicUnit "AFTER" $ Keyword After
    , testCase "\"ALIAS\" == Keyword Alias" $
-         lexerList "ALIAS" @?= Right [Keyword Alias]
+         compareBasicUnit "ALIAS" $ Keyword Alias
    , testCase "\"ALL\" == Keyword All" $
-         lexerList "ALL" @?= Right [Keyword All]
+         compareBasicUnit "ALL" $ Keyword All
    , testCase "\"AND\" == Keyword And" $
-         lexerList "AND" @?= Right [Keyword And]
+         compareBasicUnit "AND" $ Keyword And
    , testCase "\"ARCHITECTURE\" == Keyword Architecture" $
-         lexerList "ARCHITECTURE" @?= Right [Keyword Architecture]
+         compareBasicUnit "ARCHITECTURE" $ Keyword Architecture
    , testCase "\"ARRAY\" == Keyword Array" $
-         lexerList "ARRAY" @?= Right [Keyword Array]
+         compareBasicUnit "ARRAY" $ Keyword Array
    , testCase "\"ASSERT\" == Keyword Assert" $
-         lexerList "ASSERT" @?= Right [Keyword Assert]
+         compareBasicUnit "ASSERT" $ Keyword Assert
    , testCase "\"ATTRIBUTE\" == Keyword Attribute" $
-         lexerList "ATTRIBUTE" @?= Right [Keyword Attribute]
+         compareBasicUnit "ATTRIBUTE" $ Keyword Attribute
    , testCase "\"BEGIN\" == Keyword Begin" $
-         lexerList "BEGIN" @?= Right [Keyword Begin]
+         compareBasicUnit "BEGIN" $ Keyword Begin
    , testCase "\"BLOCK\" == Keyword Block" $
-         lexerList "BLOCK" @?= Right [Keyword Block]
+         compareBasicUnit "BLOCK" $ Keyword Block
    , testCase "\"BODY\" == Keyword Body" $
-         lexerList "BODY" @?= Right [Keyword Body]
+         compareBasicUnit "BODY" $ Keyword Body
    , testCase "\"BUFFER\" == Keyword Buffer" $
-         lexerList "BUFFER" @?= Right [Keyword Buffer]
+         compareBasicUnit "BUFFER" $ Keyword Buffer
    , testCase "\"BUS\" == Keyword Bus" $
-         lexerList "BUS" @?= Right [Keyword Bus]
+         compareBasicUnit "BUS" $ Keyword Bus
    , testCase "\"CASE\" == Keyword Case" $
-         lexerList "CASE" @?= Right [Keyword Case]
+         compareBasicUnit "CASE" $ Keyword Case
    , testCase "\"COMPONENT\" == Keyword Component" $
-         lexerList "COMPONENT" @?= Right [Keyword Component]
+         compareBasicUnit "COMPONENT" $ Keyword Component
    , testCase "\"CONFIGURATION\" == Keyword Configuration" $
-         lexerList "CONFIGURATION" @?= Right [Keyword Configuration]
+         compareBasicUnit "CONFIGURATION" $ Keyword Configuration
    , testCase "\"CONSTANT\" == Keyword Constant" $
-         lexerList "CONSTANT" @?= Right [Keyword Constant]
+         compareBasicUnit "CONSTANT" $ Keyword Constant
    , testCase "\"DISCONNECT\" == Keyword Disconnect" $
-         lexerList "DISCONNECT" @?= Right [Keyword Disconnect]
+         compareBasicUnit "DISCONNECT" $ Keyword Disconnect
    , testCase "\"DOWNTO\" == Keyword Downto" $
-         lexerList "DOWNTO" @?= Right [Keyword Downto]
+         compareBasicUnit "DOWNTO" $ Keyword Downto
    , testCase "\"ELSE\" == Keyword Else" $
-         lexerList "ELSE" @?= Right [Keyword Else]
+         compareBasicUnit "ELSE" $ Keyword Else
    , testCase "\"ELSIF\" == Keyword Elsif" $
-         lexerList "ELSIF" @?= Right [Keyword Elsif]
+         compareBasicUnit "ELSIF" $ Keyword Elsif
    , testCase "\"END\" == Keyword End" $
-         lexerList "END" @?= Right [Keyword End]
+         compareBasicUnit "END" $ Keyword End
    , testCase "\"ENTITY\" == Keyword Entity" $
-         lexerList "ENTITY" @?= Right [Keyword Entity]
+         compareBasicUnit "ENTITY" $ Keyword Entity
    , testCase "\"EXIT\" == Keyword Exit" $
-         lexerList "EXIT" @?= Right [Keyword Exit]
+         compareBasicUnit "EXIT" $ Keyword Exit
    , testCase "\"FILE\" == Keyword File" $
-         lexerList "FILE" @?= Right [Keyword File]
+         compareBasicUnit "FILE" $ Keyword File
    , testCase "\"FOR\" == Keyword For" $
-         lexerList "FOR" @?= Right [Keyword For]
+         compareBasicUnit "FOR" $ Keyword For
    , testCase "\"FUNCTION\" == Keyword Function" $
-         lexerList "FUNCTION" @?= Right [Keyword Function]
+         compareBasicUnit "FUNCTION" $ Keyword Function
    , testCase "\"GENERATE\" == Keyword Generate" $
-         lexerList "GENERATE" @?= Right [Keyword Generate]
+         compareBasicUnit "GENERATE" $ Keyword Generate
    , testCase "\"GENERIC\" == Keyword Generic" $
-         lexerList "GENERIC" @?= Right [Keyword Generic]
+         compareBasicUnit "GENERIC" $ Keyword Generic
    , testCase "\"GUARDED\" == Keyword Guarded" $
-         lexerList "GUARDED" @?= Right [Keyword Guarded]
+         compareBasicUnit "GUARDED" $ Keyword Guarded
    , testCase "\"IF\" == Keyword If" $
-         lexerList "IF" @?= Right [Keyword If]
+         compareBasicUnit "IF" $ Keyword If
    , testCase "\"IN\" == Keyword In" $
-         lexerList "IN" @?= Right [Keyword In]
+         compareBasicUnit "IN" $ Keyword In
    , testCase "\"INOUT\" == Keyword Inout" $
-         lexerList "INOUT" @?= Right [Keyword Inout]
+         compareBasicUnit "INOUT" $ Keyword Inout
    , testCase "\"IS\" == Keyword Is" $
-         lexerList "IS" @?= Right [Keyword Is]
+         compareBasicUnit "IS" $ Keyword Is
    , testCase "\"LABEL\" == Keyword Label" $
-         lexerList "LABEL" @?= Right [Keyword Label]
+         compareBasicUnit "LABEL" $ Keyword Label
    , testCase "\"LIBRARY\" == Keyword Library" $
-         lexerList "LIBRARY" @?= Right [Keyword Library]
+         compareBasicUnit "LIBRARY" $ Keyword Library
    , testCase "\"LINKAGE\" == Keyword Linkage" $
-         lexerList "LINKAGE" @?= Right [Keyword Linkage]
+         compareBasicUnit "LINKAGE" $ Keyword Linkage
    , testCase "\"LOOP\" == Keyword Loop" $
-         lexerList "LOOP" @?= Right [Keyword Loop]
+         compareBasicUnit "LOOP" $ Keyword Loop
    , testCase "\"MAP\" == Keyword Map" $
-         lexerList "MAP" @?= Right [Keyword Map]
+         compareBasicUnit "MAP" $ Keyword Map
    , testCase "\"MOD\" == Keyword Mod" $
-         lexerList "MOD" @?= Right [Keyword Mod]
+         compareBasicUnit "MOD" $ Keyword Mod
    , testCase "\"NAND\" == Keyword Nand" $
-         lexerList "NAND" @?= Right [Keyword Nand]
+         compareBasicUnit "NAND" $ Keyword Nand
    , testCase "\"NEW\" == Keyword New" $
-         lexerList "NEW" @?= Right [Keyword New]
+         compareBasicUnit "NEW" $ Keyword New
    , testCase "\"NEXT\" == Keyword Next" $
-         lexerList "NEXT" @?= Right [Keyword Next]
+         compareBasicUnit "NEXT" $ Keyword Next
    , testCase "\"NOR\" == Keyword Nor" $
-         lexerList "NOR" @?= Right [Keyword Nor]
+         compareBasicUnit "NOR" $ Keyword Nor
    , testCase "\"NOT\" == Keyword Not" $
-         lexerList "NOT" @?= Right [Keyword Not]
+         compareBasicUnit "NOT" $ Keyword Not
    , testCase "\"NULL\" == Keyword Null" $
-         lexerList "NULL" @?= Right [Keyword Null]
+         compareBasicUnit "NULL" $ Keyword Null
    , testCase "\"OF\" == Keyword Of" $
-         lexerList "OF" @?= Right [Keyword Of]
+         compareBasicUnit "OF" $ Keyword Of
    , testCase "\"ON\" == Keyword On" $
-         lexerList "ON" @?= Right [Keyword On]
+         compareBasicUnit "ON" $ Keyword On
    , testCase "\"OPEN\" == Keyword Open" $
-         lexerList "OPEN" @?= Right [Keyword Open]
+         compareBasicUnit "OPEN" $ Keyword Open
    , testCase "\"OR\" == Keyword Or" $
-         lexerList "OR" @?= Right [Keyword Or]
+         compareBasicUnit "OR" $ Keyword Or
    , testCase "\"OTHERS\" == Keyword Others" $
-         lexerList "OTHERS" @?= Right [Keyword Others]
+         compareBasicUnit "OTHERS" $ Keyword Others
    , testCase "\"OUT\" == Keyword Out" $
-         lexerList "OUT" @?= Right [Keyword Out]
+         compareBasicUnit "OUT" $ Keyword Out
    , testCase "\"PACKAGE\" == Keyword Package" $
-         lexerList "PACKAGE" @?= Right [Keyword Package]
+         compareBasicUnit "PACKAGE" $ Keyword Package
    , testCase "\"PORT\" == Keyword Port" $
-         lexerList "PORT" @?= Right [Keyword Port]
+         compareBasicUnit "PORT" $ Keyword Port
    , testCase "\"PROCEDURE\" == Keyword Procedure" $
-         lexerList "PROCEDURE" @?= Right [Keyword Procedure]
+         compareBasicUnit "PROCEDURE" $ Keyword Procedure
    , testCase "\"PROCESS\" == Keyword Process" $
-         lexerList "PROCESS" @?= Right [Keyword Process]
+         compareBasicUnit "PROCESS" $ Keyword Process
    , testCase "\"RANGE\" == Keyword Range" $
-         lexerList "RANGE" @?= Right [Keyword Range]
+         compareBasicUnit "RANGE" $ Keyword Range
    , testCase "\"RECORD\" == Keyword Record" $
-         lexerList "RECORD" @?= Right [Keyword Record]
+         compareBasicUnit "RECORD" $ Keyword Record
    , testCase "\"REGISTER\" == Keyword Register" $
-         lexerList "REGISTER" @?= Right [Keyword Register]
+         compareBasicUnit "REGISTER" $ Keyword Register
    , testCase "\"REM\" == Keyword Rem" $
-         lexerList "REM" @?= Right [Keyword Rem]
+         compareBasicUnit "REM" $ Keyword Rem
    , testCase "\"REPORT\" == Keyword Report" $
-         lexerList "REPORT" @?= Right [Keyword Report]
+         compareBasicUnit "REPORT" $ Keyword Report
    , testCase "\"RETURN\" == Keyword Return" $
-         lexerList "RETURN" @?= Right [Keyword Return]
+         compareBasicUnit "RETURN" $ Keyword Return
    , testCase "\"SELECT\" == Keyword Select" $
-         lexerList "SELECT" @?= Right [Keyword Select]
+         compareBasicUnit "SELECT" $ Keyword Select
    , testCase "\"SEVERITY\" == Keyword Severity" $
-         lexerList "SEVERITY" @?= Right [Keyword Severity]
+         compareBasicUnit "SEVERITY" $ Keyword Severity
    , testCase "\"SIGNAL\" == Keyword Signal" $
-         lexerList "SIGNAL" @?= Right [Keyword Signal]
+         compareBasicUnit "SIGNAL" $ Keyword Signal
    , testCase "\"SUBTYPE\" == Keyword Subtype" $
-         lexerList "SUBTYPE" @?= Right [Keyword Subtype]
+         compareBasicUnit "SUBTYPE" $ Keyword Subtype
    , testCase "\"THEN\" == Keyword Then" $
-         lexerList "THEN" @?= Right [Keyword Then]
+         compareBasicUnit "THEN" $ Keyword Then
    , testCase "\"TO\" == Keyword To" $
-         lexerList "TO" @?= Right [Keyword To]
+         compareBasicUnit "TO" $ Keyword To
    , testCase "\"TRANSPORT\" == Keyword Transport" $
-         lexerList "TRANSPORT" @?= Right [Keyword Transport]
+         compareBasicUnit "TRANSPORT" $ Keyword Transport
    , testCase "\"TYPE\" == Keyword Type" $
-         lexerList "TYPE" @?= Right [Keyword Type]
+         compareBasicUnit "TYPE" $ Keyword Type
    , testCase "\"UNITS\" == Keyword Units" $
-         lexerList "UNITS" @?= Right [Keyword Units]
+         compareBasicUnit "UNITS" $ Keyword Units
    , testCase "\"UNTIL\" == Keyword Until" $
-         lexerList "UNTIL" @?= Right [Keyword Until]
+         compareBasicUnit "UNTIL" $ Keyword Until
    , testCase "\"USE\" == Keyword Use" $
-         lexerList "USE" @?= Right [Keyword Use]
+         compareBasicUnit "USE" $ Keyword Use
    , testCase "\"VARIABLE\" == Keyword Variable" $
-         lexerList "VARIABLE" @?= Right [Keyword Variable]
+         compareBasicUnit "VARIABLE" $ Keyword Variable
    , testCase "\"WAIT\" == Keyword Wait" $
-         lexerList "WAIT" @?= Right [Keyword Wait]
+         compareBasicUnit "WAIT" $ Keyword Wait
    , testCase "\"WHEN\" == Keyword When" $
-         lexerList "WHEN" @?= Right [Keyword When]
+         compareBasicUnit "WHEN" $ Keyword When
    , testCase "\"WHILE\" == Keyword While" $
-         lexerList "WHILE" @?= Right [Keyword While]
+         compareBasicUnit "WHILE" $ Keyword While
    , testCase "\"WITH\" == Keyword With" $
-         lexerList "WITH" @?= Right [Keyword With]
+         compareBasicUnit "WITH" $ Keyword With
    , testCase "\"XOR\" == Keyword Xor" $
-         lexerList "XOR" @?= Right [Keyword Xor]
+         compareBasicUnit "XOR" $ Keyword Xor
    ]
 
 -- |Single lower case keyword lexer unit tests
@@ -212,167 +222,167 @@ singleKeywordsUpper = testGroup "Single upper case keywords"
 singleKeywordsLower :: TestTree
 singleKeywordsLower = testGroup "Single lower case keywords"
    [ testCase "\"abs\" == Keyword Abs" $
-         lexerList "abs" @?= Right [Keyword Abs]
+         compareBasicUnit "abs" $ Keyword Abs
    , testCase "\"access\" == Keyword Access" $
-         lexerList "access" @?= Right [Keyword Access]
+         compareBasicUnit "access" $ Keyword Access
    , testCase "\"after\" == Keyword After" $
-         lexerList "after" @?= Right [Keyword After]
+         compareBasicUnit "after" $ Keyword After
    , testCase "\"alias\" == Keyword Alias" $
-         lexerList "alias" @?= Right [Keyword Alias]
+         compareBasicUnit "alias" $ Keyword Alias
    , testCase "\"all\" == Keyword All" $
-         lexerList "all" @?= Right [Keyword All]
+         compareBasicUnit "all" $ Keyword All
    , testCase "\"and\" == Keyword And" $
-         lexerList "and" @?= Right [Keyword And]
+         compareBasicUnit "and" $ Keyword And
    , testCase "\"architecture\" == Keyword Architecture" $
-         lexerList "architecture" @?= Right [Keyword Architecture]
+         compareBasicUnit "architecture" $ Keyword Architecture
    , testCase "\"array\" == Keyword Array" $
-         lexerList "array" @?= Right [Keyword Array]
+         compareBasicUnit "array" $ Keyword Array
    , testCase "\"assert\" == Keyword Assert" $
-         lexerList "assert" @?= Right [Keyword Assert]
+         compareBasicUnit "assert" $ Keyword Assert
    , testCase "\"attribute\" == Keyword Attribute" $
-         lexerList "attribute" @?= Right [Keyword Attribute]
+         compareBasicUnit "attribute" $ Keyword Attribute
    , testCase "\"begin\" == Keyword Begin" $
-         lexerList "begin" @?= Right [Keyword Begin]
+         compareBasicUnit "begin" $ Keyword Begin
    , testCase "\"block\" == Keyword Block" $
-         lexerList "block" @?= Right [Keyword Block]
+         compareBasicUnit "block" $ Keyword Block
    , testCase "\"body\" == Keyword Body" $
-         lexerList "body" @?= Right [Keyword Body]
+         compareBasicUnit "body" $ Keyword Body
    , testCase "\"buffer\" == Keyword Buffer" $
-         lexerList "buffer" @?= Right [Keyword Buffer]
+         compareBasicUnit "buffer" $ Keyword Buffer
    , testCase "\"bus\" == Keyword Bus" $
-         lexerList "bus" @?= Right [Keyword Bus]
+         compareBasicUnit "bus" $ Keyword Bus
    , testCase "\"case\" == Keyword Case" $
-         lexerList "case" @?= Right [Keyword Case]
+         compareBasicUnit "case" $ Keyword Case
    , testCase "\"component\" == Keyword Component" $
-         lexerList "component" @?= Right [Keyword Component]
+         compareBasicUnit "component" $ Keyword Component
    , testCase "\"configuration\" == Keyword Configuration" $
-         lexerList "configuration" @?= Right [Keyword Configuration]
+         compareBasicUnit "configuration" $ Keyword Configuration
    , testCase "\"constant\" == Keyword Constant" $
-         lexerList "constant" @?= Right [Keyword Constant]
+         compareBasicUnit "constant" $ Keyword Constant
    , testCase "\"disconnect\" == Keyword Disconnect" $
-         lexerList "disconnect" @?= Right [Keyword Disconnect]
+         compareBasicUnit "disconnect" $ Keyword Disconnect
    , testCase "\"downto\" == Keyword Downto" $
-         lexerList "downto" @?= Right [Keyword Downto]
+         compareBasicUnit "downto" $ Keyword Downto
    , testCase "\"else\" == Keyword Else" $
-         lexerList "else" @?= Right [Keyword Else]
+         compareBasicUnit "else" $ Keyword Else
    , testCase "\"elsif\" == Keyword Elsif" $
-         lexerList "elsif" @?= Right [Keyword Elsif]
+         compareBasicUnit "elsif" $ Keyword Elsif
    , testCase "\"end\" == Keyword End" $
-         lexerList "end" @?= Right [Keyword End]
+         compareBasicUnit "end" $ Keyword End
    , testCase "\"entity\" == Keyword Entity" $
-         lexerList "entity" @?= Right [Keyword Entity]
+         compareBasicUnit "entity" $ Keyword Entity
    , testCase "\"exit\" == Keyword Exit" $
-         lexerList "exit" @?= Right [Keyword Exit]
+         compareBasicUnit "exit" $ Keyword Exit
    , testCase "\"file\" == Keyword File" $
-         lexerList "file" @?= Right [Keyword File]
+         compareBasicUnit "file" $ Keyword File
    , testCase "\"for\" == Keyword For" $
-         lexerList "for" @?= Right [Keyword For]
+         compareBasicUnit "for" $ Keyword For
    , testCase "\"function\" == Keyword Function" $
-         lexerList "function" @?= Right [Keyword Function]
+         compareBasicUnit "function" $ Keyword Function
    , testCase "\"generate\" == Keyword Generate" $
-         lexerList "generate" @?= Right [Keyword Generate]
+         compareBasicUnit "generate" $ Keyword Generate
    , testCase "\"generic\" == Keyword Generic" $
-         lexerList "generic" @?= Right [Keyword Generic]
+         compareBasicUnit "generic" $ Keyword Generic
    , testCase "\"guarded\" == Keyword Guarded" $
-         lexerList "guarded" @?= Right [Keyword Guarded]
+         compareBasicUnit "guarded" $ Keyword Guarded
    , testCase "\"if\" == Keyword If" $
-         lexerList "if" @?= Right [Keyword If]
+         compareBasicUnit "if" $ Keyword If
    , testCase "\"in\" == Keyword In" $
-         lexerList "in" @?= Right [Keyword In]
+         compareBasicUnit "in" $ Keyword In
    , testCase "\"inout\" == Keyword Inout" $
-         lexerList "inout" @?= Right [Keyword Inout]
+         compareBasicUnit "inout" $ Keyword Inout
    , testCase "\"is\" == Keyword Is" $
-         lexerList "is" @?= Right [Keyword Is]
+         compareBasicUnit "is" $ Keyword Is
    , testCase "\"label\" == Keyword Label" $
-         lexerList "label" @?= Right [Keyword Label]
+         compareBasicUnit "label" $ Keyword Label
    , testCase "\"library\" == Keyword Library" $
-         lexerList "library" @?= Right [Keyword Library]
+         compareBasicUnit "library" $ Keyword Library
    , testCase "\"linkage\" == Keyword Linkage" $
-         lexerList "linkage" @?= Right [Keyword Linkage]
+         compareBasicUnit "linkage" $ Keyword Linkage
    , testCase "\"loop\" == Keyword Loop" $
-         lexerList "loop" @?= Right [Keyword Loop]
+         compareBasicUnit "loop" $ Keyword Loop
    , testCase "\"map\" == Keyword Map" $
-         lexerList "map" @?= Right [Keyword Map]
+         compareBasicUnit "map" $ Keyword Map
    , testCase "\"mod\" == Keyword Mod" $
-         lexerList "mod" @?= Right [Keyword Mod]
+         compareBasicUnit "mod" $ Keyword Mod
    , testCase "\"nand\" == Keyword Nand" $
-         lexerList "nand" @?= Right [Keyword Nand]
+         compareBasicUnit "nand" $ Keyword Nand
    , testCase "\"new\" == Keyword New" $
-         lexerList "new" @?= Right [Keyword New]
+         compareBasicUnit "new" $ Keyword New
    , testCase "\"next\" == Keyword Next" $
-         lexerList "next" @?= Right [Keyword Next]
+         compareBasicUnit "next" $ Keyword Next
    , testCase "\"nor\" == Keyword Nor" $
-         lexerList "nor" @?= Right [Keyword Nor]
+         compareBasicUnit "nor" $ Keyword Nor
    , testCase "\"not\" == Keyword Not" $
-         lexerList "not" @?= Right [Keyword Not]
+         compareBasicUnit "not" $ Keyword Not
    , testCase "\"null\" == Keyword Null" $
-         lexerList "null" @?= Right [Keyword Null]
+         compareBasicUnit "null" $ Keyword Null
    , testCase "\"of\" == Keyword Of" $
-         lexerList "of" @?= Right [Keyword Of]
+         compareBasicUnit "of" $ Keyword Of
    , testCase "\"on\" == Keyword On" $
-         lexerList "on" @?= Right [Keyword On]
+         compareBasicUnit "on" $ Keyword On
    , testCase "\"open\" == Keyword Open" $
-         lexerList "open" @?= Right [Keyword Open]
+         compareBasicUnit "open" $ Keyword Open
    , testCase "\"or\" == Keyword Or" $
-         lexerList "or" @?= Right [Keyword Or]
+         compareBasicUnit "or" $ Keyword Or
    , testCase "\"others\" == Keyword Others" $
-         lexerList "others" @?= Right [Keyword Others]
+         compareBasicUnit "others" $ Keyword Others
    , testCase "\"out\" == Keyword Out" $
-         lexerList "out" @?= Right [Keyword Out]
+         compareBasicUnit "out" $ Keyword Out
    , testCase "\"package\" == Keyword Package" $
-         lexerList "package" @?= Right [Keyword Package]
+         compareBasicUnit "package" $ Keyword Package
    , testCase "\"port\" == Keyword Port" $
-         lexerList "port" @?= Right [Keyword Port]
+         compareBasicUnit "port" $ Keyword Port
    , testCase "\"procedure\" == Keyword Procedure" $
-         lexerList "procedure" @?= Right [Keyword Procedure]
+         compareBasicUnit "procedure" $ Keyword Procedure
    , testCase "\"process\" == Keyword Process" $
-         lexerList "process" @?= Right [Keyword Process]
+         compareBasicUnit "process" $ Keyword Process
    , testCase "\"range\" == Keyword Range" $
-         lexerList "range" @?= Right [Keyword Range]
+         compareBasicUnit "range" $ Keyword Range
    , testCase "\"record\" == Keyword Record" $
-         lexerList "record" @?= Right [Keyword Record]
+         compareBasicUnit "record" $ Keyword Record
    , testCase "\"register\" == Keyword Register" $
-         lexerList "register" @?= Right [Keyword Register]
+         compareBasicUnit "register" $ Keyword Register
    , testCase "\"rem\" == Keyword Rem" $
-         lexerList "rem" @?= Right [Keyword Rem]
+         compareBasicUnit "rem" $ Keyword Rem
    , testCase "\"report\" == Keyword Report" $
-         lexerList "report" @?= Right [Keyword Report]
+         compareBasicUnit "report" $ Keyword Report
    , testCase "\"return\" == Keyword Return" $
-         lexerList "return" @?= Right [Keyword Return]
+         compareBasicUnit "return" $ Keyword Return
    , testCase "\"select\" == Keyword Select" $
-         lexerList "select" @?= Right [Keyword Select]
+         compareBasicUnit "select" $ Keyword Select
    , testCase "\"severity\" == Keyword Severity" $
-         lexerList "severity" @?= Right [Keyword Severity]
+         compareBasicUnit "severity" $ Keyword Severity
    , testCase "\"signal\" == Keyword Signal" $
-         lexerList "signal" @?= Right [Keyword Signal]
+         compareBasicUnit "signal" $ Keyword Signal
    , testCase "\"subtype\" == Keyword Subtype" $
-         lexerList "subtype" @?= Right [Keyword Subtype]
+         compareBasicUnit "subtype" $ Keyword Subtype
    , testCase "\"then\" == Keyword Then" $
-         lexerList "then" @?= Right [Keyword Then]
+         compareBasicUnit "then" $ Keyword Then
    , testCase "\"to\" == Keyword To" $
-         lexerList "to" @?= Right [Keyword To]
+         compareBasicUnit "to" $ Keyword To
    , testCase "\"transport\" == Keyword Transport" $
-         lexerList "transport" @?= Right [Keyword Transport]
+         compareBasicUnit "transport" $ Keyword Transport
    , testCase "\"type\" == Keyword Type" $
-         lexerList "type" @?= Right [Keyword Type]
+         compareBasicUnit "type" $ Keyword Type
    , testCase "\"units\" == Keyword Units" $
-         lexerList "units" @?= Right [Keyword Units]
+         compareBasicUnit "units" $ Keyword Units
    , testCase "\"until\" == Keyword Until" $
-         lexerList "until" @?= Right [Keyword Until]
+         compareBasicUnit "until" $ Keyword Until
    , testCase "\"use\" == Keyword Use" $
-         lexerList "use" @?= Right [Keyword Use]
+         compareBasicUnit "use" $ Keyword Use
    , testCase "\"variable\" == Keyword Variable" $
-         lexerList "variable" @?= Right [Keyword Variable]
+         compareBasicUnit "variable" $ Keyword Variable
    , testCase "\"wait\" == Keyword Wait" $
-         lexerList "wait" @?= Right [Keyword Wait]
+         compareBasicUnit "wait" $ Keyword Wait
    , testCase "\"when\" == Keyword When" $
-         lexerList "when" @?= Right [Keyword When]
+         compareBasicUnit "when" $ Keyword When
    , testCase "\"while\" == Keyword While" $
-         lexerList "while" @?= Right [Keyword While]
+         compareBasicUnit "while" $ Keyword While
    , testCase "\"with\" == Keyword With" $
-         lexerList "with" @?= Right [Keyword With]
+         compareBasicUnit "with" $ Keyword With
    , testCase "\"xor\" == Keyword Xor" $
-         lexerList "xor" @?= Right [Keyword Xor]
+         compareBasicUnit "xor" $ Keyword Xor
    ]
 
 -- |Single operator lexer unit tests
@@ -380,51 +390,51 @@ singleKeywordsLower = testGroup "Single lower case keywords"
 singleOperators :: TestTree
 singleOperators = testGroup "Single operators"
    [ testCase "\"=>\" == Arrow" $
-         lexerList "=>" @?= Right [Operator Arrow]
+         compareBasicUnit "=>" $ Operator Arrow
    , testCase "\"**\" == DoubleStar" $
-         lexerList "**" @?= Right [Operator DoubleStar]
+         compareBasicUnit "**" $ Operator DoubleStar
    , testCase "\":=\" == VarAssign" $
-         lexerList ":=" @?= Right [Operator VarAssign]
+         compareBasicUnit ":=" $ Operator VarAssign
    , testCase "\"/=\" == Inequality" $
-         lexerList "/=" @?= Right [Operator Inequality]
+         compareBasicUnit "/=" $ Operator Inequality
    , testCase "\">=\" == GreaterThanOrEqual" $
-         lexerList ">=" @?= Right [Operator GreaterThanOrEqual]
+         compareBasicUnit ">=" $ Operator GreaterThanOrEqual
    , testCase "\"<=\" == SignAssign" $
-         lexerList "<=" @?= Right [Operator SignAssign]
+         compareBasicUnit "<=" $ Operator SignAssign
    , testCase "\"<>\" == Box" $
-         lexerList "<>" @?= Right [Operator Box]
+         compareBasicUnit "<>" $ Operator Box
    , testCase "\"&\" == Ampersand" $
-         lexerList "&" @?= Right [Operator Ampersand]
+         compareBasicUnit "&" $ Operator Ampersand
    , testCase "\"'\" == Apostrophe" $
-         lexerList "'" @?= Right [Operator Apostrophe]
+         compareBasicUnit "'" $ Operator Apostrophe
    , testCase "\"(\" == LeftParen" $
-         lexerList "(" @?= Right [Operator LeftParen]
+         compareBasicUnit "(" $ Operator LeftParen
    , testCase "\")\" == RightParen" $
-         lexerList ")" @?= Right [Operator RightParen]
+         compareBasicUnit ")" $ Operator RightParen
    , testCase "\"*\" == Star" $
-         lexerList "*" @?= Right [Operator Star]
+         compareBasicUnit "*" $ Operator Star
    , testCase "\"+\" == Plus" $
-         lexerList "+" @?= Right [Operator Plus]
+         compareBasicUnit "+" $ Operator Plus
    , testCase "\",\" == Comma" $
-         lexerList "," @?= Right [Operator Comma]
+         compareBasicUnit "," $ Operator Comma
    , testCase "\"-\" == Hyphen" $
-         lexerList "-" @?= Right [Operator Hyphen]
+         compareBasicUnit "-" $ Operator Hyphen
    , testCase "\".\" == Period" $
-         lexerList "." @?= Right [Operator Period]
+         compareBasicUnit "." $ Operator Period
    , testCase "\"/\" == Slash" $
-         lexerList "/" @?= Right [Operator Slash]
+         compareBasicUnit "/" $ Operator Slash
    , testCase "\":\" == Colon" $
-         lexerList ":" @?= Right [Operator Colon]
+         compareBasicUnit ":" $ Operator Colon
    , testCase "\";\" == Semicolon" $
-         lexerList ";" @?= Right [Operator Semicolon]
+         compareBasicUnit ";" $ Operator Semicolon
    , testCase "\"<\" == LessThan" $
-         lexerList "<" @?= Right [Operator LessThan]
+         compareBasicUnit "<" $ Operator LessThan
    , testCase "\"=\" == Equal" $
-         lexerList "=" @?= Right [Operator Equal]
+         compareBasicUnit "=" $ Operator Equal
    , testCase "\">\" == GreaterThan" $
-         lexerList ">" @?= Right [Operator GreaterThan]
+         compareBasicUnit ">" $ Operator GreaterThan
    , testCase "\"|\" == Bar" $
-         lexerList "|" @?= Right [Operator Bar]
+         compareBasicUnit "|" $ Operator Bar
    ]
 
 -- |Single literal lexer tests
@@ -450,9 +460,10 @@ singleBasedLiterals = testGroup "Single based values"
 -- |Generator for a single based literal with specified containers
 singleBasedLiterals_cont :: Char -> QC.Property
 singleBasedLiterals_cont container =
-   QC.forAll (generateBasedStr container) $ \basedStr ->
-      let lexRun = lexerList basedStr
-          filteredBasedStr = filter (\char -> char /= '_') basedStr
+   QC.ioProperty $ do
+      basedStr <- QC.generate $ generateBasedStr container
+      lexRun <- runExceptT $ lexerList basedStr
+      let filteredBasedStr = filter (\char -> char /= '_') basedStr
           (baseChars,valueStr,exponentStr) = case splitOn [container] filteredBasedStr of
             (base:val:('E':exp):[]) -> (base,val,exp)
             (base:val:('e':exp):[]) -> (base,val,exp)
@@ -469,7 +480,7 @@ singleBasedLiterals_cont container =
                                        val -> val
                    in (read expStrNoPlus) - exponentAdjust
           convertedValue = (fromIntegral $ fromBase (toInteger $ floor baseVal) shiftedValue) * (baseVal ^^ expVal)
-          expectedOutput =
+      let expectedOutput =
             if isInfinite convertedValue then
                let errorType =
                      if elem '.' filteredBasedStr then
@@ -482,7 +493,7 @@ singleBasedLiterals_cont container =
                   [ Literal $ convertedValue
                   & if floor convertedValue == ceiling convertedValue then Univ_Int . floor else Univ_Real
                   ]
-      in lexRun == expectedOutput
+      return $ lexRun == expectedOutput
    where fromBase :: Integer -> String -> Integer
          fromBase base = fst . head . readInt base ((<base).digitToInteger) digitToInt
          digitToInteger :: Char -> Integer
@@ -524,41 +535,46 @@ singleDecimalLiterals = testGroup "Single decimal values"
 -- Tests the universal integer ('Univ_Int') type without an exponent
 singleDecLit_int :: TestTree
 singleDecLit_int = QC.testProperty "Integer value without exponent" $
-   let expression :: Int -> Bool
-       expression value =
-         let lexRun = lexerList $ show value
-             expectedOutput = Right [Literal $ Univ_Int $ fromIntegral value]
-         in lexRun == expectedOutput
-   in expression . abs
+   let expression :: Int -> IO Bool
+       expression value = do
+         lexRun <- runExceptT $ lexerList $ show value
+         let expectedOutput = Right [Literal $ Univ_Int $ fromIntegral value]
+         return $ lexRun == expectedOutput
+   in QC.ioProperty $ do
+         val <- QC.generate QC.arbitrary
+         expression $ abs val
 
 -- |Decimal literal token test type
 -- Tests the universal real ('Univ_Real') type without an exponent
 singleDecLit_real :: TestTree
 singleDecLit_real = QC.testProperty "Real value without exponent" $
-   let expression :: Double -> Bool
-       expression value =
-         let lexRun = lexerList $ show value
-             expectedOutput = Right [Literal $ Univ_Real value]
-         in lexRun == expectedOutput
-   in expression . abs
+   let expression :: Double -> IO Bool
+       expression value = do
+         lexRun <- runExceptT $ lexerList $ show value
+         let expectedOutput = Right [Literal $ Univ_Real value]
+         return $ lexRun == expectedOutput
+   in QC.ioProperty $ do
+         val <- QC.generate QC.arbitrary
+         expression $ abs val
 
 -- |Decimal literal token test type
 -- Tests the universal integer ('Univ_Int') type with an exponent
 singleDecLit_int_exp :: TestTree
 singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
-   QC.forAll genVal $ \value ->
+   QC.ioProperty $ do
+      value <- QC.generate genVal
       let [base,exp] =
             filter (\char -> not $ elem char "+_") value
             & splitOneOf "Ee"
             & fmap read
           doubleValue :: Double -- ?? Probably needs changing to deal with numbers too large for double, potentially use unbounded Integer instead
           doubleValue = base * 10 ** exp
-          expectedValue =
-            if isInfinite doubleValue then
-                  Left $ PosnWrapper { getPos = AlexPn 0 1 0, unPos = LexErr_UniversalInt_OutOfBounds value }
-            else Right [Literal $ Univ_Int $ floor doubleValue]
-          lexRun = lexerList value
-      in lexRun == expectedValue
+      expectedValue <- return $
+         if isInfinite doubleValue then
+               Left $ PosnWrapper { getPos = AlexPn 0 1 0, unPos = LexErr_UniversalInt_OutOfBounds value }
+         else Right [Literal $ Univ_Int $ floor doubleValue]
+      lexRun <- runExceptT $ lexerList value
+      return $ lexRun == expectedValue
    where genVal = do
             intStr <- genInteger 1 10
             expStr <- genExponent
@@ -751,10 +767,11 @@ generateUnderscoreExtendedChar allowedChars = do
 -- Tests the universal integer ('Univ_Real') type with an exponent
 singleDecLit_real_exp :: TestTree
 singleDecLit_real_exp = QC.testProperty "Real value with exponent" $
-   QC.forAll genVal $ \value ->
-      let expectedValue = Right [Literal $ Univ_Real $ read $ filter (/= '_') value]
-          lexRun = lexerList value
-      in lexRun == expectedValue
+   QC.ioProperty $ do
+      value <- QC.generate genVal
+      expectedValue <- return $ Right [Literal $ Univ_Real $ read $ filter (/= '_') value]
+      lexRun <- runExceptT $ lexerList value
+      return $ lexRun == expectedValue
    where genVal = do
             intStr <- genInteger 1 10
             expStr <- genExponent
@@ -766,20 +783,26 @@ singleDecLit_real_exp = QC.testProperty "Real value with exponent" $
 -- * Random test for values with (random) exponents
 singleDecLit_zeroes :: TestTree
 singleDecLit_zeroes = testGroup "Zero values"
-   [ testCase "0" $ lexerList "0" @?= Right [Literal $ Univ_Int 0]
-   , testCase "0.0" $ lexerList "0.0" @?= Right [Literal $ Univ_Real 0.0]
+   [ testCase "0" $ compareBasicUnit "0" $ Literal $ Univ_Int 0
+   , testCase "0.0" $ compareBasicUnit "0.0" $ Literal $ Univ_Real 0.0
    , QC.testProperty "0[Ee][+-]?[0-9]+" $
-         QC.forAll (genExp "0") $ \input -> compareFunc input $ Univ_Int 0
+         QC.ioProperty $ do
+            input <- QC.generate $ genExp "0"
+            compareFunc input $ Univ_Int 0
    , QC.testProperty "0.0[Ee][+-]?[0-9]+" $
-         QC.forAll (genExp "0.0") $ \input -> compareFunc input $ Univ_Real 0.0
+         QC.ioProperty $ do
+            input <- QC.generate $ genExp "0.0"
+            compareFunc input $ Univ_Real 0.0
    ]
    where genExp :: String -> QC.Gen String
          genExp start = do
             expStr <- genExponent
             return $ start ++ expStr
-         compareFunc :: String -> LitType -> Bool
-         compareFunc input value =
-            lexerList input == Right [Literal $ value]
+         compareFunc :: String -> LitType -> IO Bool
+         compareFunc input value = do
+            lexRun <- runExceptT $ lexerList input
+            let expectedOutput = Right [Literal value]
+            return $ lexRun == expectedOutput
 
 -- |Single bit string literal lexer tests
 -- A single string that lexes to a literal token containing a bit string literal
@@ -793,17 +816,18 @@ singleBitStrLiterals = testGroup "Single bit strings"
 -- |Generator for a single bit string literal with specified containers
 singleBitStrLiterals_cont :: Char -> QC.Property
 singleBitStrLiterals_cont container =
-   QC.forAll (generateBitStr container) $ \bitStr ->
-      let lexRun = lexerList bitStr
-          (baseChar:_:strNoBase) = bitStr
+   QC.ioProperty $ do
+      bitStr <- QC.generate $ generateBitStr container
+      lexRun <- runExceptT $ lexerList bitStr
+      let (baseChar:_:strNoBase) = bitStr
           base = baseMap MapS.! baseChar
           unformattedStr =
             strNoBase
             & init
             & filter (\char -> char /= '_')
             & ByteString.pack
-          expectedOutput = Right [Literal $ BitStr base unformattedStr]
-      in lexRun == expectedOutput
+      let expectedOutput = Right [Literal $ BitStr base unformattedStr]
+      return $ lexRun == expectedOutput
    where baseMap =
             [ ('B', BinBased)
             , ('b', BinBased)
@@ -835,26 +859,27 @@ singleStrLiterals = testGroup "Singular strings"
 -- > ""
 singleEmptyString :: TestTree
 singleEmptyString = testCase "\"\" == Literal Str \"\"" $
-         lexerList "\"\"" @?= Right [Literal $ Str ""]
+         compareBasicUnit "\"\"" $ Literal $ Str ""
 
 -- |Single empty string literal lexer test
 -- Unit test for:
 -- > %%
 singleEmptyString_diffCont :: TestTree
 singleEmptyString_diffCont = testCase "%% == Literal Str \"\"" $
-         lexerList "%%" @?= Right [Literal $ Str ""]
+         compareBasicUnit "%%" $ Literal $ Str ""
 
 -- |Single random string literal lexer test
 -- Random string with \\" containers
 singleRandomString :: TestTree
 singleRandomString = QC.testProperty "Single random string with \" containers" $
-   QC.forAll generateRandomString $ \stringContents ->
-      let lexRun =
-            replicateConts stringContents []
-            & \lexInput -> "\"" ++ lexInput ++ "\""
-            & lexerList
-          expectedAnswer = Right [Literal $ Str stringContents]
-      in lexRun == expectedAnswer
+   QC.ioProperty $ do
+      stringContents <- QC.generate generateRandomString
+      lexRun <- runExceptT $
+         replicateConts stringContents []
+         & \lexInput -> "\"" ++ lexInput ++ "\""
+         & lexerList
+      expectedAnswer <- return $ Right [Literal $ Str stringContents]
+      return $ lexRun == expectedAnswer
    where generateRandomString = do
             stringLength <- QC.elements [1..200]
             let charGenerator = QC.elements validTestCharacters
@@ -868,13 +893,14 @@ singleRandomString = QC.testProperty "Single random string with \" containers" $
 -- Random string with \\% containers
 singleRandomString_diffCont :: TestTree
 singleRandomString_diffCont = QC.testProperty "Single random string with % containers" $
-   QC.forAll generateRandomString $ \stringContents ->
-      let lexRun =
-            replicateConts stringContents []
-            & \lexInput -> "%" ++ lexInput ++ "%"
-            & lexerList
-          expectedAnswer = Right [Literal $ Str stringContents]
-      in lexRun == expectedAnswer
+   QC.ioProperty $ do
+      stringContents <- QC.generate generateRandomString
+      lexRun <- runExceptT $
+         replicateConts stringContents []
+         & \lexInput -> "%" ++ lexInput ++ "%"
+         & lexerList
+      let expectedAnswer = Right [Literal $ Str stringContents]
+      return $ lexRun == expectedAnswer
    where generateRandomString = do
             stringLength <- QC.elements [1..200]
             let charGenerator = QC.elements validTestStringCharacters
@@ -893,20 +919,23 @@ validTestCharacters = ['A'..'Z'] ++ ['0'..'9'] ++ ['a'..'z'] ++
 -- A single string that lexes to a character literal token
 singleCharLiterals :: TestTree
 singleCharLiterals = QC.testProperty "Single random character" $
-   QC.forAll (QC.elements validTestCharacters) $ \selectedChar ->
-      let lexRun = lexerList $ "'" ++ [selectedChar] ++ "'"
-          expectedAnswer = Right [Literal $ Character selectedChar]
-      in lexRun == expectedAnswer
+   QC.ioProperty $ do
+      selectedChar <- QC.generate $ QC.elements validTestCharacters
+      lexRun <- runExceptT $ lexerList $ "'" ++ [selectedChar] ++ "'"
+      let expectedAnswer = Right [Literal $ Character selectedChar]
+      return $ lexRun == expectedAnswer
 
 -- |Single identifier literal lexer tests
 -- A single string that lexes to a identifier token
 singleIdentifiers :: TestTree
 singleIdentifiers = QC.testProperty "Single identifier" $
-   QC.forAll generateIdentifier $ \identifierStr ->
-      let lexRun = lexerList identifierStr
-          expectedAnswer = Right [Identifier identifierStr]
-      in lexRun == expectedAnswer
-   where generateIdentifier = do
+   QC.ioProperty $ do
+      identifierStr <- QC.generate generateIdentifier
+      lexRun <- runExceptT $ lexerList identifierStr
+      let expectedAnswer = Right [Identifier identifierStr]
+      return $ lexRun == expectedAnswer
+   where generateIdentifier :: QC.Gen String
+         generateIdentifier = do
             stringLength <- QC.elements [0..200]
             fstChar <- QC.elements validStartChar
             let genOtherChars = QC.elements validOtherChar

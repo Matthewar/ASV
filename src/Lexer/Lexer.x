@@ -376,7 +376,7 @@ lexer cont = do
 -- | Basic call to lexer
 -- Can be used for debug
 -- Returns either error or list of tokens
-lexerList :: String -> Either WrappedParserError [Token]
+lexerList :: String -> ExceptT WrappedParserError IO [Token]
 lexerList str = runAlex str $
    let loop tknLst = do token <- alexMonadScan
                         case unPos token of

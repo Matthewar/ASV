@@ -17,7 +17,7 @@ import Lexer.Alex.Types
          , AlexInput
          )
 
-type Alex a = StateT AlexState (Either WrappedParserError) a
+type Alex a = StateT AlexState (ExceptT WrappedParserError IO) a
 
 -- |Type for Alex actions
 type AlexAction result = AlexInput -> Int -> Alex result

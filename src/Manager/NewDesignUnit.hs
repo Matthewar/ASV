@@ -3,7 +3,8 @@ module Manager.NewDesignUnit where
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.State (execStateT)
 import Control.Monad.Except
-         ( runExceptT
+         ( ExceptT
+         , runExceptT
          , withExceptT
          , liftEither
          , lift
@@ -57,7 +58,7 @@ create :: FilePath -> FilePath -> [NetlistName] -> String -> String -> Conversio
 create workPath ieeePath dependencies library unitName = do
    filePath <- lift $ withExceptT (ConverterError_Filing) $ findDesignUnit workPath ieeePath library unitName
    fileContents <- liftIO $ readFile filePath
-   parseTree <- lift $ withExceptT (ConverterError_Parse) $ liftEither $ parse fileContents
+   parseTree <- lift $ withExceptT (ConverterError_Parse) $ parse fileContents
    let netlistName = NetlistName library unitName
    convertTree (create workPath ieeePath (netlistName:dependencies)) library dependencies parseTree
    -- ?? Build simulation files
@@ -66,5 +67,5 @@ create workPath ieeePath dependencies library unitName = do
 -- Check dependencies
 -- Parse new files
 
-parse :: String -> Either WrappedParserError DesignFile
+parse :: String -> ExceptT WrappedParserError IO DesignFile
 parse s = runAlex s Parser.v1987
