@@ -10,7 +10,8 @@ module Lexer.Alex.Functions where
 import Data.Char (ord)
 import qualified Data.Bits
 import Control.Monad.Trans.State
-         ( evalStateT
+         ( StateT
+         , evalStateT
          , gets
          , modify
          )
@@ -22,6 +23,8 @@ import Control.Monad.Except
 import Lexer.Types.Error
 import Lexer.Types.Monad (Alex(..))
 import Lexer.Alex.Types
+import Netlister.Types.Stores (NetlistStore)
+import Netlister.Types.Top (ConverterError(ConverterError_Parse))
 
 -- | Encode a Haskell String to a list of Byte values, in UTF8 format.
 utf8Encode :: Char -> [Byte]
@@ -79,7 +82,7 @@ alexMove (AlexPn a l c) _    = AlexPn (a+1)  l     (c+1)
 -- ?? Compile with -funbox-strict-fields for best results!
 
 -- | Take in input a string and run the lexer on it
-runAlex :: String -> Alex a -> ExceptT WrappedParserError IO a
+runAlex :: String -> Alex a -> StateT NetlistStore (ExceptT ConverterError IO) a
 runAlex input__ f =
    evalStateT f $
       (AlexState {alex_pos = alexStartPos,
@@ -99,7 +102,7 @@ alexSetInput (pos,c,bs,inp__) =
 
 -- | Return lexer error
 alexError :: WrappedParserError -> Alex a
-alexError err = throwError err
+alexError = throwError . ConverterError_Parse
 
 -- | Get lexer current startcode
 alexGetStartCode :: Alex Int

@@ -18,6 +18,7 @@ data FilingError =
    FilingError_InvalidLibDir [String]
    -- |Cannot find file
    | FilingError_NoFoundFile String
+   deriving (Eq)
 
 instance (Show FilingError) where
    show (FilingError_InvalidLibDir libs) =

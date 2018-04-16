@@ -5,6 +5,7 @@ import Test.Tasty.HUnit
 import qualified Test.Tasty.QuickCheck as QC
 import Control.Monad
 import Control.Monad.Except (runExceptT)
+import Control.Monad.Trans.State (evalStateT)
 import Data.Function ((&))
 import qualified Data.Map.Strict as MapS
 import Data.List.Split (splitOneOf,splitOn)
@@ -18,6 +19,8 @@ import Lexer.Types.Token
 import Lexer.Types.Error
 import Lexer.Types.PositionWrapper
 import Lexer.Alex.Types (AlexPosn(..))
+import Netlister.Types.Top (ConverterError(ConverterError_Parse))
+import Netlister.Builtin.Netlist (netlist)
 
 -- |All lexer tests
 tests :: TestTree
@@ -42,10 +45,14 @@ singleKeywords = testGroup "Single keyword tests for lexer"
    , singleKeywordsLower
    ]
 
+-- |Run the lexer and get the result
+getLexResult :: String -> IO (Either ConverterError [Token])
+getLexResult input = runExceptT $ evalStateT (lexerList input) netlist
+
 -- |Compare a single unit input
 compareBasicUnit :: String -> Token -> Assertion
 compareBasicUnit input output = do
-   result <- runExceptT $ lexerList input
+   result <- getLexResult input
    let expectedOutput = Right [output]
    result @?= expectedOutput
 
@@ -462,7 +469,7 @@ singleBasedLiterals_cont :: Char -> QC.Property
 singleBasedLiterals_cont container =
    QC.ioProperty $ do
       basedStr <- QC.generate $ generateBasedStr container
-      lexRun <- runExceptT $ lexerList basedStr
+      lexRun <- getLexResult basedStr
       let filteredBasedStr = filter (\char -> char /= '_') basedStr
           (baseChars,valueStr,exponentStr) = case splitOn [container] filteredBasedStr of
             (base:val:('E':exp):[]) -> (base,val,exp)
@@ -487,7 +494,7 @@ singleBasedLiterals_cont container =
                         LexErr_UniversalReal_OutOfBounds
                      else
                         LexErr_UniversalInt_OutOfBounds
-               in Left $ PosnWrapper { getPos = AlexPn 0 1 0, unPos = errorType basedStr }
+               in Left $ ConverterError_Parse $ PosnWrapper { getPos = AlexPn 0 1 0, unPos = errorType basedStr }
             else
                Right $
                   [ Literal $ convertedValue
@@ -537,7 +544,7 @@ singleDecLit_int :: TestTree
 singleDecLit_int = QC.testProperty "Integer value without exponent" $
    let expression :: Int -> IO Bool
        expression value = do
-         lexRun <- runExceptT $ lexerList $ show value
+         lexRun <- getLexResult $ show value
          let expectedOutput = Right [Literal $ Univ_Int $ fromIntegral value]
          return $ lexRun == expectedOutput
    in QC.ioProperty $ do
@@ -550,7 +557,7 @@ singleDecLit_real :: TestTree
 singleDecLit_real = QC.testProperty "Real value without exponent" $
    let expression :: Double -> IO Bool
        expression value = do
-         lexRun <- runExceptT $ lexerList $ show value
+         lexRun <- getLexResult $ show value
          let expectedOutput = Right [Literal $ Univ_Real value]
          return $ lexRun == expectedOutput
    in QC.ioProperty $ do
@@ -571,9 +578,9 @@ singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
           doubleValue = base * 10 ** exp
       expectedValue <- return $
          if isInfinite doubleValue then
-               Left $ PosnWrapper { getPos = AlexPn 0 1 0, unPos = LexErr_UniversalInt_OutOfBounds value }
+               Left $ ConverterError_Parse $ PosnWrapper { getPos = AlexPn 0 1 0, unPos = LexErr_UniversalInt_OutOfBounds value }
          else Right [Literal $ Univ_Int $ floor doubleValue]
-      lexRun <- runExceptT $ lexerList value
+      lexRun <- getLexResult value
       return $ lexRun == expectedValue
    where genVal = do
             intStr <- genInteger 1 10
@@ -770,7 +777,7 @@ singleDecLit_real_exp = QC.testProperty "Real value with exponent" $
    QC.ioProperty $ do
       value <- QC.generate genVal
       expectedValue <- return $ Right [Literal $ Univ_Real $ read $ filter (/= '_') value]
-      lexRun <- runExceptT $ lexerList value
+      lexRun <- getLexResult value
       return $ lexRun == expectedValue
    where genVal = do
             intStr <- genInteger 1 10
@@ -800,7 +807,7 @@ singleDecLit_zeroes = testGroup "Zero values"
             return $ start ++ expStr
          compareFunc :: String -> LitType -> IO Bool
          compareFunc input value = do
-            lexRun <- runExceptT $ lexerList input
+            lexRun <- getLexResult input
             let expectedOutput = Right [Literal value]
             return $ lexRun == expectedOutput
 
@@ -818,7 +825,7 @@ singleBitStrLiterals_cont :: Char -> QC.Property
 singleBitStrLiterals_cont container =
    QC.ioProperty $ do
       bitStr <- QC.generate $ generateBitStr container
-      lexRun <- runExceptT $ lexerList bitStr
+      lexRun <- getLexResult bitStr
       let (baseChar:_:strNoBase) = bitStr
           base = baseMap MapS.! baseChar
           unformattedStr =
@@ -874,10 +881,9 @@ singleRandomString :: TestTree
 singleRandomString = QC.testProperty "Single random string with \" containers" $
    QC.ioProperty $ do
       stringContents <- QC.generate generateRandomString
-      lexRun <- runExceptT $
+      lexRun <- getLexResult $
          replicateConts stringContents []
          & \lexInput -> "\"" ++ lexInput ++ "\""
-         & lexerList
       expectedAnswer <- return $ Right [Literal $ Str stringContents]
       return $ lexRun == expectedAnswer
    where generateRandomString = do
@@ -895,10 +901,9 @@ singleRandomString_diffCont :: TestTree
 singleRandomString_diffCont = QC.testProperty "Single random string with % containers" $
    QC.ioProperty $ do
       stringContents <- QC.generate generateRandomString
-      lexRun <- runExceptT $
+      lexRun <- getLexResult $
          replicateConts stringContents []
          & \lexInput -> "%" ++ lexInput ++ "%"
-         & lexerList
       let expectedAnswer = Right [Literal $ Str stringContents]
       return $ lexRun == expectedAnswer
    where generateRandomString = do
@@ -921,7 +926,7 @@ singleCharLiterals :: TestTree
 singleCharLiterals = QC.testProperty "Single random character" $
    QC.ioProperty $ do
       selectedChar <- QC.generate $ QC.elements validTestCharacters
-      lexRun <- runExceptT $ lexerList $ "'" ++ [selectedChar] ++ "'"
+      lexRun <- getLexResult $ "'" ++ [selectedChar] ++ "'"
       let expectedAnswer = Right [Literal $ Character selectedChar]
       return $ lexRun == expectedAnswer
 
@@ -931,7 +936,7 @@ singleIdentifiers :: TestTree
 singleIdentifiers = QC.testProperty "Single identifier" $
    QC.ioProperty $ do
       identifierStr <- QC.generate generateIdentifier
-      lexRun <- runExceptT $ lexerList identifierStr
+      lexRun <- getLexResult identifierStr
       let expectedAnswer = Right [Identifier identifierStr]
       return $ lexRun == expectedAnswer
    where generateIdentifier :: QC.Gen String

@@ -10,14 +10,15 @@ module Lexer.Types.Monad where
 import Control.Monad.Trans.State (StateT)
 import Control.Monad.Except (ExceptT)
 
-import Lexer.Types.Error (WrappedParserError)
 import Lexer.Types.Token (WrappedToken)
 import Lexer.Alex.Types
          ( AlexState
          , AlexInput
          )
+import Netlister.Types.Stores (NetlistStore)
+import Netlister.Types.Top (ConverterError)
 
-type Alex a = StateT AlexState (ExceptT WrappedParserError IO) a
+type Alex a = StateT AlexState (StateT NetlistStore (ExceptT ConverterError IO)) a
 
 -- |Type for Alex actions
 type AlexAction result = AlexInput -> Int -> Alex result

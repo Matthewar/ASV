@@ -90,6 +90,7 @@ data ScopeConverterError =
    -- |Cyclic dependency between two (or more) modules
    -- Module that is already in chain, module chain
    | ScopeConverterError_CyclicDependency NetlistName [NetlistName]
+   deriving (Eq)
 
 instance (Show ScopeConverterError) where
    show (ScopeConverterError_InvalidLibrary libName) =

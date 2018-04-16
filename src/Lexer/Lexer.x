@@ -6,6 +6,7 @@ import Control.Monad.Except
          ( ExceptT
          , runExceptT
          )
+import Control.Monad.Trans.State (StateT)
 
 import Lexer.Types.Token
 import Lexer.Types.Error
@@ -14,6 +15,8 @@ import Lexer.Types.PositionWrapper
 import Lexer.Functions.Lex
 import Lexer.Alex.Types
 import Lexer.Alex.Functions
+import Netlister.Types.Stores (NetlistStore)
+import Netlister.Types.Top (ConverterError)
 }
 
 $upper_case_letter = [A-Z]
@@ -376,7 +379,7 @@ lexer cont = do
 -- | Basic call to lexer
 -- Can be used for debug
 -- Returns either error or list of tokens
-lexerList :: String -> ExceptT WrappedParserError IO [Token]
+lexerList :: String -> StateT NetlistStore (ExceptT ConverterError IO) [Token]
 lexerList str = runAlex str $
    let loop tknLst = do token <- alexMonadScan
                         case unPos token of

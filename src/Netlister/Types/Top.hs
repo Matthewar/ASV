@@ -50,6 +50,7 @@ data ConverterError =
    | ConverterError_Netlist WrappedNetlistError
    -- |Error for not implemented features
    | ConverterError_NotImplemented WrappedSimpleName
+   deriving (Eq)
 
 instance (Show ConverterError) where
    show (ConverterError_Filing fileErr) =
@@ -95,6 +96,7 @@ data NetlistError =
    | NetlistError_TypeNotFound String
    -- |Type name cannot be an operator
    | NetlistError_InvalidTypeName_Operator
+   deriving (Eq)
 
 instance (Show NetlistError) where
    show  (NetlistError_UnmatchedPackageName

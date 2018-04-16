@@ -1,7 +1,11 @@
 module Manager.NewDesignUnit where
 
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.State (execStateT)
+import Control.Monad.Trans.State
+         ( StateT
+         , execStateT
+         , withStateT
+         )
 import Control.Monad.Except
          ( ExceptT
          , runExceptT
@@ -54,11 +58,11 @@ printError error = do
    putStrLn fullMessage
    exitFailure
 
-create :: FilePath -> FilePath -> [NetlistName] -> String -> String -> ConversionStack ()
+create :: FilePath -> FilePath -> [NetlistName] -> String -> String -> StateT NetlistStore (ExceptT ConverterError IO) ()
 create workPath ieeePath dependencies library unitName = do
    filePath <- lift $ withExceptT (ConverterError_Filing) $ findDesignUnit workPath ieeePath library unitName
    fileContents <- liftIO $ readFile filePath
-   parseTree <- lift $ withExceptT (ConverterError_Parse) $ parse fileContents
+   parseTree <- parse fileContents
    let netlistName = NetlistName library unitName
    convertTree (create workPath ieeePath (netlistName:dependencies)) library dependencies parseTree
    -- ?? Build simulation files
@@ -67,5 +71,5 @@ create workPath ieeePath dependencies library unitName = do
 -- Check dependencies
 -- Parse new files
 
-parse :: String -> ExceptT WrappedParserError IO DesignFile
+parse :: String -> StateT NetlistStore (ExceptT ConverterError IO) DesignFile
 parse s = runAlex s Parser.v1987
