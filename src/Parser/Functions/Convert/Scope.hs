@@ -1,17 +1,14 @@
 {-|
-   Module      : Netlister.Convert.Scope
-   Description : Converter to find scope of current parsetree position
+   Module      : Parser.Functions.Convert.Scope
+   Description : Converter to find scope of current parser position
 
    Uses library and use statements to find current scope for declarations
 -}
-module Netlister.Convert.Scope
-         ( convertScope
-         , evalScope
+module Parser.Functions.Convert.Scope
+         ( evalScope
          ) where
 
 import qualified Data.Map.Strict as MapS
-import Data.List (nub)
-import Data.Char (toUpper)
 import Control.Monad
          ( unless
          , when
@@ -32,133 +29,34 @@ import Control.Monad.Except
 
 import Lexer.Types.PositionWrapper
 import Lexer.Alex.Types (AlexPosn)
-import Parser.Happy.Types
-         ( WrappedContextItem
-         , ContextItem(..)
-         , LibraryClause(..)
-         , UseClause(..)
-         , WrappedSimpleName
-         , WrappedSelectedName
-         , SelectedName(..)
-         , Prefix(..)
-         , Suffix(..)
-         , Name(..)
-         )
-import Netlister.Types.Scope
+import Parser.Netlist.Types.Scope
          ( Scope(..)
          , UnitScope
          , WrappedDeclarationScopeItem
          , DeclarationScopeItem(..)
          , NewScopeDeclares(..)
          , WrappedNewScopeDeclares
-         , ScopeReturn
          , ScopeConverterError(..)
          , WrappedScopeConverterError
          )
-import Netlister.Types.Operators
-         ( Operator
-         , convertOperator
-         )
-import Netlister.Types.Top
-         ( ConverterError(ConverterError_Scope)
-         , ConversionStack
-         )
-import Netlister.Types.Stores
+import Parser.Netlist.Types.Operators (Operator)
+import Parser.Netlist.Types.Stores
          ( NetlistStore(..)
          , NetlistName(..)
          , Package(..)
          , FunctionStore
          , ScopeStore(..)
-         , ScopeStore(..)
          , emptyScopeStore
          )
-import Netlister.Functions.Stores (convertPackageToScope)
-import Netlister.Types.Representation
+import Parser.Netlist.Functions.Stores (convertPackageToScope)
+import Parser.Netlist.Types.Representation
          ( Function(..)
          , FunctionBody
          , Designator(..)
          , Type
          )
-import Netlister.Builtin.Netlist as InitialNetlist (scope)
-
--- |Convert context items to scope
--- Takes context items (library/use statements) to scope
-convertScope :: [WrappedContextItem] -> Either WrappedScopeConverterError Scope
-convertScope contextItems = do
-   let contextOrder = reverse contextItems
-       conversion = convertScope' contextOrder
-       reorderScopedDeclares scope = scope { scopeDeclarations = reverse $ scopeDeclarations scope }
-   scope <- execStateT conversion InitialNetlist.scope
-   return $ reorderScopedDeclares scope
-
--- |Internal: Convert context items to scope
--- Takes context items, initial scope and build scope
-convertScope' :: [WrappedContextItem] -> ScopeReturn ()
-convertScope' (PosnWrapper _ contextItem:otherContext) = do
-   case contextItem of
-      Context_LibraryClause (LibraryClause libNames) -> addLibraries $ reverse libNames
-      Context_UseClause (UseClause selectedNames) -> addDeclarations $ reverse selectedNames
-   convertScope' otherContext
-convertScope' [] = return ()
-
--- |Add library to the scope
--- Take library names, initial scope and return updated scope
-addLibraries :: [WrappedSimpleName] -> ScopeReturn ()
-addLibraries (PosnWrapper pos libName:libs) = do
-   let upperLibName = map toUpper libName
-   unless (elem upperLibName ["IEEE","WORK","STD"]) $ throwError $ PosnWrapper pos $ ScopeConverterError_InvalidLibrary upperLibName -- ?? CURRENTLY DON'T ACCEPT CUSTOM LIBRARIES
-   let isLibInScope = (elem upperLibName) . scopeLibraries
-   libInScope <- gets isLibInScope
-   let insertLibInScope scope = scope { scopeLibraries = (upperLibName:scopeLibraries scope) }
-   unless libInScope $ modify insertLibInScope
-   addLibraries libs
-addLibraries [] = return ()
-
--- |Add declarations to the scope
--- Takes selected names, initial scope and return updated scope
-addDeclarations :: [WrappedSelectedName] -> ScopeReturn ()
-addDeclarations
-   (  (PosnWrapper _ (SelectedName
-         (PosnWrapper _ (Prefix_Name (Name_Selected (SelectedName
-            (PosnWrapper libPos (Prefix_Name (Name_Simple libName)))
-            (PosnWrapper packagePos (Suffix_Name packageName))
-         ))))
-         (PosnWrapper suffixPos suffix)
-      ))
-      :otherNames
-   ) = do
-      let upperLibName = map toUpper libName
-      unless (elem upperLibName ["IEEE","WORK","STD"]) $ throwError $ PosnWrapper libPos $ ScopeConverterError_InvalidLibrary upperLibName -- ?? CURRENTLY DON'T ACCEPT CUSTOM LIBRARIES
-      let upperPackageName = map toUpper packageName
-      declareContents <- case suffix of
-         Suffix_Name str -> return $ Declare_Identifier str
-         Suffix_Operator opStr -> case convertOperator opStr of
-            Just op -> return $ Declare_Operator op
-            Nothing -> throwError $ PosnWrapper suffixPos $ ScopeConverterError_InvalidOperator opStr
-         Suffix_All -> return Declare_All
-         Suffix_Char chr -> throwError $ PosnWrapper suffixPos $ ScopeConverterError_SuffixChar chr
-      let wrappedDeclareContents = PosnWrapper suffixPos declareContents
-      let isLibInScope = (elem upperLibName) . scopeLibraries
-      libInScope <- gets isLibInScope
-      unless libInScope $ throwError $ PosnWrapper libPos $ ScopeConverterError_LibNoScope upperLibName
-      let netlistName = NetlistName upperLibName upperPackageName
-          scopeItem = PosnWrapper suffixPos declareContents
-      let updateDeclares scope = scope { scopeDeclarations = combineDeclares netlistName scopeItem $ scopeDeclarations scope }
-      modify updateDeclares
-      addDeclarations otherNames
-addDeclarations [] = return ()
-addDeclarations (PosnWrapper pos selectedName:_) =
-   throwError $ PosnWrapper pos $ ScopeConverterError_UseClause selectedName
-
--- |Combine declarations in declaration scope
-combineDeclares :: NetlistName -> WrappedDeclarationScopeItem -> [UnitScope] -> [UnitScope]
-combineDeclares name (PosnWrapper pos Declare_All) unitScopeList =
-   -- ?? Warning for each declare overwritten by this?
-   (name,PosnWrapper pos Declare_All) : filter (\(lstName,_) -> lstName /= name) unitScopeList
-combineDeclares name (PosnWrapper pos declare) unitScopeList =
-   if any (\(lstName,(PosnWrapper _ lstDeclare)) -> name == lstName && (declare == lstDeclare || lstDeclare == Declare_All)) unitScopeList
-      then unitScopeList -- ?? Warning if element is already in scope
-      else ((name,PosnWrapper pos declare):unitScopeList)
+import Parser.Netlist.Builtin.Netlist as InitialNetlist (scope)
+import Manager.Types.Error (ConverterError(ConverterError_Scope))
 
 -- |Secondary state stores scoped conversions
 -- Scoped conversions are converted modules required by the scope
@@ -166,7 +64,7 @@ type BuildScope = StateT ScopeStore (StateT NetlistStore (ExceptT ConverterError
 
 -- |Evaluate scope
 -- Run through scope, evaluating (IE converting) any modules not yet parsed/converted
-evalScope :: (String -> String -> ConversionStack()) -> Scope -> [NetlistName] -> ConversionStack ScopeStore
+evalScope :: (String -> String -> StateT NetlistStore (ExceptT ConverterError IO) ()) -> Scope -> [NetlistName] -> StateT NetlistStore (ExceptT ConverterError IO) ScopeStore
 evalScope create scope dependencies = do
    let evalScope' :: [UnitScope] -> BuildScope
        evalScope' = evalScopeList create dependencies
@@ -176,7 +74,7 @@ evalScope create scope dependencies = do
 
 -- |Evaluate scope list
 -- Run through scope list, evaluating any units not yet parsed/converted
-evalScopeList :: (String -> String -> ConversionStack ()) -> [NetlistName] -> [UnitScope] -> BuildScope
+evalScopeList :: (String -> String -> StateT NetlistStore (ExceptT ConverterError IO) ()) -> [NetlistName] -> [UnitScope] -> BuildScope
 evalScopeList create dependencies ((NetlistName libName unitName,scopeItem):otherUnits) = do
    let netlistName = NetlistName libName unitName
        isInScope :: NetlistStore -> Bool

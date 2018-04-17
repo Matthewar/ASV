@@ -14,7 +14,6 @@ module Parser.Netlist.Types.Scope
    , WrappedNewScopeDeclares
    , ScopeConverterError(..)
    , WrappedScopeConverterError
-   , ScopeReturn
    ) where
 
 import qualified Data.Map.Strict as MapS
@@ -77,18 +76,18 @@ data ScopeConverterError =
 --   -- |Correct format of selected name but final suffix is wrong type
 --   -- In this case this only occurs if the suffix is a character
 --   | ScopeConverterError_SuffixChar Char
---   -- |Invalid operator included
---   -- Final suffix is of type operator, but operator stated does not exist
---   | ScopeConverterError_InvalidOperator String
+   -- |Invalid operator included
+   -- Final suffix is of type operator, but operator stated does not exist
+   | ScopeConverterError_InvalidOperator String
    -- |Library is not in current scope
    | ScopeConverterError_LibNoScope String
---   -- |Declare is not in included package
---   | ScopeConverterError_InvalidDeclare String NetlistName
---   -- |Operator declare is not in included package
---   | ScopeConverterError_InvalidOpDeclare Operator NetlistName
---   -- |Cyclic dependency between two (or more) modules
---   -- Module that is already in chain, module chain
---   | ScopeConverterError_CyclicDependency NetlistName [NetlistName]
+   -- |Declare is not in included package
+   | ScopeConverterError_InvalidDeclare String NetlistName
+   -- |Operator declare is not in included package
+   | ScopeConverterError_InvalidOpDeclare Operator NetlistName
+   -- |Cyclic dependency between two (or more) modules
+   -- Module that is already in chain, module chain
+   | ScopeConverterError_CyclicDependency NetlistName [NetlistName]
    deriving (Eq)
 
 instance (Show ScopeConverterError) where
@@ -138,6 +137,3 @@ getChain inCycle = (findStart inCycle) . reverse
 
 -- |'ScopeConverterError' with position
 type WrappedScopeConverterError = PosnWrapper ScopeConverterError
-
--- |Scope return type
-type ScopeReturn a = StateT Scope (Either WrappedScopeConverterError) a

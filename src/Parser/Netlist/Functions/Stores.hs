@@ -1,8 +1,8 @@
 {-|
-   Module      : Netlister.Convert.Stores
+   Module      : Parser.Netlist.Convert.Stores
    Description : Functions for storing the representation of netlists
 -}
-module Netlister.Functions.Stores
+module Parser.Netlist.Functions.Stores
    ( newPackage
    , convertPackageToGenericUnit
    , convertPackageToScope
@@ -14,13 +14,13 @@ import qualified Data.Map.Strict as MapS
 import Data.List (nub)
 import Data.Maybe (isJust)
 
-import Netlister.Types.Representation
+import Parser.Netlist.Types.Representation
          ( Function(..)
          , Designator(..)
          , Type(..)
          , Enumerate(..)
          )
-import Netlister.Types.Stores
+import Parser.Netlist.Types.Stores
          ( Package(..)
          , ScopeStore(..)
          , UnitStore(..)
