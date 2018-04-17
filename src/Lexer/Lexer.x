@@ -15,8 +15,8 @@ import Lexer.Types.PositionWrapper
 import Lexer.Functions.Lex
 import Lexer.Alex.Types
 import Lexer.Alex.Functions
-import Netlister.Types.Stores (NetlistStore)
-import Netlister.Types.Top (ConverterError)
+import Parser.Netlist.Types.Stores (NetlistStore)
+import Manager.Types.Error (ConverterError)
 }
 
 $upper_case_letter = [A-Z]
@@ -388,6 +388,7 @@ lexerList str = runAlex str $
    in loop []
 
 -- |Lexer scan
+alexMonadScan :: Alex WrappedToken
 alexMonadScan = do
   inp__ <- alexGetInput
   sc <- alexGetStartCode

@@ -1,11 +1,11 @@
 {-|
-   Module      : Netlister.Types.Scope
+   Module      : Parser.Netlist.Types.Scope
    Description : Types for the scope of declarations
 
    Scope details for declarations.
    Used for includes (library and use statements).
 -}
-module Netlister.Types.Scope
+module Parser.Netlist.Types.Scope
    ( Scope(..)
    , UnitScope
    , DeclarationScopeItem(..)
@@ -17,22 +17,21 @@ module Netlister.Types.Scope
    , ScopeReturn
    ) where
 
+import qualified Data.Map.Strict as MapS
+import Control.Monad.Trans.State (StateT)
+import Data.List (intersperse)
+
 import Lexer.Types.PositionWrapper
-import Lexer.Alex.Types (AlexPosn)
-import Parser.Happy.Types
-         ( SelectedName
-         )
-import Netlister.Types.Representation (Type)
-import Netlister.Types.Operators (Operator)
-import Netlister.Types.Stores
+--import Parser.Happy.Types
+--         ( SelectedName
+--         )
+import Parser.Netlist.Types.Representation (Type)
+import Parser.Netlist.Types.Operators (Operator)
+import Parser.Netlist.Types.Stores
          ( NetlistName
          , FunctionStore
          , ScopeStore
          )
-
-import qualified Data.Map.Strict as MapS
-import Control.Monad.Trans.State (StateT)
-import Data.List (intersperse)
 
 -- |Current scope
 -- Library Name, Included Objects
@@ -72,60 +71,60 @@ data ScopeConverterError =
    -- Currently only IEEE is supported
    -- Eventually have a list of accepted libraries
    ScopeConverterError_InvalidLibrary String
-   -- |Invalid use clause
-   -- Cannot read selected name
-   | ScopeConverterError_UseClause SelectedName
-   -- |Correct format of selected name but final suffix is wrong type
-   -- In this case this only occurs if the suffix is a character
-   | ScopeConverterError_SuffixChar Char
-   -- |Invalid operator included
-   -- Final suffix is of type operator, but operator stated does not exist
-   | ScopeConverterError_InvalidOperator String
+--   -- |Invalid use clause
+--   -- Cannot read selected name
+--   | ScopeConverterError_UseClause SelectedName
+--   -- |Correct format of selected name but final suffix is wrong type
+--   -- In this case this only occurs if the suffix is a character
+--   | ScopeConverterError_SuffixChar Char
+--   -- |Invalid operator included
+--   -- Final suffix is of type operator, but operator stated does not exist
+--   | ScopeConverterError_InvalidOperator String
    -- |Library is not in current scope
    | ScopeConverterError_LibNoScope String
-   -- |Declare is not in included package
-   | ScopeConverterError_InvalidDeclare String NetlistName
-   -- |Operator declare is not in included package
-   | ScopeConverterError_InvalidOpDeclare Operator NetlistName
-   -- |Cyclic dependency between two (or more) modules
-   -- Module that is already in chain, module chain
-   | ScopeConverterError_CyclicDependency NetlistName [NetlistName]
+--   -- |Declare is not in included package
+--   | ScopeConverterError_InvalidDeclare String NetlistName
+--   -- |Operator declare is not in included package
+--   | ScopeConverterError_InvalidOpDeclare Operator NetlistName
+--   -- |Cyclic dependency between two (or more) modules
+--   -- Module that is already in chain, module chain
+--   | ScopeConverterError_CyclicDependency NetlistName [NetlistName]
    deriving (Eq)
 
 instance (Show ScopeConverterError) where
    show (ScopeConverterError_InvalidLibrary libName) =
       "invalid library: "
       ++ libName
-   show (ScopeConverterError_UseClause selectedName) =
-      "invalid name in use clause"
-   show (ScopeConverterError_SuffixChar char) =
-      "invalid suffix in use clause"
-   show (ScopeConverterError_InvalidOperator opStr) =
-      "invalid operator in use clause: \""
-      ++ opStr
-      ++ "\""
-   show (ScopeConverterError_LibNoScope libName) =
-      "the library is not in the current scope: "
-      ++ libName
-   show (ScopeConverterError_InvalidDeclare declareName packageName) =
-      "the declare: \""
-      ++ declareName
-      ++ "\" can not be found in the package: \""
-      ++ show packageName
-      ++ "\""
-   show (ScopeConverterError_InvalidOpDeclare op packageName) =
-      "the operator declare: \""
-      ++ show op
-      ++ "\" can not be found in the package: \""
-      ++ show packageName
-      ++ "\""
-   show (ScopeConverterError_CyclicDependency inCycle cycle) =
-      "a cyclic dependency was detected, "
-      ++ show (head cycle)
-      ++ " tried to import "
-      ++ show inCycle
-      ++ ". But the dependency chain prevents this: "
-      ++ (getChain inCycle cycle)
+   --show (ScopeConverterError_UseClause selectedName) =
+   --   "invalid name in use clause"
+   --show (ScopeConverterError_SuffixChar char) =
+   --   "invalid suffix in use clause"
+   --show (ScopeConverterError_InvalidOperator opStr) =
+   --   "invalid operator in use clause: \""
+   --   ++ opStr
+   --   ++ "\""
+   --show (ScopeConverterError_LibNoScope libName) =
+   --   "the library is not in the current scope: "
+   --   ++ libName
+   --show (ScopeConverterError_InvalidDeclare declareName packageName) =
+   --   "the declare: \""
+   --   ++ declareName
+   --   ++ "\" can not be found in the package: \""
+   --   ++ show packageName
+   --   ++ "\""
+   --show (ScopeConverterError_InvalidOpDeclare op packageName) =
+   --   "the operator declare: \""
+   --   ++ show op
+   --   ++ "\" can not be found in the package: \""
+   --   ++ show packageName
+   --   ++ "\""
+   --show (ScopeConverterError_CyclicDependency inCycle cycle) =
+   --   "a cyclic dependency was detected, "
+   --   ++ show (head cycle)
+   --   ++ " tried to import "
+   --   ++ show inCycle
+   --   ++ ". But the dependency chain prevents this: "
+   --   ++ (getChain inCycle cycle)
 
 getChain :: NetlistName -> [NetlistName] -> String
 getChain inCycle = (findStart inCycle) . reverse

@@ -23,13 +23,14 @@ import Manager.Filing
          )
 import Lexer.Types.Error (WrappedParserError)
 import Lexer.Alex.Functions (runAlex)
-import qualified Parser.Parser as Parser (v1987)
-import Parser.Happy.Types (DesignFile)
-import Netlister.Types.Stores (NetlistStore)
-import Netlister.Types.Stores (NetlistName(..))
-import qualified Netlister.Builtin.Netlist as InitialNetlist (netlist)
-import Netlister.Types.Top (ConversionStack,ConverterError(..))
-import Netlister.ParseTree (convertTree)
+import Parser.Netlist.Types.Stores
+         ( NetlistStore
+         , NetlistName(..)
+         )
+import qualified Parser.Netlist.Builtin.Netlist as InitialNetlist (netlist)
+import Manager.Types.Error (ConverterError(..))
+--import Netlister.ParseTree (convertTree)
+import Parser.Functions.Parse.DesignFile (parseDesignFile)
 
 createTop :: Args.Options -> IO ()
 createTop options = do
@@ -62,14 +63,10 @@ create :: FilePath -> FilePath -> [NetlistName] -> String -> String -> StateT Ne
 create workPath ieeePath dependencies library unitName = do
    filePath <- lift $ withExceptT (ConverterError_Filing) $ findDesignUnit workPath ieeePath library unitName
    fileContents <- liftIO $ readFile filePath
-   parseTree <- parse fileContents
    let netlistName = NetlistName library unitName
-   convertTree (create workPath ieeePath (netlistName:dependencies)) library dependencies parseTree
+   runAlex fileContents $ parseDesignFile (create workPath ieeePath (netlistName:dependencies)) library dependencies
    -- ?? Build simulation files
    return ()
    
 -- Check dependencies
 -- Parse new files
-
-parse :: String -> StateT NetlistStore (ExceptT ConverterError IO) DesignFile
-parse s = runAlex s Parser.v1987

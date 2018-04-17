@@ -15,8 +15,8 @@ import Lexer.Alex.Types
          ( AlexState
          , AlexInput
          )
-import Netlister.Types.Stores (NetlistStore)
-import Netlister.Types.Top (ConverterError)
+import Parser.Netlist.Types.Stores (NetlistStore)
+import Manager.Types.Error (ConverterError)
 
 type Alex a = StateT AlexState (StateT NetlistStore (ExceptT ConverterError IO)) a
 

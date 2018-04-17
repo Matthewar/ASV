@@ -1,8 +1,8 @@
 {-|
-   Module      : Netlister.Builtin.Netlist
+   Module      : Parser.Netlist.Builtin.Netlist
    Description : Prebuilt design units
 -}
-module Netlister.Builtin.Netlist 
+module Parser.Netlist.Builtin.Netlist 
    ( netlist
    , scope
    ) where
@@ -12,16 +12,16 @@ import Data.Function ((&))
 
 import Lexer.Types.PositionWrapper (PosnWrapper(..))
 import Lexer.Alex.Types (AlexPosn(..))
-import Netlister.Types.Stores
+import Parser.Netlist.Types.Stores
          ( NetlistStore(..)
          , PackageStore(..)
          , NetlistName(..)
          )
-import Netlister.Types.Scope
+import Parser.Netlist.Types.Scope
          ( Scope(..)
          , DeclarationScopeItem(Declare_All)
          )
-import Netlister.Builtin.Standard
+import Parser.Netlist.Builtin.Standard
 --import Netlister.Builtin.TextIO
 
 builtinPackages :: PackageStore

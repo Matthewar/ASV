@@ -12,6 +12,7 @@ import Data.Char as Char
 import Data.Int (Int64)
 import Data.Function ((&))
 
+import Lexer.Types.Token (Token)
 import Lexer.Types.PositionWrapper
 import Lexer.Alex.Types (AlexPosn(..))
 
@@ -57,6 +58,21 @@ data ParserError
    | LexErr_BitStrLiteral_EmptyStr String
    -- |Used when an unknown error has occurred in the parser
    | GenericParseError
+   -- |Expected library name (identifier) but got something else
+   | ParseErr_ExpectedLibraryName Token
+   -- |Expected continuation or completion of library clause
+   -- ',' or ';'
+   | ParseErr_ExpectedLibraryClauseContiue Token
+   -- |Expected library name (identifier) in first element of use clause
+   | ParseErr_ExpectedLibraryNameInUseClause Token
+   -- |Expected full stop (period) in second or fourth element of use clause
+   | ParseErr_ExpectedPeriodInUseClause Token
+   -- |Expected package name (identifier) in fifth element of use clause
+   | ParseErr_ExpectedPackageNameInUseClause Token
+   -- |Invalid operator (string literal) in sixth element of use clause
+   | ParseErr_ExpectedOperatorInUseClause String
+   -- |Invalid suffix (identifier, string literal, keyword all) in sixth element of use clause
+   | ParseErr_ExpectedSuffixInUseClause Token
    deriving (Eq)
 -- ?? NonMatchingIdentifierError ReservedWord String String
 

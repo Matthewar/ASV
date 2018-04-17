@@ -1,8 +1,8 @@
 {-|
-   Module      : Netlister.Types.Stores
+   Module      : Parser.Netlist.Types.Stores
    Description : Types for storing the representation of netlists
 -}
-module Netlister.Types.Stores
+module Parser.Netlist.Types.Stores
    ( NetlistName(..)
    , NetlistStore(..)
    , TypeStore
@@ -20,13 +20,13 @@ module Netlister.Types.Stores
 
 import qualified Data.Map.Strict as MapS
 
-import Netlister.Types.Representation
+import Parser.Netlist.Types.Representation
          ( Type
          , Subtype
          , Function(..)
          , FunctionBody(..)
          )
-import Netlister.Types.Objects
+import Parser.Netlist.Types.Objects
          ( Constant
          , Signal
          )

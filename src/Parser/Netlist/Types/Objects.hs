@@ -2,13 +2,13 @@
    Module      : Netlister.Types.Objects
    Description : Types for storing object declarations in netlists
 -}
-module Netlister.Types.Objects
+module Parser.Netlist.Types.Objects
          ( Constant(..)
          , Signal(..)
          , Variable(..)
          ) where
 
-import Netlister.Types.Representation
+import Parser.Netlist.Types.Representation
          ( Type
          , Subtype
          , Calculation

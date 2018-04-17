@@ -23,8 +23,8 @@ import Control.Monad.Except
 import Lexer.Types.Error
 import Lexer.Types.Monad (Alex(..))
 import Lexer.Alex.Types
-import Netlister.Types.Stores (NetlistStore)
-import Netlister.Types.Top (ConverterError(ConverterError_Parse))
+import Parser.Netlist.Types.Stores (NetlistStore)
+import Manager.Types.Error (ConverterError(ConverterError_Parse))
 
 -- | Encode a Haskell String to a list of Byte values, in UTF8 format.
 utf8Encode :: Char -> [Byte]

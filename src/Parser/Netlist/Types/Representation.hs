@@ -4,7 +4,7 @@
 
    Haskell types for containing and representing VHDL builtin and user types, functions, other low level elements
 -}
-module Netlister.Types.Representation
+module Parser.Netlist.Types.Representation
    ( Type(..)
    , Enumerate(..)
    , IntegerRange(..)
@@ -24,7 +24,7 @@ module Netlister.Types.Representation
 import Data.Int (Int64)
 import qualified Data.Map.Strict as MapS
 
-import Netlister.Types.Operators (Operator)
+import Parser.Netlist.Types.Operators (Operator)
 
 -- ?? Type attribute data
 -- Name, Attributes

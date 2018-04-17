@@ -19,8 +19,8 @@ import Lexer.Types.Token
 import Lexer.Types.Error
 import Lexer.Types.PositionWrapper
 import Lexer.Alex.Types (AlexPosn(..))
-import Netlister.Types.Top (ConverterError(ConverterError_Parse))
-import Netlister.Builtin.Netlist (netlist)
+import Parser.Netlist.Builtin.Netlist (netlist)
+import Manager.Types.Error (ConverterError(ConverterError_Parse))
 
 -- |All lexer tests
 tests :: TestTree

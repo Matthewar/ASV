@@ -20,55 +20,16 @@ import Data.Char (toUpper)
 import Data.List (intersperse)
 
 import Lexer.Types.PositionWrapper (PosnWrapper(..))
-import Lexer.Types.Error
-         ( WrappedParserError
-         , getLineAndColErrStr
-         )
-import Lexer.Alex.Types (AlexPosn)
+import Lexer.Types.Error (getLineAndColErrStr)
 import Parser.Happy.Types
          ( WrappedSimpleName
          , WrappedEnumerationLiteral
          , EnumerationLiteral(..)
          )
 import Netlister.Types.Stores (NetlistStore)
-import Netlister.Types.Scope (WrappedScopeConverterError)
-import Manager.Filing (FilingError)
 
 -- |Monads required for conversion
 type ConversionStack a = StateT NetlistStore (ExceptT ConverterError IO) a
-
--- |Errors that can occur within the converter
-data ConverterError =
-   -- |Error checking files
-   ConverterError_Filing FilingError
-   -- |Error in scope converter
-   | ConverterError_Scope WrappedScopeConverterError
-   -- |Error in parser
-   | ConverterError_Parse WrappedParserError
-   -- |Error in converter
-   -- When reading the parse tree to convert it to netlist
-   | ConverterError_Netlist WrappedNetlistError
-   -- |Error for not implemented features
-   | ConverterError_NotImplemented WrappedSimpleName
-   deriving (Eq)
-
-instance (Show ConverterError) where
-   show (ConverterError_Filing fileErr) =
-      "Filer: "
-      ++ show fileErr
-   show (ConverterError_Scope scopeErr) =
-      "Scope Conversion: "
-      ++ show scopeErr
-   show (ConverterError_Parse parseErr) =
-      "Parser: "
-      ++ show parseErr
-   show (ConverterError_Netlist netlistErr) =
-      "Netlister: "
-      ++ show netlistErr
-   show (ConverterError_NotImplemented (PosnWrapper pos info)) =
-      "Not implemented: "
-      ++ info
-      ++ getLineAndColErrStr pos
 
 -- |Wrapped netlist error
 -- ?? Want to have file name along with position for better error messages

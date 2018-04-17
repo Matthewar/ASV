@@ -23,28 +23,34 @@ library
                      , Lexer.Types.PositionWrapper
                      , Lexer.Types.Error
                      , Lexer.Functions.Lex
-                     , Parser.Parser
-                     , Parser.Happy.Types
-                     , Parser.Happy.Functions
-                     , Parser.Happy.ParseFunctions
-                     , Netlister.Builtin.Standard
-                     , Netlister.Builtin.Netlist
-                     , Netlister.Types.Scope
-                     , Netlister.Types.Operators
-                     , Netlister.Types.Objects
-                     , Netlister.Types.Stores
-                     , Netlister.Functions.Stores
-                     , Netlister.Types.Representation
-                     , Netlister.Types.Top
-                     , Netlister.Convert.Scope
+                     , Lexer.Functions.PositionWrapper
+                     --, Parser.Parser
+                     , Parser.Functions.IdentifyToken
+                     , Parser.Functions.IdentifyName
+                     , Parser.Functions.Parse.DesignFile
+                     , Parser.Functions.Parse.Context
+                     , Parser.Netlist.Types.Representation
+                     , Parser.Netlist.Types.Stores
+                     , Parser.Netlist.Types.Scope
+                     , Parser.Netlist.Types.Objects
+                     , Parser.Netlist.Types.Operators
+                     , Parser.Netlist.Builtin.Netlist
+                     , Parser.Netlist.Builtin.Standard
+                     --, Parser.Happy.Types
+                     --, Parser.Happy.Functions
+                     --, Parser.Happy.ParseFunctions
+                     --, Netlister.Functions.Stores
+                     --, Netlister.Types.Top
+                     --, Netlister.Convert.Scope
                      , Manager.NewDesignUnit
                      , Manager.Args
                      , Manager.Filing
-                     , Netlister.ParseTree
-                     , Netlister.Parse.Library
-                     , Netlister.Parse.Package
-                     , Netlister.Parse.Type
-                     , Netlister.Parse.Objects
+                     , Manager.Types.Error
+                     --, Netlister.ParseTree
+                     --, Netlister.Parse.Library
+                     --, Netlister.Parse.Package
+                     --, Netlister.Parse.Type
+                     --, Netlister.Parse.Objects
   build-depends:       base >= 4.7 && < 5
                      , array
                      , split

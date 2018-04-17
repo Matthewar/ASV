@@ -1,10 +1,10 @@
 {-|
-   Module      : Netlister.Types.Operators
+   Module      : Parser.Netlist.Types.Operators
    Description : Types for acceptable netlist operators.
 
    Operators used in netlists.
 -}
-module Netlister.Types.Operators
+module Parser.Netlist.Types.Operators
          ( Operator(..)
          , convertOperator
          ) where
@@ -12,8 +12,6 @@ module Netlister.Types.Operators
 import qualified Data.Bimap as Bimap
 import Data.Char (toUpper)
 import Data.Function ((&))
-
-import qualified Parser.Happy.Types as ParserTypes (OperatorSymbol)
 
 -- |Netlist operators
 data Operator =
@@ -65,7 +63,7 @@ data Operator =
 -- Read operator string literal
 -- - If doesn't exist: return 'Nothing'
 -- - If exists: return 'Just' 'Operator'
-convertOperator :: ParserTypes.OperatorSymbol -> Maybe Operator
+convertOperator :: String -> Maybe Operator
 convertOperator op = Bimap.lookup (map toUpper op) operatorMap
 
 -- |Map of operators and associated string names

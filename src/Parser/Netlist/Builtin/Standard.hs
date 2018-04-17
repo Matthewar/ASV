@@ -1,12 +1,12 @@
 {-|
-   Module      : Netlister.Builtin.Standard
+   Module      : Parser.Netlist.Builtin.Standard
    Description : Implementation of bultin \\'standard\\' package
 -}
-module Netlister.Builtin.Standard 
+module Parser.Netlist.Builtin.Standard 
    ( standardPackage
    ) where
 
-import Netlister.Types.Representation
+import Parser.Netlist.Types.Representation
          ( Type(..)
          , IntegerRange(..)
          , FloatRange(..)
@@ -18,7 +18,7 @@ import Netlister.Types.Representation
          , Function(..)
          , Designator(..)
          )
-import Netlister.Types.Stores
+import Parser.Netlist.Types.Stores
          ( TypeStore
          , SubtypeStore
          , FunctionStore
