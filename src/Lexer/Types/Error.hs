@@ -77,8 +77,15 @@ data ParserError
    | ParseErr_ExpectedFirstKeywordInLibraryUnit Token
    -- |Expected second token to be remainder of package body (body keyword)
    | ParseErr_ExpectedPackageBodyKeywordInLibraryUnit Token
+   -- |Expected package declarative item marker (certain keywords) or keyword end to mark end of declarative region
+   | ParseErr_ExpectedPackageDeclItemOrEnd Token
+   -- |Package identifiers (if both provided) must match
+   | ParseErr_PackageNamesNoMatch (PosnWrapper String) (PosnWrapper String)
+   -- |Expected semicolon to end package
+   | ParseErr_ExpectedSemicolonInPackage Token
+   -- |Expected semicolon or identifier at the end of a package declaration
+   | ParseErr_ExpectedPackageEndOfDec Token
    deriving (Eq)
--- ?? NonMatchingIdentifierError ReservedWord String String
 
 instance (Show ParserError) where
    show (GenericLexError) =

@@ -23,6 +23,7 @@ import Parser.Functions.IdentifyToken
          , isKeywordPackage
          , isIdentifier
          )
+import Parser.Functions.Parse.Package (parsePackage)
 import Parser.Netlist.Types.Stores (ScopeStore)
 import Manager.Types.Error (ConverterError(..))
 
@@ -33,8 +34,7 @@ parseLibrary scope libraryName = do
    case library of
       Primary_Entity -> throwError $ ConverterError_NotImplemented $ passPosition "Entity declaration" token
       Primary_Configuration -> throwError $ ConverterError_NotImplemented $ passPosition "Configuration declaration" token
-      Primary_Package -> throwError $ ConverterError_NotImplemented $ passPosition "Package declaration" token
-      --PrimaryUnit_PackageDeclaration packageDecl -> convertPackage scope libraryName $ PosnWrapper pos packageDecl
+      Primary_Package -> parsePackage scope libraryName
       Secondary_Architecture -> throwError $ ConverterError_NotImplemented $ passPosition "Architecture body" token
       Secondary_PackageBody -> throwError $ ConverterError_NotImplemented $ passPosition "Package body" token
    -- For secondaries:

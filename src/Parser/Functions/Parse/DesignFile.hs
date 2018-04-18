@@ -6,10 +6,10 @@ import Control.Monad.Trans.State
          ( execStateT
          , evalStateT
          )
-import Control.Monad.Except (lift)
 
 import Lexer.Types.Monad (Alex)
 import Parser.Types.Monad (ParserStack)
+import Parser.Functions.Monad (accessNetlist)
 import Parser.Functions.Parse.Context (parseContext)
 import Parser.Functions.Parse.Library (parseLibrary)
 import Parser.Functions.Convert.Scope (evalScope)
@@ -24,6 +24,6 @@ parseDesignFile create libraryName dependencies = evalStateT (parseDesignUnit cr
 parseDesignUnit :: (String -> String -> NetlistStack ()) -> String -> [NetlistName] -> ParserStack ()
 parseDesignUnit create libraryName dependencies = do
    scope <- execStateT parseContext InitialNetlist.scope
-   realScope <- lift $ lift $ evalScope create scope dependencies
+   realScope <- accessNetlist $ evalScope create scope dependencies
    parseLibrary realScope libraryName
    return ()

@@ -32,6 +32,7 @@ library
                      , Parser.Functions.Parse.DesignFile
                      , Parser.Functions.Parse.Context
                      , Parser.Functions.Parse.Library
+                     , Parser.Functions.Parse.Package
                      , Parser.Functions.Convert.Scope
                      , Parser.Netlist.Types.Representation
                      , Parser.Netlist.Types.Stores
