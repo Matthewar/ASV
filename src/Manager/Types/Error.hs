@@ -8,7 +8,11 @@ module Manager.Types.Error
    ( ConverterError(..)
    ) where
 
-import Lexer.Types.Error (WrappedParserError)
+import Lexer.Types.Error
+         ( WrappedParserError
+         , getLineAndColErrStr
+         )
+import Lexer.Types.PositionWrapper
 import Parser.Netlist.Types.Scope (WrappedScopeConverterError)
 import Manager.Filing (FilingError)
 
@@ -24,7 +28,7 @@ data ConverterError =
    -- When reading the parse tree to convert it to netlist
 --   | ConverterError_Netlist WrappedNetlistError
    -- |Error for not implemented features
---   | ConverterError_NotImplemented WrappedSimpleName
+   | ConverterError_NotImplemented (PosnWrapper String)
    deriving (Eq)
 
 instance (Show ConverterError) where
@@ -40,7 +44,7 @@ instance (Show ConverterError) where
    --show (ConverterError_Netlist netlistErr) =
    --   "Netlister: "
    --   ++ show netlistErr
-   --show (ConverterError_NotImplemented (PosnWrapper pos info)) =
-   --   "Not implemented: "
-   --   ++ info
-   --   ++ getLineAndColErrStr pos
+   show (ConverterError_NotImplemented (PosnWrapper pos info)) =
+      "Not implemented: "
+      ++ info
+      ++ getLineAndColErrStr pos

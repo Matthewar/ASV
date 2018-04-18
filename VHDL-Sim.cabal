@@ -25,16 +25,20 @@ library
                      , Lexer.Functions.Lex
                      , Lexer.Functions.PositionWrapper
                      --, Parser.Parser
+                     , Parser.Types.Monad
+                     , Parser.Functions.Monad
                      , Parser.Functions.IdentifyToken
                      , Parser.Functions.IdentifyName
                      , Parser.Functions.Parse.DesignFile
                      , Parser.Functions.Parse.Context
+                     , Parser.Functions.Parse.Library
                      , Parser.Functions.Convert.Scope
                      , Parser.Netlist.Types.Representation
                      , Parser.Netlist.Types.Stores
                      , Parser.Netlist.Types.Scope
                      , Parser.Netlist.Types.Objects
                      , Parser.Netlist.Types.Operators
+                     , Parser.Netlist.Types.Monad
                      , Parser.Netlist.Functions.Stores
                      , Parser.Netlist.Builtin.Netlist
                      , Parser.Netlist.Builtin.Standard

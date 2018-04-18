@@ -73,6 +73,10 @@ data ParserError
    | ParseErr_ExpectedOperatorInUseClause String
    -- |Invalid suffix (identifier, string literal, keyword all) in sixth element of use clause
    | ParseErr_ExpectedSuffixInUseClause Token
+   -- |Expected first token of library unit (certain keywords)
+   | ParseErr_ExpectedFirstKeywordInLibraryUnit Token
+   -- |Expected second token to be remainder of package body (body keyword)
+   | ParseErr_ExpectedPackageBodyKeywordInLibraryUnit Token
    deriving (Eq)
 -- ?? NonMatchingIdentifierError ReservedWord String String
 

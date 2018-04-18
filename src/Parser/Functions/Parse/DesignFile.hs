@@ -3,30 +3,27 @@ module Parser.Functions.Parse.DesignFile
    ) where
 
 import Control.Monad.Trans.State
-         ( StateT
-         , execStateT
+         ( execStateT
+         , evalStateT
          )
-import Control.Monad.Except
-         ( ExceptT
-         , lift
-         )
+import Control.Monad.Except (lift)
 
 import Lexer.Types.Monad (Alex)
-import Parser.Functions.Parse.Context
+import Parser.Types.Monad (ParserStack)
+import Parser.Functions.Parse.Context (parseContext)
+import Parser.Functions.Parse.Library (parseLibrary)
 import Parser.Functions.Convert.Scope (evalScope)
-import Parser.Netlist.Types.Stores
-         ( NetlistName
-         , NetlistStore
-         )
+import Parser.Netlist.Types.Stores (NetlistName)
+import Parser.Netlist.Types.Monad (NetlistStack)
 import Parser.Netlist.Builtin.Netlist as InitialNetlist (scope)
-import Manager.Types.Error (ConverterError)
 
-parseDesignFile :: (String -> String -> StateT NetlistStore (ExceptT ConverterError IO) ()) -> String -> [NetlistName] -> Alex ()
+parseDesignFile :: (String -> String -> NetlistStack ()) -> String -> [NetlistName] -> Alex ()
 --parseDesignFile create libraryName dependencies =
-parseDesignFile = parseDesignUnit
+parseDesignFile create libraryName dependencies = evalStateT (parseDesignUnit create libraryName dependencies) []
 
-parseDesignUnit :: (String -> String -> StateT NetlistStore (ExceptT ConverterError IO) ()) -> String -> [NetlistName] -> Alex ()
+parseDesignUnit :: (String -> String -> NetlistStack ()) -> String -> [NetlistName] -> ParserStack ()
 parseDesignUnit create libraryName dependencies = do
    scope <- execStateT parseContext InitialNetlist.scope
-   realScope <- lift $ evalScope create scope dependencies
+   realScope <- lift $ lift $ evalScope create scope dependencies
+   parseLibrary realScope libraryName
    return ()

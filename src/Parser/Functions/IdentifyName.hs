@@ -2,26 +2,18 @@ module Parser.Functions.IdentifyName
    ( matchSuffix
    ) where
 
-import Control.Monad.Trans.State (StateT)
-import Control.Monad.Except
-         ( ExceptT
-         , throwError
-         )
+import Control.Monad.Except (throwError)
 
-import Manager.Types.Error (ConverterError(..))
+import Manager.Types.Error (ConverterError(ConverterError_Parse))
 import qualified Lexer.Types.Token as Tokens
 import Lexer.Types.PositionWrapper
 import Lexer.Types.Error (ParserError(..))
-import Lexer.Alex.Types (AlexState)
-import Lexer.Functions.PositionWrapper
-import Parser.Netlist.Types.Scope
-         ( Scope
-         , DeclarationScopeItem(..)
-         )
-import Parser.Netlist.Types.Stores (NetlistStore)
+import Lexer.Functions.PositionWrapper (raisePosition)
+import Parser.Types.Monad (ScopeStack)
+import Parser.Netlist.Types.Scope (DeclarationScopeItem(..))
 import Parser.Netlist.Types.Operators (convertOperator)
 
-matchSuffix :: PosnWrapper Tokens.Token -> StateT Scope (StateT AlexState (StateT NetlistStore (ExceptT ConverterError IO))) DeclarationScopeItem
+matchSuffix :: Tokens.WrappedToken -> ScopeStack DeclarationScopeItem
 matchSuffix (PosnWrapper _ (Tokens.Identifier iden)) = return $ Declare_Identifier iden
 matchSuffix (PosnWrapper pos (Tokens.Literal (Tokens.Str str))) =
    case convertOperator str of

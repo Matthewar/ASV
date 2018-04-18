@@ -14,21 +14,22 @@ import Control.Monad
          , when
          )
 import Control.Monad.Trans.State
-         ( StateT
-         , execStateT
+         ( execStateT
          , modify
          , gets
          )
 import Control.Monad.Except
-         ( ExceptT
-         , throwError
+         ( throwError
          , lift
          , liftEither
          , withExceptT
          )
 
 import Lexer.Types.PositionWrapper
+import Lexer.Functions.PositionWrapper (passPosition)
 import Lexer.Alex.Types (AlexPosn)
+import Parser.Types.Monad (BuildScopeStack)
+import Parser.Netlist.Types.Monad (NetlistStack)
 import Parser.Netlist.Types.Scope
          ( Scope(..)
          , UnitScope
@@ -55,18 +56,13 @@ import Parser.Netlist.Types.Representation
          , Designator(..)
          , Type
          )
-import Parser.Netlist.Builtin.Netlist as InitialNetlist (scope)
 import Manager.Types.Error (ConverterError(ConverterError_Scope))
-
--- |Secondary state stores scoped conversions
--- Scoped conversions are converted modules required by the scope
-type BuildScope = StateT ScopeStore (StateT NetlistStore (ExceptT ConverterError IO)) ()
 
 -- |Evaluate scope
 -- Run through scope, evaluating (IE converting) any modules not yet parsed/converted
-evalScope :: (String -> String -> StateT NetlistStore (ExceptT ConverterError IO) ()) -> Scope -> [NetlistName] -> StateT NetlistStore (ExceptT ConverterError IO) ScopeStore
+evalScope :: (String -> String -> NetlistStack ()) -> Scope -> [NetlistName] -> NetlistStack ScopeStore
 evalScope create scope dependencies = do
-   let evalScope' :: [UnitScope] -> BuildScope
+   let evalScope' :: [UnitScope] -> BuildScopeStack
        evalScope' = evalScopeList create dependencies
    -- initialScope <- gets $ \(NetlistStore _) -> NetlistStore MapS.empty -- ?? Keep entities, just empty packages
    execStateT (evalScope' $ scopeDeclarations scope) emptyScopeStore
@@ -74,13 +70,13 @@ evalScope create scope dependencies = do
 
 -- |Evaluate scope list
 -- Run through scope list, evaluating any units not yet parsed/converted
-evalScopeList :: (String -> String -> StateT NetlistStore (ExceptT ConverterError IO) ()) -> [NetlistName] -> [UnitScope] -> BuildScope
+evalScopeList :: (String -> String -> NetlistStack ()) -> [NetlistName] -> [UnitScope] -> BuildScopeStack
 evalScopeList create dependencies ((NetlistName libName unitName,scopeItem):otherUnits) = do
    let netlistName = NetlistName libName unitName
        isInScope :: NetlistStore -> Bool
        isInScope = (MapS.member netlistName) . packages
        isDependency = elem netlistName dependencies
-   when isDependency $ throwError $ ConverterError_Scope $ PosnWrapper (getPos scopeItem) $ ScopeConverterError_CyclicDependency netlistName dependencies
+   when isDependency $ throwError $ ConverterError_Scope $ passPosition (ScopeConverterError_CyclicDependency netlistName dependencies) scopeItem
    inScope <- lift $ gets isInScope
    unless inScope $ lift $ create libName unitName
    newWrappedScopeDeclare <- lift $ gets $ getPackageParts netlistName scopeItem
@@ -141,7 +137,7 @@ findPackageFunctionsByIdentifier expectedName =
    in MapS.filterWithKey functionFind
 
 -- | Merge scope from current unit with total scope
-mergeScope :: WrappedNewScopeDeclares -> BuildScope
+mergeScope :: WrappedNewScopeDeclares -> BuildScopeStack
 mergeScope (PosnWrapper pos (NewScopeDeclare_Package newScope)) =
    -- ?? Should be checking for overlaps and warning
    let modifyScope oldScope =
@@ -156,14 +152,14 @@ mergeScope (PosnWrapper pos (NewScopeDeclare_Functions newFuncs)) = mergeScopeFu
 mergeScope (PosnWrapper pos (NewScopeDeclare_Type typeName typeDeclare)) = mergeScopeType $ PosnWrapper pos (typeName,typeDeclare)
 
 -- |Merge a single type into the scope
-mergeScopeFuncs :: PosnWrapper FunctionStore -> BuildScope
+mergeScopeFuncs :: PosnWrapper FunctionStore -> BuildScopeStack
 mergeScopeFuncs (PosnWrapper pos newFuncs) =
    -- ?? Should be checking for overlaps and warning
    let modifyScope oldScope = oldScope { scopeFunctions = MapS.union newFuncs $ scopeFunctions oldScope }
    in modify modifyScope
 
 -- |Merge a single type into the scope
-mergeScopeType :: PosnWrapper (String,Type) -> BuildScope
+mergeScopeType :: PosnWrapper (String,Type) -> BuildScopeStack
 mergeScopeType (PosnWrapper pos (name,declare)) = do
    let readScopeTypes = scopeTypes
    isInScope <- gets ((MapS.member name) . readScopeTypes)

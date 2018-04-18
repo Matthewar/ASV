@@ -3,15 +3,13 @@ module Parser.Functions.Parse.Context
    ) where
 
 import Control.Monad.Except
-         ( ExceptT
-         , unless
+         ( unless
          , lift
          , throwError
          , replicateM
          )
 import Control.Monad.Trans.State
-         ( StateT
-         , gets
+         ( gets
          , modify
          )
 import Data.Char (toUpper)
@@ -19,8 +17,8 @@ import Data.Char (toUpper)
 import Lexer.Types.PositionWrapper
 import Lexer.Types.Error (ParserError(..))
 import Lexer.Functions.PositionWrapper
-import Lexer.Alex.Types (AlexState)
-import Lexer.Lexer (alexMonadScan)
+import Parser.Types.Monad (ScopeStack)
+import Parser.Functions.Monad (getToken)
 import Parser.Functions.IdentifyToken
          ( isKeywordLibrary
          , isKeywordUse
@@ -37,35 +35,32 @@ import Parser.Netlist.Types.Scope
          , WrappedDeclarationScopeItem
          , ScopeConverterError(..)
          )
-import Parser.Netlist.Types.Stores
-         ( NetlistStore
-         , NetlistName(..)
-         )
+import Parser.Netlist.Types.Stores (NetlistName(..))
 import Manager.Types.Error (ConverterError(..))
 
-parseContext :: StateT Scope (StateT AlexState (StateT NetlistStore (ExceptT ConverterError IO))) ()
+parseContext :: ScopeStack ()
 parseContext = do
-   contextToken <- lift alexMonadScan
+   contextToken <- lift getToken
    if isKeywordLibrary contextToken
       then parseLibraryContext
       else if isKeywordUse contextToken
          then parseUseContext
          else return ()
 
-parseLibraryContext :: StateT Scope (StateT AlexState (StateT NetlistStore (ExceptT ConverterError IO))) ()
+parseLibraryContext :: ScopeStack ()
 parseLibraryContext = do
-   identifier <- lift alexMonadScan
+   identifier <- lift getToken
    case matchIdentifier identifier of
       Just libName -> addLibrary libName
       Nothing -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedLibraryName identifier
-   op <- lift alexMonadScan
+   op <- lift getToken
    if isComma op
       then parseLibraryContext
       else unless (isSemicolon op) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedLibraryClauseContiue op
 
-parseUseContext :: StateT Scope (StateT AlexState (StateT NetlistStore (ExceptT ConverterError IO))) ()
+parseUseContext :: ScopeStack ()
 parseUseContext = do
-   [libTok,dotTok1,unitTok,dotTok2,decTok] <- replicateM 5 $ lift alexMonadScan
+   [libTok,dotTok1,unitTok,dotTok2,decTok] <- replicateM 5 $ lift getToken
    libName <- case matchIdentifier libTok of
                   Just (PosnWrapper _ lib) -> return $ map toUpper lib
                   Nothing -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedLibraryNameInUseClause libTok
@@ -84,7 +79,7 @@ parseUseContext = do
    let updateDeclares scope = scope { scopeDeclarations = combineDeclares netlistName scopeItem $ scopeDeclarations scope }
    modify updateDeclares
 
-addLibrary :: PosnWrapper String -> StateT Scope (StateT AlexState (StateT NetlistStore (ExceptT ConverterError IO))) ()
+addLibrary :: PosnWrapper String -> ScopeStack ()
 addLibrary libName = do
    let upperLibName = map toUpper $ unPos libName
    unless (elem upperLibName ["IEEE","WORK","STD"]) $ throwError $ ConverterError_Scope $ passPosition (ScopeConverterError_InvalidLibrary upperLibName) libName -- ?? CURRENTLY DON'T ACCEPT CUSTOM LIBRARIES
