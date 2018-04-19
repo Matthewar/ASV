@@ -71,6 +71,12 @@ data Enumerate =
    | Enum_Char Char
    deriving (Eq,Ord)
 
+instance (Show Enumerate) where
+   show (Enum_Identifier str) =
+      "enumerate identifier " ++ str
+   show (Enum_Char chr) =
+      "enumerate character " ++ ['\'',chr,'\'']
+
 -- |Integer range
 -- Left direction right
 data IntegerRange = IntegerRange Int64 Int64 RangeDirection

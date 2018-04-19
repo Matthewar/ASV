@@ -14,6 +14,7 @@ import Lexer.Types.Error
          )
 import Lexer.Types.PositionWrapper
 import Parser.Netlist.Types.Scope (WrappedScopeConverterError)
+import Parser.Netlist.Types.Error (WrappedNetlistError)
 import Manager.Filing (FilingError)
 
 -- |Errors that can occur within the converter
@@ -26,7 +27,7 @@ data ConverterError =
    | ConverterError_Parse WrappedParserError
    -- |Error in converter
    -- When reading the parse tree to convert it to netlist
---   | ConverterError_Netlist WrappedNetlistError
+   | ConverterError_Netlist WrappedNetlistError
    -- |Error for not implemented features
    | ConverterError_NotImplemented (PosnWrapper String)
    deriving (Eq)
@@ -41,9 +42,9 @@ instance (Show ConverterError) where
    show (ConverterError_Parse parseErr) =
       "Parser: "
       ++ show parseErr
-   --show (ConverterError_Netlist netlistErr) =
-   --   "Netlister: "
-   --   ++ show netlistErr
+   show (ConverterError_Netlist netlistErr) =
+      "Netlister: "
+      ++ show netlistErr
    show (ConverterError_NotImplemented (PosnWrapper pos info)) =
       "Not implemented: "
       ++ info

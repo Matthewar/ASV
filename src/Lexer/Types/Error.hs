@@ -85,6 +85,17 @@ data ParserError
    | ParseErr_ExpectedSemicolonInPackage Token
    -- |Expected semicolon or identifier at the end of a package declaration
    | ParseErr_ExpectedPackageEndOfDec Token
+   -- |Expected type name (identifier) in type declaration
+   | ParseErr_ExpectedTypeName Token
+   -- |Expected semicolon to mark end of type definition
+   | ParseErr_ExpectedSemicolonInTypeDef Token
+   -- |Expected token to mark start of type definition (certain keywords)
+   | ParseErr_ExpectedTypeDefinition Token
+   -- |Expected enumeration literal (identifier or character literal)
+   | ParseErr_ExpectedEnumLiteral Token
+   -- |Expected enumeration continuation (comma to continue, right parenthesis to end)
+   | ParseErr_ExpectedEnumCont Token
+   | ParseErr_
    deriving (Eq)
 
 instance (Show ParserError) where

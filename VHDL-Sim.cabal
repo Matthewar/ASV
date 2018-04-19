@@ -33,6 +33,7 @@ library
                      , Parser.Functions.Parse.Context
                      , Parser.Functions.Parse.Library
                      , Parser.Functions.Parse.Package
+                     , Parser.Functions.Parse.Type
                      , Parser.Functions.Convert.Scope
                      , Parser.Netlist.Types.Representation
                      , Parser.Netlist.Types.Stores
@@ -40,21 +41,18 @@ library
                      , Parser.Netlist.Types.Objects
                      , Parser.Netlist.Types.Operators
                      , Parser.Netlist.Types.Monad
+                     , Parser.Netlist.Types.Error
                      , Parser.Netlist.Functions.Stores
                      , Parser.Netlist.Builtin.Netlist
                      , Parser.Netlist.Builtin.Standard
                      --, Parser.Happy.Types
                      --, Parser.Happy.Functions
                      --, Parser.Happy.ParseFunctions
-                     --, Netlister.Types.Top
                      , Manager.NewDesignUnit
                      , Manager.Args
                      , Manager.Filing
                      , Manager.Types.Error
                      --, Netlister.ParseTree
-                     --, Netlister.Parse.Library
-                     --, Netlister.Parse.Package
-                     --, Netlister.Parse.Type
                      --, Netlister.Parse.Objects
   build-depends:       base >= 4.7 && < 5
                      , array

@@ -9,6 +9,7 @@ import Control.Monad.Trans.State
          ( StateT
          , execStateT
          , gets
+         , modify
          )
 import Control.Monad.Except
          ( ExceptT
@@ -50,11 +51,12 @@ import Parser.Functions.IdentifyToken
          , isKeywordType
          , isKeywordUse
          )
+import Parser.Functions.Parse.Type (parseType)
 import Parser.Netlist.Types.Stores
          ( ScopeStore
          , NetlistStore(packages)
          , UnitStore
-         , Package
+         , Package(..)
          , NetlistName(..)
          )
 import Parser.Netlist.Functions.Stores
@@ -96,10 +98,10 @@ parsePackageDeclares' :: WrappedToken -> ScopeStore -> UnitStore -> PackageBuild
 parsePackageDeclares' token scopeStore unitStore
    | isKeywordProcedure token = throwError $ ConverterError_NotImplemented $ passPosition "Procedure declaration" token
    | isKeywordFunction token = throwError $ ConverterError_NotImplemented $ passPosition "Function declaration" token
-   | isKeywordType token = throwError $ ConverterError_NotImplemented $ passPosition "Type declaration" token
-         --(typeName,newType) <- lift $ convertType scopeStore unitStore $ PosnWrapper declarePos typeDeclare
-         --let insertPackageType package = package { packageTypes = MapS.insert typeName newType $ packageTypes package }
-         --modify insertPackageType
+   | isKeywordType token = do
+         (typeName,newType) <- lift $ parseType scopeStore unitStore
+         let insertPackageType package = package { packageTypes = MapS.insert typeName newType $ packageTypes package }
+         modify insertPackageType
    | isKeywordSubtype token = throwError $ ConverterError_NotImplemented $ passPosition "Subtype declaration" token
    | isKeywordConstant token = throwError $ ConverterError_NotImplemented $ passPosition "Constant declaration" token
          --constStore <- lift $ convertConstant scopeStore unitStore $ PosnWrapper declarePos constDeclare

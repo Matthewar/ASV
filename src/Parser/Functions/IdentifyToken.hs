@@ -448,3 +448,9 @@ isStr _ = False
 isChar :: Tokens.WrappedToken -> Bool
 isChar (PosnWrapper _ (Tokens.Literal (Tokens.Character _))) = True
 isChar _ = False
+
+matchChar :: Tokens.WrappedToken -> Maybe (PosnWrapper Char)
+matchChar token =
+   case unPos token of
+      Tokens.Literal (Tokens.Character chr) -> Just $ PosnWrapper (getPos token) chr
+      _ -> Nothing
