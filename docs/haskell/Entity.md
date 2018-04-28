@@ -3,6 +3,9 @@ Becomes a module in `build/<LIBRARY>/ENTITY'<ENTITY>.hs`
 - `<LIBRARY>`: Library name (upper case)
 - `<ENTITY>`: Entity name (upper case)
 
+## Imports
+- Default (`STD.STANDARD`)
+
 ## Entity Header
 Creates the input/output function associated with the entity
 
@@ -30,21 +33,35 @@ If default expression included, this is dealt with on calling the function (stat
 ### Ports
 Only _interface signal declarations_ are permitted.
 
-Defines a record type in Haskell:
+Defines two record types in Haskell:
 ```haskell
-data <ENTITY>'PORTS =
-   <ENTITY>'PORTS
-      { <entity>'ports'<PORT_NAME> :: <PORT_TYPE>
+data <ENTITY>'PORTS'IN =
+   <ENTITY>'PORTS'IN
+      { <entity>'ports'in'<PORT_NAME> :: <PORT_TYPE>
+      , <entity>'ports'in'<PORT_NAME>'update :: Bool
+      ...
+      }
+data <ENTITY>'PORTS'OUT =
+   <ENTITY>'PORTS'OUT
+      { <entity>'ports'out'<PORT_NAME> :: <PORT_TYPE>
+      , <entity>'ports'out'<PORT_NAME>'update'time :: Maybe <PORT_TYPE>
+      , <entity>'ports'out'<PORT_NAME>'update'delta :: Maybe <PORT_TYPE>
       ...
       }
 ```
-- Name is `<ENTITY>'PORTS`
-- For each generic:
-   - Entry name is `<entity>'ports'<PORT_NAME>`
+- Name is `<ENTITY>'PORTS'(IN|OUT)`
+   - `IN`: For input ports
+   - `OUT`: For output ports
+   - NOTE: Likely that ports of mode `inout` will appear in both types
+- For each port:
+   - Entry name is `<entity>'ports'(in|out)'<PORT_NAME>`
       - `<PORT_NAME>`: Port name (upper case)
       - `<entity>`: Entity name (lower case)
    - Entry type is `<PORT_TYPE>`
       - `<PORT_TYPE>`: Port type (upper case)
+- For each output port:
+   - A second entry `<entity>'ports'out'<PORT_NAME>'changed` exists
+   - This marks whether this port has changed
 
 If default expression included, this is dealt with on calling the function (static expression calculated in the parser).
 - Only can have disconnected inputs (_open_) if default expression included
