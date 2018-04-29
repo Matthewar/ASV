@@ -12,7 +12,7 @@ import Parser.Netlist.Types.Representation
          , FloatRange(..)
          , Enumerate(..)
          , RangeDirection(..)
-         , Subtype(..)
+         , SubtypeIndication(..)
          , ArrayBounds(..)
          , Constraint(..)
          , Function(..)
@@ -20,7 +20,6 @@ import Parser.Netlist.Types.Representation
          )
 import Parser.Netlist.Types.Stores
          ( TypeStore
-         , SubtypeStore
          , FunctionStore
          , Package(..)
          , emptyPackage
@@ -47,8 +46,40 @@ types =
          ]
       )
    ,  ( "CHARACTER"
-      , EnumerationType -- ?? Missing valid characters
-         [ Enum_Char ' '
+      , EnumerationType
+         [ Enum_Identifier "NUL"
+         , Enum_Identifier "SOH"
+         , Enum_Identifier "STX"
+         , Enum_Identifier "ETX"
+         , Enum_Identifier "EOT"
+         , Enum_Identifier "ENQ"
+         , Enum_Identifier "ACK"
+         , Enum_Identifier "BEL"
+         , Enum_Identifier "BS"
+         , Enum_Identifier "HT"
+         , Enum_Identifier "LF"
+         , Enum_Identifier "VT"
+         , Enum_Identifier "FF"
+         , Enum_Identifier "CR"
+         , Enum_Identifier "SO"
+         , Enum_Identifier "SI"
+         , Enum_Identifier "DLE"
+         , Enum_Identifier "DC1"
+         , Enum_Identifier "DC2"
+         , Enum_Identifier "DC3"
+         , Enum_Identifier "DC4"
+         , Enum_Identifier "NAK"
+         , Enum_Identifier "SYN"
+         , Enum_Identifier "ETB"
+         , Enum_Identifier "CAN"
+         , Enum_Identifier "EM"
+         , Enum_Identifier "SUB"
+         , Enum_Identifier "ESC"
+         , Enum_Identifier "FSP"
+         , Enum_Identifier "GSP"
+         , Enum_Identifier "RSP"
+         , Enum_Identifier "USP"
+         , Enum_Char ' '
          , Enum_Char '!'
          , Enum_Char '"'
          , Enum_Char '#'
@@ -142,6 +173,7 @@ types =
          , Enum_Char '|'
          , Enum_Char '}'
          , Enum_Char '~'
+         , Enum_Identifier "DEL"
          ]
       )
    ,  ( "SEVERITY_LEVEL"
@@ -186,36 +218,8 @@ types =
             & MapS.fromList
          )
       )
-   ,  ( "STRING"
-      , ArrayType
-         ( Unconstrained
-            [ types MapS.! "POSITIVE" ]
-         )
-         ( Subtype
-            Nothing
-            (types MapS.! "CHARACTER")
-            Nothing
-         )
-      )
-   ,  ( "BIT_VECTOR"
-      , ArrayType
-         ( Unconstrained
-            [ types MapS.! "NATURAL" ]
-         )
-         ( Subtype
-            Nothing
-            (types MapS.! "BIT")
-            Nothing
-         )
-      )
-   ]
-   & MapS.fromList
-   where floatBound = getFloatBound (0.0 :: Double)
-
-subtypes :: SubtypeStore
-subtypes =
-   [  ( "NATURAL"
-      , Subtype
+   ,  ( "NATURAL"
+      , Subtype $ SubtypeIndication
          Nothing
          (types MapS.! "INTEGER")
          ( Just $
@@ -227,7 +231,7 @@ subtypes =
          )
       )
    ,  ( "POSITIVE"
-      , Subtype
+      , Subtype $ SubtypeIndication
          Nothing
          (types MapS.! "INTEGER")
          ( Just $
@@ -238,8 +242,31 @@ subtypes =
                   To
          )
       )
+   ,  ( "STRING"
+      , ArrayType
+         ( Unconstrained
+            [ types MapS.! "POSITIVE" ]
+         )
+         ( SubtypeIndication
+            Nothing
+            (types MapS.! "CHARACTER")
+            Nothing
+         )
+      )
+   ,  ( "BIT_VECTOR"
+      , ArrayType
+         ( Unconstrained
+            [ types MapS.! "NATURAL" ]
+         )
+         ( SubtypeIndication
+            Nothing
+            (types MapS.! "BIT")
+            Nothing
+         )
+      )
    ]
    & MapS.fromList
+   where floatBound = getFloatBound (0.0 :: Double)
 
 functions :: FunctionStore
 functions =
@@ -251,8 +278,50 @@ functions =
       ) -- ?? MUST BE DEALT WITH IN INTERMEDIARY CONVERSION
 --   ,  ( Function
 --         (Designator_Operator And)
---         [ FunctionInterface FunctionInterfaceType_Constant "L" (SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
---         , FunctionInterface FunctionInterfaceType_Constant "R" (SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
+--         [ FunctionInterface FunctionInterfaceType_Constant "L" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
+--         , FunctionInterface FunctionInterfaceType_Constant "R" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
+--         ]
+--         (types MapS.! "BOOLEAN")
+--      ,
+--      FunctionBody
+--         [ Statement_Return $ Calculation_Index (Calculation_Const "TABLE") [(Calculation_Const "L"),(Calculation_Const "R")]
+--         ]
+--      )
+--   ,  ( Function
+--         (Designator_Operator Or)
+--         [ FunctionInterface FunctionInterfaceType_Constant "L" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
+--         , FunctionInterface FunctionInterfaceType_Constant "R" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
+--         ]
+--         (types MapS.! "BOOLEAN")
+--      ,
+--      )
+--   ,  ( Function
+--         (Designator_Operator Xor)
+--         [ FunctionInterface FunctionInterfaceType_Constant "L" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
+--         , FunctionInterface FunctionInterfaceType_Constant "R" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
+--         ]
+--         (types MapS.! "BOOLEAN")
+--      ,
+--      )
+--   ,  ( Function
+--         (Designator_Operator Nand)
+--         [ FunctionInterface FunctionInterfaceType_Constant "L" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
+--         , FunctionInterface FunctionInterfaceType_Constant "R" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
+--         ]
+--         (types MapS.! "BOOLEAN")
+--      ,
+--      )
+--   ,  ( Function
+--         (Designator_Operator Nor)
+--         [ FunctionInterface FunctionInterfaceType_Constant "L" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
+--         , FunctionInterface FunctionInterfaceType_Constant "R" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
+--         ]
+--         (types MapS.! "BOOLEAN")
+--      ,
+--      )
+--   ,  ( Function
+--         (Designator_Operator Not)
+--         [ FunctionInterface FunctionInterfaceType_Constant "R" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
 --         ]
 --         (types MapS.! "BOOLEAN")
 --      ,
@@ -265,5 +334,4 @@ standardPackage =
    emptyPackage
       { packageFunctions = functions
       , packageTypes = types
-      , packageSubtypes = subtypes
       }

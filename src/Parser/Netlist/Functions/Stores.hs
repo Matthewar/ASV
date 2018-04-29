@@ -19,32 +19,43 @@ import Parser.Netlist.Types.Representation
          , Designator(..)
          , Type(..)
          , Enumerate(..)
+         , Constant
+         , Signal(..)
          )
 import Parser.Netlist.Types.Stores
          ( Package(..)
          , ScopeStore(..)
          , UnitStore(..)
          , TypeStore
-         , SubtypeStore
          , FunctionStore
          , ConstantStore
          , SignalStore
+         , NetlistName
          )
 
 -- |New package with scope
 newPackage :: ScopeStore -> Package
-newPackage scope = Package scope MapS.empty MapS.empty MapS.empty MapS.empty MapS.empty
+newPackage scope = Package scope MapS.empty MapS.empty MapS.empty MapS.empty
 
 -- |Convert package to generalised store for use in low level conversions
 convertPackageToGenericUnit :: Package -> (ScopeStore,UnitStore)
-convertPackageToGenericUnit (Package scope funcs types subtypes consts signals) =
-   let unit = UnitStore funcs types subtypes consts signals
+convertPackageToGenericUnit (Package scope funcs types consts signals) =
+   let unit = UnitStore funcs types consts signals
    in (scope,unit)
 
 -- |Convert package to scope object
-convertPackageToScope :: Package -> ScopeStore
-convertPackageToScope (Package _ funcs types subtypes consts signals) =
-   ScopeStore funcs types subtypes consts signals
+convertPackageToScope :: Package -> NetlistName -> ScopeStore
+convertPackageToScope (Package _ funcs types consts signals) packageName =
+   ScopeStore
+      funcs
+      (newExtraScope funcs)
+      types
+      (newExtraScope types)
+      consts
+      (newExtraScope consts)
+      signals
+      (newExtraScope signals)
+   where newExtraScope = MapS.map (\_ -> packageName)
 
 -- |Check if a name exists in the unit
 isNameInUnit :: UnitStore -> String -> Bool
@@ -57,11 +68,10 @@ isEnumNameInUnit = isNameDeclaredInUnit False
 
 -- |Check if an identifier has already been defined in the current unit
 isNameDeclaredInUnit :: Bool -> UnitStore -> String -> Bool
-isNameDeclaredInUnit includeEnums (UnitStore funcs types subtypes consts signals) name =
+isNameDeclaredInUnit includeEnums (UnitStore funcs types consts signals) name =
    let allNames =
          getFunctionNames funcs
          ++ (getSomeTypeNames includeEnums types)
-         ++ getSubtypeNames subtypes
          ++ getConstantNames consts
          ++ getSignalNames signals
    in elem name allNames
@@ -97,10 +107,6 @@ getSomeTypeNames includeEnums = concat . (map convertTypes) . MapS.toList
          extractEnumNames (Enum_Identifier str) = Just str
          extractEnumNames _ = Nothing
 
--- |Get names of subtypes
-getSubtypeNames :: SubtypeStore -> [String]
-getSubtypeNames = MapS.keys
-
 -- |Get names of constants
 getConstantNames :: ConstantStore -> [String]
 getConstantNames = MapS.keys
@@ -108,3 +114,65 @@ getConstantNames = MapS.keys
 -- |Get names of signals
 getSignalNames :: SignalStore -> [String]
 getSignalNames = MapS.keys
+
+matchTypeNameInScope :: ScopeStore -> UnitStore -> String -> Maybe Type
+matchTypeNameInScope scope unit name =
+   case MapS.lookup name $ unitTypes unit of
+      Just typ -> Just typ
+      Nothing ->
+         case MapS.lookup name $ scopeTypes scope of
+            Just typ -> Just typ
+            Nothing -> Nothing
+--
+--matchSubtypeNameInScope :: ScopeStore -> UnitStore -> String -> Maybe Subtype
+--matchSubtypeNameInScope scope unit name =
+--   case MapS.lookup name $ unitTypes unit of
+--      Just typ -> Just typ
+--      Nothing ->
+--         case MapS.lookup name $ scopeTypes scope of
+--            Just typ -> Just typ
+--            Nothing -> Nothing
+
+matchFunctionNameInScope :: ScopeStore -> UnitStore -> String -> Maybe FunctionStore
+matchFunctionNameInScope scope unit name =
+   let filterFunction (Function (Designator_Identifier str) _ _) _ = name == str
+       filterFunction _ _ = False
+       runFilter = MapS.filterWithKey filterFunction
+       validUnitFuncs = runFilter $ unitFunctions unit
+       validScopeFuncs = runFilter $ scopeFunctions scope
+   in case MapS.union validUnitFuncs validScopeFuncs of
+         emptyMap | MapS.null emptyMap -> Nothing
+         nonEmpty -> Just nonEmpty
+
+matchEnumNameInScope :: ScopeStore -> UnitStore -> String -> Maybe TypeStore
+matchEnumNameInScope scope unit name =
+   let enumName = Enum_Identifier name
+       isEnumNameInType (EnumerationType enums) = elem enumName enums
+       isEnumNameInType _ = False
+       runFilter = MapS.filter isEnumNameInType
+       validUnitEnums = runFilter $ unitTypes unit
+       validScopeEnums = runFilter $ scopeTypes scope
+   in case MapS.union validUnitEnums validScopeEnums of
+         emptyMap | MapS.null emptyMap -> Nothing
+         nonEmpty -> Just nonEmpty
+
+matchConstantNameInScope :: ScopeStore -> UnitStore -> String -> Maybe Constant
+matchConstantNameInScope scope unit name =
+   case MapS.lookup name $ unitConstants unit of
+      Just const -> Just const
+      Nothing ->
+         case MapS.lookup name $ scopeConstants scope of
+            Just const -> Just const
+            Nothing -> Nothing
+
+matchSignalNameInScope :: ScopeStore -> UnitStore -> String -> Maybe Type
+matchSignalNameInScope scope unit name =
+   let extractType (Signal typ _) = typ
+   in case MapS.lookup name $ unitSignals unit of
+         Just sig -> Just $ extractType sig
+         Nothing ->
+            case MapS.lookup name $ scopeSignals scope of
+               Just sig -> Just $ extractType sig
+               Nothing -> Nothing
+
+--matchVariableNameInScope :: ScopeStore -> UnitStore -> String -> Maybe (Type,VariableValue)

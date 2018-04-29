@@ -10,7 +10,7 @@ module Parser.Netlist.Types.Representation
    , IntegerRange(..)
    , FloatRange(..)
    , RangeDirection(..)
-   , Subtype(..)
+   , SubtypeIndication(..)
    , ArrayBounds(..)
    , FunctionBody(..)
    , Constraint(..)
@@ -19,6 +19,8 @@ module Parser.Netlist.Types.Representation
    , Function(..)
    , Designator(..)
    , Calculation(..)
+   , Signal(..)
+   , Constant(..)
    ) where
 
 import Data.Int (Int64)
@@ -59,7 +61,8 @@ data Type =
    -- |Array type
    -- Array of another type
    -- ?? Does this need entire subtype indication, not sure if need function and/or constraint
-   | ArrayType ArrayBounds Subtype--Indication
+   | ArrayType ArrayBounds SubtypeIndication
+   | Subtype SubtypeIndication
    deriving (Eq,Ord)
 
 -- |Enumerate
@@ -99,13 +102,13 @@ data RangeDirection =
    | Downto
    deriving (Eq,Ord)
 
--- |Subtype
+-- |Subtype indication
 -- Type built on another type
 -- Essentially a type link
 -- Includes resolution function, type, constraint
 -- ?? Link to Function name or function body
-data Subtype = Subtype (Maybe FunctionBody) Type (Maybe Constraint)
-               deriving (Eq,Ord)
+data SubtypeIndication = SubtypeIndication (Maybe FunctionBody) Type (Maybe Constraint)
+                       deriving (Eq,Ord)
 
 -- |Array bounds
 -- Range/dimensions of the array type specified
@@ -119,7 +122,8 @@ data ArrayBounds =
    deriving (Eq,Ord)
 
 -- |Function body
-data FunctionBody = FunctionBody -- ?? [FunctionDeclarative] [FunctionStatement]
+-- ?? [FunctionDeclarative]
+data FunctionBody = FunctionBody [Statement]
                   deriving (Eq,Ord)
 
 -- |Constraint of subtype
@@ -138,7 +142,7 @@ type IndexConstraint = [DiscreteRange]
 
 -- |Discrete range
 -- ?? Can floating point be discrete, should make custom subtype indication for discrete
-data DiscreteRange = Discrete_SubtypeIndication Subtype--Indication
+data DiscreteRange = Discrete_SubtypeIndication SubtypeIndication
                    | Discrete_IntegerRange IntegerRange
                    | Discrete_FloatingRange FloatRange
                    deriving (Eq,Ord)
@@ -157,7 +161,7 @@ data Designator =
 
 -- |Interface to function
 -- ?? Need to define
-data FunctionInterface = FunctionInterface FunctionInterfaceType String Subtype--Indication
+data FunctionInterface = FunctionInterface FunctionInterfaceType String SubtypeIndication
                deriving (Eq,Ord)
 
 data FunctionInterfaceType =
@@ -165,4 +169,82 @@ data FunctionInterfaceType =
    | FunctionInterfaceType_Signal --SignalBus
    deriving (Eq,Ord)
 
-data Calculation = Calculation
+data Statement = Statement
+   deriving (Eq,Ord)
+
+data Calculation =
+   Calc_SignalDelayed (String,Signal) Int64 -- save and carry out after time
+   | Calc_SignalStable (String,Signal) Int64 -- check changes over timeframe (need to record last time changed)
+   | Calc_SignalQuiet (String,Signal) Int64
+   -- ?? Signal transaction
+   | Calc_SignalEvent (String,Signal)
+   | Calc_SignalActive (String,Signal)
+   | Calc_SignalLastEvent (String,Signal)
+   | Calc_SignalLastActive (String,Signal)
+   | Calc_SignalLastValue (String,Signal) 
+   | Calc_Value Type Value
+
+data Value =
+   Value_Enum Enumerate
+   | Value_Int Int64
+   | Value_Float Float
+   | Value_Physical Int64
+   | Value_Array [Value]
+   deriving (Eq,Ord)
+
+data ScalarAttributes =
+   ScalarAttributes
+      { scalarAttr_Left :: Value
+      , scalarAttr_Right :: Value
+      , scalarAttr_High :: Value
+      , scalarAttr_Low :: Value
+      }
+   deriving (Eq,Ord)
+
+data DiscreteAttributes =
+   DiscreteAttributes
+      { discAttr_Pos :: (Function,FunctionBody)
+      , discAttr_Val :: (Function,FunctionBody)
+      , discAttr_Succ :: (Function,FunctionBody)
+      , discAttr_Pred :: (Function,FunctionBody)
+      , discAttr_Leftof :: (Function,FunctionBody)
+      , discAttr_Rightof :: (Function,FunctionBody)
+      }
+
+data ArrayAttributes =
+   ArrayAttributes
+      { arrayAttr_Left :: (Function,FunctionBody)
+      , arrayAttr_Right :: (Function,FunctionBody)
+      , arrayAttr_High :: (Function,FunctionBody)
+      , arrayAttr_Low :: (Function,FunctionBody)
+      , arrayAttr_Range :: IntegerRange
+      , arrayAttr_ReverseRange :: IntegerRange
+      , arrayAttr_Length :: Value
+      }
+
+--type BlockAttributeStore = MapS.Map BlockAttributes Calculation
+--
+--data BlockAttributes =
+--   BlkAttr_Behaviour
+--   | BlkAttr_Structure
+
+-- |Constant representation
+-- Type of constant, constant value
+-- ?? Only can have not calculation ("deferred constant") in package (header) declaration, make separate type
+data Constant = Constant Type (Maybe Calculation)
+
+-- |Signal representation
+-- Resolution function body, type of signal
+-- ?? Need signal kind - signal guard only acceptable if resolved signal
+-- Default value if calculation is not included is Type'left
+-- Type cannot be file or access
+data Signal =
+   Signal
+      { signalType :: Type
+      , signalDefault :: Calculation
+      }
+
+-- |Variable representation
+-- Type of variable, default value (Type'left is not included)
+-- Type cannot be file
+data Variable = Variable Type Calculation

@@ -90,6 +90,23 @@ parseTypeDefinition' scope unit typeName token
    | isKeywordFile token = throwError $ ConverterError_NotImplemented $ passPosition "File type" token
    | otherwise = throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedTypeDefinition token
 
+--parseRange :: ScopeStore -> UnitStore -> ParserStack Range
+--parseRange scope unit = do
+--   expression1 <- parseSimpleExpression scope unit
+--
+--parseSimpleExpression :: ScopeStore -> UnitStore -> ParserStack Calculation
+--parseSimpleExpression scope unit = do
+--   signOrTermTok <- getToken
+--   let checkSign :: WrappedToken -> ParserStack Sign
+--       checkSign token
+--         | isPlus token = return Plus
+--         | isHyphen token = return Minus
+--         | otherwise = do
+--            saveToken token
+--            return Plus
+--   sign <- checkSign signOrTermTok
+--   term <- parseTerm scope unit
+
 parseEnumerationLiterals :: UnitStore -> String -> ParserStack [Enumerate]
 parseEnumerationLiterals unit typeName =
    let parseEnumerationLiterals' :: [Enumerate] -> ParserStack [Enumerate]

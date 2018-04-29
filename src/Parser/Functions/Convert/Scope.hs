@@ -81,7 +81,7 @@ evalScopeList create dependencies ((NetlistName libName unitName,scopeItem):othe
    unless inScope $ lift $ create libName unitName
    newWrappedScopeDeclare <- lift $ gets $ getPackageParts netlistName scopeItem
    newScopeDeclare <- lift $ lift $ withExceptT (ConverterError_Scope) $ liftEither newWrappedScopeDeclare
-   mergeScope newScopeDeclare
+   mergeScope newScopeDeclare netlistName
    evalScopeList create dependencies otherUnits
 evalScopeList _ _ [] = return ()
 
@@ -92,7 +92,7 @@ getPackageParts packageName scopeItem netlistStore =
    let package = (packages netlistStore) MapS.! packageName
    in case scopeItem of
          PosnWrapper pos Declare_All ->
-            return $ PosnWrapper pos $ NewScopeDeclare_Package $ convertPackageToScope package
+            return $ PosnWrapper pos $ NewScopeDeclare_Package $ convertPackageToScope package packageName
          PosnWrapper pos (Declare_Operator op) ->
             let newFunctions = findPackageFunctionsByOperator op $ packageFunctions package
             in if MapS.null newFunctions
@@ -137,32 +137,44 @@ findPackageFunctionsByIdentifier expectedName =
    in MapS.filterWithKey functionFind
 
 -- | Merge scope from current unit with total scope
-mergeScope :: WrappedNewScopeDeclares -> BuildScopeStack
-mergeScope (PosnWrapper pos (NewScopeDeclare_Package newScope)) =
+mergeScope :: WrappedNewScopeDeclares -> NetlistName -> BuildScopeStack
+mergeScope (PosnWrapper pos (NewScopeDeclare_Package newScope)) _ =
    -- ?? Should be checking for overlaps and warning
    let modifyScope oldScope =
-         ScopeStore
-            (MapS.union (scopeFunctions newScope) (scopeFunctions oldScope))
-            (MapS.union (scopeTypes newScope) (scopeTypes oldScope))
-            (MapS.union (scopeSubtypes newScope) (scopeSubtypes oldScope))
-            (MapS.union (scopeConstants newScope) (scopeConstants oldScope))
-            (MapS.union (scopeSignals newScope) (scopeSignals oldScope))
+         let unionStore unionFunc = MapS.union (unionFunc newScope) (unionFunc oldScope)
+         in ScopeStore
+               (unionStore scopeFunctions)
+               (unionStore scopeFunctionPackage)
+               (unionStore scopeTypes)
+               (unionStore scopeTypePackage)
+               (unionStore scopeConstants)
+               (unionStore scopeConstantPackage)
+               (unionStore scopeSignals)
+               (unionStore scopeSignalPackage)
    in modify modifyScope
-mergeScope (PosnWrapper pos (NewScopeDeclare_Functions newFuncs)) = mergeScopeFuncs $ PosnWrapper pos newFuncs
-mergeScope (PosnWrapper pos (NewScopeDeclare_Type typeName typeDeclare)) = mergeScopeType $ PosnWrapper pos (typeName,typeDeclare)
+mergeScope (PosnWrapper pos (NewScopeDeclare_Functions newFuncs)) netlistName = mergeScopeFuncs netlistName $ PosnWrapper pos newFuncs
+mergeScope (PosnWrapper pos (NewScopeDeclare_Type typeName typeDeclare)) netlistName = mergeScopeType netlistName $ PosnWrapper pos (typeName,typeDeclare)
 
 -- |Merge a single type into the scope
-mergeScopeFuncs :: PosnWrapper FunctionStore -> BuildScopeStack
-mergeScopeFuncs (PosnWrapper pos newFuncs) =
+mergeScopeFuncs :: NetlistName -> PosnWrapper FunctionStore -> BuildScopeStack
+mergeScopeFuncs netlistName (PosnWrapper pos newFuncs) =
    -- ?? Should be checking for overlaps and warning
-   let modifyScope oldScope = oldScope { scopeFunctions = MapS.union newFuncs $ scopeFunctions oldScope }
+   let modifyScope oldScope =
+         oldScope
+            { scopeFunctions = MapS.union newFuncs $ scopeFunctions oldScope
+            , scopeFunctionPackage = MapS.union (MapS.map (\_ -> netlistName) newFuncs) $ scopeFunctionPackage oldScope
+            }
    in modify modifyScope
 
 -- |Merge a single type into the scope
-mergeScopeType :: PosnWrapper (String,Type) -> BuildScopeStack
-mergeScopeType (PosnWrapper pos (name,declare)) = do
+mergeScopeType :: NetlistName -> PosnWrapper (String,Type) -> BuildScopeStack
+mergeScopeType netlistName (PosnWrapper pos (name,declare)) = do
    let readScopeTypes = scopeTypes
    isInScope <- gets ((MapS.member name) . readScopeTypes)
    -- ?? when isInScope $ ?? Warning?
-   let modifyScope oldScope = oldScope { scopeTypes = MapS.insert name declare $ scopeTypes oldScope }
+   let modifyScope oldScope =
+         oldScope
+            { scopeTypes = MapS.insert name declare $ scopeTypes oldScope
+            , scopeTypePackage = MapS.insert name netlistName $ scopeTypePackage oldScope
+            }
    modify modifyScope
