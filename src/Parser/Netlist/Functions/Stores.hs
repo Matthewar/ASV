@@ -12,10 +12,14 @@ module Parser.Netlist.Functions.Stores
 
 import qualified Data.Map.Strict as MapS
 import Data.List (nub)
-import Data.Maybe (isJust)
+import Data.Maybe
+         ( isJust
+         , fromJust
+         )
 
 import Parser.Netlist.Types.Representation
          ( Function(..)
+         , FunctionBody
          , Designator(..)
          , Type(..)
          , Enumerate(..)
@@ -115,47 +119,80 @@ getConstantNames = MapS.keys
 getSignalNames :: SignalStore -> [String]
 getSignalNames = MapS.keys
 
-matchTypeNameInScope :: ScopeStore -> UnitStore -> String -> Maybe Type
+-- |Check if type name is within scope
+-- If not, returns Nothing
+-- If it is, returns tuple of:
+-- - Type data
+-- - Package that the type exists in
+--    - Nothing if directly visible
+--    - package name/library if visible by selection
+matchTypeNameInScope :: ScopeStore -> UnitStore -> String -> Maybe (Type,Maybe NetlistName)
 matchTypeNameInScope scope unit name =
    case MapS.lookup name $ unitTypes unit of
-      Just typ -> Just typ
+      Just typ -> Just (typ,Nothing)
       Nothing ->
          case MapS.lookup name $ scopeTypes scope of
-            Just typ -> Just typ
+            Just typ -> Just (typ,Just $ (scopeTypePackage scope) MapS.! name)
             Nothing -> Nothing
---
---matchSubtypeNameInScope :: ScopeStore -> UnitStore -> String -> Maybe Subtype
---matchSubtypeNameInScope scope unit name =
---   case MapS.lookup name $ unitTypes unit of
---      Just typ -> Just typ
---      Nothing ->
---         case MapS.lookup name $ scopeTypes scope of
---            Just typ -> Just typ
---            Nothing -> Nothing
 
-matchFunctionNameInScope :: ScopeStore -> UnitStore -> String -> Maybe FunctionStore
+-- |Check if function name is within scope (ignoring types/arguments)
+-- If not, returns Nothing
+-- If it is, returns customised function map:
+-- - Function keys (as normal)
+-- - Value is tuple of
+--    - Function body (normal function store value)
+--    - Package that the function exists in
+--       - Nothing if directly visible
+--       - package name/library if visible by selection
+matchFunctionNameInScope :: ScopeStore -> UnitStore -> String -> Maybe (MapS.Map Function (Maybe FunctionBody,Maybe NetlistName))
 matchFunctionNameInScope scope unit name =
-   let filterFunction (Function (Designator_Identifier str) _ _) _ = name == str
-       filterFunction _ _ = False
-       runFilter = MapS.filterWithKey filterFunction
-       validUnitFuncs = runFilter $ unitFunctions unit
-       validScopeFuncs = runFilter $ scopeFunctions scope
+   let validUnitFuncs =
+         let filterFunction (Function (Designator_Identifier str) _ _) _ = name == str
+             filterFunction _ _ = False
+         in MapS.map (\body -> (body,Nothing)) $ MapS.filterWithKey filterFunction $ unitFunctions unit
+       validScopeFuncs =
+         let zipFunction (function,body) packageName =
+               case function of
+                  Function (Designator_Identifier str) _ _ | name == str ->
+                     Just (function,(body,Just packageName))
+                  _ -> Nothing
+             scopeDataList = MapS.toList $ scopeFunctions scope
+             scopePackageList = MapS.elems $ scopeFunctionPackage scope
+             filterFunction Nothing = False
+             filterFunction (Just _) = True
+         in MapS.fromList $ map fromJust $ filter filterFunction $ zipWith zipFunction scopeDataList scopePackageList
    in case MapS.union validUnitFuncs validScopeFuncs of
          emptyMap | MapS.null emptyMap -> Nothing
          nonEmpty -> Just nonEmpty
 
-matchEnumNameInScope :: ScopeStore -> UnitStore -> String -> Maybe TypeStore
+-- |Check if enumerate name is within scope
+-- If not, returns Nothing
+-- If it is, returns customised type store:
+-- - Type name keys (as normal)
+-- - Value is tuple of
+--    - Type data (normal type store value)
+--    - Package that the enum type exists in
+--       - Nothing if directly visible
+--       - package name/library if visible by selection
+matchEnumNameInScope :: ScopeStore -> UnitStore -> String -> Maybe (MapS.Map String (Type,Maybe NetlistName))
 matchEnumNameInScope scope unit name =
    let enumName = Enum_Identifier name
        isEnumNameInType (EnumerationType enums) = elem enumName enums
        isEnumNameInType _ = False
        runFilter = MapS.filter isEnumNameInType
-       validUnitEnums = runFilter $ unitTypes unit
-       validScopeEnums = runFilter $ scopeTypes scope
+       validUnitEnums = MapS.map (\typ -> (typ,Nothing)) $ runFilter $ unitTypes unit
+       validScopeEnums =
+         let mapFunction typeName typ = (typ,Just $ (scopeTypePackage scope) MapS.! typeName)
+         in MapS.mapWithKey mapFunction $ runFilter $ scopeTypes scope
    in case MapS.union validUnitEnums validScopeEnums of
          emptyMap | MapS.null emptyMap -> Nothing
          nonEmpty -> Just nonEmpty
 
+-- |Check if constant name is within scope
+-- If not, returns Nothing
+-- If it is, returns constant data
+-- 
+-- Constants are static ?? so don't need package name
 matchConstantNameInScope :: ScopeStore -> UnitStore -> String -> Maybe Constant
 matchConstantNameInScope scope unit name =
    case MapS.lookup name $ unitConstants unit of
@@ -165,14 +202,20 @@ matchConstantNameInScope scope unit name =
             Just const -> Just const
             Nothing -> Nothing
 
-matchSignalNameInScope :: ScopeStore -> UnitStore -> String -> Maybe Type
+-- |Check if signal name is within scope
+-- If not, returns Nothing
+-- If it is, returns tuple of:
+-- - Signal data
+-- - Package that the type exists in
+--    - Nothing if directly visible
+--    - package name/library if visible by selection
+matchSignalNameInScope :: ScopeStore -> UnitStore -> String -> Maybe (Signal,Maybe NetlistName)
 matchSignalNameInScope scope unit name =
-   let extractType (Signal typ _) = typ
-   in case MapS.lookup name $ unitSignals unit of
-         Just sig -> Just $ extractType sig
-         Nothing ->
-            case MapS.lookup name $ scopeSignals scope of
-               Just sig -> Just $ extractType sig
-               Nothing -> Nothing
+   case MapS.lookup name $ unitSignals unit of
+      Just sig -> Just (sig,Nothing)
+      Nothing ->
+         case MapS.lookup name $ scopeSignals scope of
+            Just sig -> Just (sig,Just $ (scopeSignalPackage scope) MapS.! name)
+            Nothing -> Nothing
 
 --matchVariableNameInScope :: ScopeStore -> UnitStore -> String -> Maybe (Type,VariableValue)

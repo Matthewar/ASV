@@ -38,7 +38,6 @@ library
                      , Parser.Netlist.Types.Representation
                      , Parser.Netlist.Types.Stores
                      , Parser.Netlist.Types.Scope
-                     , Parser.Netlist.Types.Objects
                      , Parser.Netlist.Types.Operators
                      , Parser.Netlist.Types.Monad
                      , Parser.Netlist.Types.Error
