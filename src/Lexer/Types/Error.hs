@@ -79,6 +79,8 @@ data ParserError
    | ParseErr_ExpectedPackageBodyKeywordInLibraryUnit Token
    -- |Expected package declarative item marker (certain keywords) or keyword end to mark end of declarative region
    | ParseErr_ExpectedPackageDeclItemOrEnd Token
+   -- |Expected keyword is to mark start of package declarative region
+   | ParseErr_ExpectedKeywordIsInPackage Token
    -- |Package identifiers (if both provided) must match
    | ParseErr_PackageNamesNoMatch (PosnWrapper String) (PosnWrapper String)
    -- |Expected semicolon to end package
@@ -95,7 +97,6 @@ data ParserError
    | ParseErr_ExpectedEnumLiteral Token
    -- |Expected enumeration continuation (comma to continue, right parenthesis to end)
    | ParseErr_ExpectedEnumCont Token
-   | ParseErr_
    deriving (Eq)
 
 instance (Show ParserError) where
@@ -149,10 +150,71 @@ instance (Show ParserError) where
    show (LexErr_BitStrLiteral_EmptyStr str) =
       "Lexer found empty bit string "
       ++ str
-   --show (GenericParseError) =
-   --   "Some parser error occurred "
    show (GenericParseError) =
       "Some parser error occurred"
+   show (ParseErr_ExpectedLibraryName token) =
+      "Expected library name (identifier), but got "
+      ++ show token
+   show (ParseErr_ExpectedLibraryClauseContiue token) =
+      "Expected ',' or ';' to continue or end library clause, but got "
+      ++ show token
+   show (ParseErr_ExpectedLibraryNameInUseClause token) =
+      "Expected library name (identifier) in first selected name, in use clause, but got "
+      ++ show token
+   show (ParseErr_ExpectedPeriodInUseClause token) =
+      "Expected '.' to continue selected name (after library or entity name) in use clause, but got "
+      ++ show token
+   show (ParseErr_ExpectedPackageNameInUseClause token) =
+      "Expected package name (identifier) in selected name (after library name) in use clause, but got "
+      ++ show token
+   show (ParseErr_ExpectedOperatorInUseClause strLit) =
+      "Expected the string literal in selected name to name a valid operator, but got \""
+      ++ strLit
+      ++ "\""
+   show (ParseErr_ExpectedSuffixInUseClause token) =
+      "Expected a selected name suffix (identifier, string literal containing an operator, or the keyword all) in the final element of use clause, but got "
+      ++ show token
+   show (ParseErr_ExpectedFirstKeywordInLibraryUnit token) =
+      "Expected design unit declaration (entity, configuration, architecture or package), but got "
+      ++ show token
+   show (ParseErr_ExpectedPackageBodyKeywordInLibraryUnit token) =
+      "Expected either package name (identifier) or body keyword to follow package keyword, but got "
+      ++ show token
+   show (ParseErr_ExpectedPackageDeclItemOrEnd token) =
+      "Expected package declaration or end keyword to make end of declarative region, but got "
+      ++ show token
+   show (ParseErr_ExpectedKeywordIsInPackage token) =
+      "Expected keyword is, marking the start of the package declarative region, but got "
+      ++ show token
+   show (ParseErr_PackageNamesNoMatch (PosnWrapper pos1 name1) (PosnWrapper pos2 name2)) =
+      "Package names (identifiers) must match when both are provided. First identifier "
+      ++ name1
+      ++ getLineAndColErrStr pos1
+      ++ "; second identifier "
+      ++ name2
+      ++ getLineAndColErrStr pos2
+      ++ ". In package declaration"
+   show (ParseErr_ExpectedSemicolonInPackage token) =
+      "Expected semicolon to end package design entity, but got "
+      ++ show token
+   show (ParseErr_ExpectedPackageEndOfDec token) =
+      "Expected either a semicolon or the repeated package name (identifier) at the end of a package design entity, but got "
+      ++ show token
+   show (ParseErr_ExpectedTypeName token) =
+      "Expected a name (identifier) in the type declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedSemicolonInTypeDef token) =
+      "Expected semicolon at the end of the type definition, but got "
+      ++ show token
+   show (ParseErr_ExpectedTypeDefinition token) =
+      "Expected type definition token, but got "
+      ++ show token
+   show (ParseErr_ExpectedEnumLiteral token) =
+      "Expected enumeration literal (identifier, or character literal), but got "
+      ++ show token
+   show (ParseErr_ExpectedEnumCont token) =
+      "Expected ',' or ')' to continue or end enumeration literal definition, but got "
+      ++ show token
 
 -- | Find largest (and by extension smallest) possible value of double
 getFloatBound :: RealFloat a => a -> a
