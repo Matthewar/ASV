@@ -12,10 +12,10 @@ import Data.Function ((&))
 
 import Lexer.Types.PositionWrapper (PosnWrapper(..))
 import Lexer.Alex.Types (AlexPosn(..))
+import Parser.Netlist.Types.Representation (NetlistName(..))
 import Parser.Netlist.Types.Stores
          ( NetlistStore(..)
          , PackageStore(..)
-         , NetlistName(..)
          )
 import Parser.Netlist.Types.Scope
          ( Scope(..)

@@ -12,14 +12,16 @@ import Parser.Netlist.Types.Representation
          , FloatRange(..)
          , Enumerate(..)
          , RangeDirection(..)
-         , SubtypeIndication(..)
+         , Subtype(..)
          , ArrayBounds(..)
          , Constraint(..)
          , Function(..)
          , Designator(..)
+         , NetlistName(..)
          )
 import Parser.Netlist.Types.Stores
          ( TypeStore
+         , SubtypeStore
          , FunctionStore
          , Package(..)
          , emptyPackage
@@ -218,9 +220,47 @@ types =
             & MapS.fromList
          )
       )
-   ,  ( "NATURAL"
-      , Subtype $ SubtypeIndication
+   ,  ( "STRING"
+      , ArrayType
+         ( Unconstrained
+            [ subtypes MapS.! "POSITIVE" ]
+         )
+         "STRING"
+         (NetlistName "STD" "STANDARD")
+         ( Subtype
+            Nothing
+            "CHARACTER"
+            (NetlistName "STD" "STANDARD")
+            (types MapS.! "CHARACTER")
+            Nothing
+         )
+      )
+   ,  ( "BIT_VECTOR"
+      , ArrayType
+         ( Unconstrained
+            [ subtypes MapS.! "NATURAL" ]
+         )
+         "BIT"
+         (NetlistName "STD" "STANDARD")
+         ( Subtype
+            Nothing
+            "BIT"
+            (NetlistName "STD" "STANDARD")
+            (types MapS.! "BIT")
+            Nothing
+         )
+      )
+   ]
+   & MapS.fromList
+   where floatBound = getFloatBound (0.0 :: Double)
+
+subtypes :: SubtypeStore
+subtypes =
+   [  ( "NATURAL"
+      , Subtype
          Nothing
+         "INTEGER"
+         (NetlistName "STD" "STANDARD")
          (types MapS.! "INTEGER")
          ( Just $
             Constraint_IntegerRange $
@@ -231,8 +271,10 @@ types =
          )
       )
    ,  ( "POSITIVE"
-      , Subtype $ SubtypeIndication
+      , Subtype
          Nothing
+         "INTEGER"
+         (NetlistName "STD" "STANDARD")
          (types MapS.! "INTEGER")
          ( Just $
             Constraint_IntegerRange $
@@ -242,31 +284,8 @@ types =
                   To
          )
       )
-   ,  ( "STRING"
-      , ArrayType
-         ( Unconstrained
-            [ types MapS.! "POSITIVE" ]
-         )
-         ( SubtypeIndication
-            Nothing
-            (types MapS.! "CHARACTER")
-            Nothing
-         )
-      )
-   ,  ( "BIT_VECTOR"
-      , ArrayType
-         ( Unconstrained
-            [ types MapS.! "NATURAL" ]
-         )
-         ( SubtypeIndication
-            Nothing
-            (types MapS.! "BIT")
-            Nothing
-         )
-      )
    ]
    & MapS.fromList
-   where floatBound = getFloatBound (0.0 :: Double)
 
 functions :: FunctionStore
 functions =
@@ -334,4 +353,5 @@ standardPackage =
    emptyPackage
       { packageFunctions = functions
       , packageTypes = types
+      , packageSubtypes = subtypes
       }

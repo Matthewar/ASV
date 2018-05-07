@@ -16,7 +16,10 @@ import Control.Monad.Except
          , throwError
          , lift
          )
-import Control.Monad (unless)
+import Control.Monad
+         ( unless
+         , replicateM
+         )
 
 import Lexer.Types.Token (WrappedToken)
 import Lexer.Types.Error (ParserError(..))
@@ -45,6 +48,7 @@ import Parser.Functions.IdentifyToken
          , isKeywordEnd
          , isKeywordFile
          , isKeywordFunction
+         , isKeywordIs
          , isKeywordSignal
          , isKeywordSubtype
          , isKeywordProcedure
@@ -52,12 +56,12 @@ import Parser.Functions.IdentifyToken
          , isKeywordUse
          )
 import Parser.Functions.Parse.Type (parseType)
+import Parser.Netlist.Types.Representation (NetlistName(..))
 import Parser.Netlist.Types.Stores
          ( ScopeStore
          , NetlistStore(packages)
          , UnitStore
          , Package(..)
-         , NetlistName(..)
          )
 import Parser.Netlist.Functions.Stores
          ( newPackage
@@ -67,9 +71,10 @@ import Manager.Types.Error (ConverterError(..))
 
 parsePackage :: ScopeStore -> String -> ParserStack ()
 parsePackage scope libraryName = do
-   nameToken <- getToken
+   [nameToken,contToken] <- replicateM 2 getToken
    let name1Info = fromJust $ matchIdentifier nameToken
        basePackage = newPackage scope
+   unless (isKeywordIs contToken) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedKeywordIsInPackage contToken
    package <- execStateT parsePackageDeclares basePackage
    possibleNameToken <- getToken
    case matchIdentifier possibleNameToken of

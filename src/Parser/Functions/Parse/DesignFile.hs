@@ -13,7 +13,7 @@ import Parser.Functions.Monad (accessNetlist)
 import Parser.Functions.Parse.Context (parseContext)
 import Parser.Functions.Parse.Library (parseLibrary)
 import Parser.Functions.Convert.Scope (evalScope)
-import Parser.Netlist.Types.Stores (NetlistName)
+import Parser.Netlist.Types.Representation (NetlistName)
 import Parser.Netlist.Types.Monad (NetlistStack)
 import Parser.Netlist.Builtin.Netlist as InitialNetlist (scope)
 

@@ -18,7 +18,10 @@ import Lexer.Types.PositionWrapper
 import Lexer.Types.Error (ParserError(..))
 import Lexer.Functions.PositionWrapper
 import Parser.Types.Monad (ScopeStack)
-import Parser.Functions.Monad (getToken)
+import Parser.Functions.Monad
+         ( getToken
+         , saveToken
+         )
 import Parser.Functions.IdentifyToken
          ( isKeywordLibrary
          , isKeywordUse
@@ -35,7 +38,7 @@ import Parser.Netlist.Types.Scope
          , WrappedDeclarationScopeItem
          , ScopeConverterError(..)
          )
-import Parser.Netlist.Types.Stores (NetlistName(..))
+import Parser.Netlist.Types.Representation (NetlistName(..))
 import Manager.Types.Error (ConverterError(..))
 
 parseContext :: ScopeStack ()
@@ -45,7 +48,7 @@ parseContext = do
       then parseLibraryContext
       else if isKeywordUse contextToken
          then parseUseContext
-         else return ()
+         else lift $ saveToken contextToken
 
 parseLibraryContext :: ScopeStack ()
 parseLibraryContext = do

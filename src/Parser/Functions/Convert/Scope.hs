@@ -43,7 +43,6 @@ import Parser.Netlist.Types.Scope
 import Parser.Netlist.Types.Operators (Operator)
 import Parser.Netlist.Types.Stores
          ( NetlistStore(..)
-         , NetlistName(..)
          , Package(..)
          , FunctionStore
          , ScopeStore(..)
@@ -55,6 +54,8 @@ import Parser.Netlist.Types.Representation
          , FunctionBody
          , Designator(..)
          , Type
+         , Subtype
+         , NetlistName(..)
          )
 import Manager.Types.Error (ConverterError(ConverterError_Scope))
 
@@ -102,11 +103,20 @@ getPackageParts packageName scopeItem netlistStore =
 
 -- |Get scoped declares from stored types
 -- Check types of package and if relevant, put into scope
--- If not, check functions
+-- If not, check subtypes
 checkTypes :: NetlistName -> Package -> String -> AlexPosn -> Either WrappedScopeConverterError WrappedNewScopeDeclares
 checkTypes packageName package name pos =
    case MapS.lookup name $ packageTypes package of
       Just foundType -> return $ PosnWrapper pos $ NewScopeDeclare_Type name foundType
+      Nothing -> checkSubtypes packageName package name pos
+
+-- |Get scoped declares from stored subtypes
+-- Check subtypes of package and if relevant, put into scope
+-- If not, check functions
+checkSubtypes :: NetlistName -> Package -> String -> AlexPosn -> Either WrappedScopeConverterError WrappedNewScopeDeclares
+checkSubtypes packageName package name pos =
+   case MapS.lookup name $ packageSubtypes package of
+      Just foundSubtype -> return $ PosnWrapper pos $ NewScopeDeclare_Subtype name foundSubtype
       Nothing -> checkFunctions packageName package name pos
 
 -- |Get scoped declares from stored functions
@@ -147,6 +157,8 @@ mergeScope (PosnWrapper pos (NewScopeDeclare_Package newScope)) _ =
                (unionStore scopeFunctionPackage)
                (unionStore scopeTypes)
                (unionStore scopeTypePackage)
+               (unionStore scopeSubtypes)
+               (unionStore scopeSubtypePackage)
                (unionStore scopeConstants)
                (unionStore scopeConstantPackage)
                (unionStore scopeSignals)
@@ -154,6 +166,7 @@ mergeScope (PosnWrapper pos (NewScopeDeclare_Package newScope)) _ =
    in modify modifyScope
 mergeScope (PosnWrapper pos (NewScopeDeclare_Functions newFuncs)) netlistName = mergeScopeFuncs netlistName $ PosnWrapper pos newFuncs
 mergeScope (PosnWrapper pos (NewScopeDeclare_Type typeName typeDeclare)) netlistName = mergeScopeType netlistName $ PosnWrapper pos (typeName,typeDeclare)
+mergeScope (PosnWrapper pos (NewScopeDeclare_Subtype subtypeName subtypeDeclare)) netlistName = mergeScopeSubtype netlistName $ PosnWrapper pos (subtypeName,subtypeDeclare)
 
 -- |Merge a single type into the scope
 mergeScopeFuncs :: NetlistName -> PosnWrapper FunctionStore -> BuildScopeStack
@@ -176,5 +189,18 @@ mergeScopeType netlistName (PosnWrapper pos (name,declare)) = do
          oldScope
             { scopeTypes = MapS.insert name declare $ scopeTypes oldScope
             , scopeTypePackage = MapS.insert name netlistName $ scopeTypePackage oldScope
+            }
+   modify modifyScope
+
+-- |Merge a single subtype into the scope
+mergeScopeSubtype :: NetlistName -> PosnWrapper (String,Subtype) -> BuildScopeStack
+mergeScopeSubtype netlistName (PosnWrapper pos (name,declare)) = do
+   let readScopeSubtypes = scopeSubtypes
+   isInScope <- gets ((MapS.member name) . readScopeSubtypes)
+   -- ?? when isInScope $ ?? Warning?
+   let modifyScope oldScope =
+         oldScope
+            { scopeSubtypes = MapS.insert name declare $ scopeSubtypes oldScope
+            , scopeSubtypePackage = MapS.insert name netlistName $ scopeSubtypePackage oldScope
             }
    modify modifyScope

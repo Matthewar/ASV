@@ -23,10 +23,8 @@ import Manager.Filing
          )
 import Lexer.Types.Error (WrappedParserError)
 import Lexer.Alex.Functions (runAlex)
-import Parser.Netlist.Types.Stores
-         ( NetlistStore
-         , NetlistName(..)
-         )
+import Parser.Netlist.Types.Representation (NetlistName(..))
+import Parser.Netlist.Types.Stores (NetlistStore)
 import qualified Parser.Netlist.Builtin.Netlist as InitialNetlist (netlist)
 import Manager.Types.Error (ConverterError(..))
 --import Netlister.ParseTree (convertTree)
@@ -45,7 +43,7 @@ createTop options = do
       return finalNetlist
    case result of
       Left err -> printError err
-      Right result -> return ()
+      Right result -> putStrLn $ show result
 -- Call create function for topmost file
 --
 -- Need state monad of current scoped and already parsed objects to be setup?

@@ -5,12 +5,13 @@
    Haskell types for containing and representing VHDL builtin and user types, functions, other low level elements
 -}
 module Parser.Netlist.Types.Representation
-   ( Type(..)
+   ( NetlistName(..)
+   , Type(..)
    , Enumerate(..)
    , IntegerRange(..)
    , FloatRange(..)
    , RangeDirection(..)
-   , SubtypeIndication(..)
+   , Subtype(..)
    , ArrayBounds(..)
    , FunctionBody(..)
    , Constraint(..)
@@ -27,6 +28,14 @@ import Data.Int (Int64)
 import qualified Data.Map.Strict as MapS
 
 import Parser.Netlist.Types.Operators (Operator)
+
+-- |Netlist name representation
+-- Made up of the library the unit is in and its name
+data NetlistName = NetlistName { libraryName :: String, unitName :: String }
+                 deriving (Eq,Ord)
+
+instance (Show NetlistName) where
+   show (NetlistName lib unit) = lib ++ "." ++ unit
 
 -- ?? Type attribute data
 -- Name, Attributes
@@ -61,9 +70,13 @@ data Type =
    -- |Array type
    -- Array of another type
    -- ?? Does this need entire subtype indication, not sure if need function and/or constraint
-   | ArrayType ArrayBounds SubtypeIndication
-   | Subtype SubtypeIndication
-   deriving (Eq,Ord)
+   | ArrayType
+      { array_bounds :: ArrayBounds
+      , array_typeName :: String
+      , array_typePackage :: NetlistName
+      , array_typeData :: Subtype
+      }
+   deriving (Eq,Ord,Show)
 
 -- |Enumerate
 -- Can be identifier or character
@@ -83,12 +96,12 @@ instance (Show Enumerate) where
 -- |Integer range
 -- Left direction right
 data IntegerRange = IntegerRange Int64 Int64 RangeDirection
-                  deriving (Eq,Ord)
+                  deriving (Eq,Ord,Show)
 
 -- |Floating point range
 -- Left direction right
 data FloatRange = FloatRange Double Double RangeDirection
-                deriving (Eq,Ord)
+                deriving (Eq,Ord,Show)
 
 -- |Range direction
 data RangeDirection =
@@ -100,15 +113,22 @@ data RangeDirection =
    -- Left > Right
    -- If Left < Right: null range
    | Downto
-   deriving (Eq,Ord)
+   deriving (Eq,Ord,Show)
 
--- |Subtype indication
+-- |Subtype
 -- Type built on another type
 -- Essentially a type link
 -- Includes resolution function, type, constraint
 -- ?? Link to Function name or function body
-data SubtypeIndication = SubtypeIndication (Maybe FunctionBody) Type (Maybe Constraint)
-                       deriving (Eq,Ord)
+data Subtype =
+   Subtype
+      { subtype_resolutionFunction :: Maybe FunctionBody
+      , subtype_typeName :: String
+      , subtype_typePackage :: NetlistName
+      , subtype_typeData :: Type
+      , subtype_Constraint :: Maybe Constraint
+      }
+      deriving (Eq,Ord,Show)
 
 -- |Array bounds
 -- Range/dimensions of the array type specified
@@ -118,13 +138,13 @@ data ArrayBounds =
    Constrained IndexConstraint
    -- |Unconstrained
    -- Array dimension types defined, but not actual array size
-   | Unconstrained [Type]
-   deriving (Eq,Ord)
+   | Unconstrained [Subtype]
+   deriving (Eq,Ord,Show)
 
 -- |Function body
 -- ?? [FunctionDeclarative]
 data FunctionBody = FunctionBody [Statement]
-                  deriving (Eq,Ord)
+                  deriving (Eq,Ord,Show)
 
 -- |Constraint of subtype
 data Constraint =
@@ -134,7 +154,7 @@ data Constraint =
    | Constraint_FloatingRange FloatRange
    -- |Index constraint
    | Constraint_Index IndexConstraint
-   deriving (Eq,Ord)
+   deriving (Eq,Ord,Show)
 
 -- |List of discrete ranges
 -- Ranges of each array dimension
@@ -142,55 +162,57 @@ type IndexConstraint = [DiscreteRange]
 
 -- |Discrete range
 -- ?? Can floating point be discrete, should make custom subtype indication for discrete
-data DiscreteRange = Discrete_SubtypeIndication SubtypeIndication
+data DiscreteRange = Discrete_SubtypeIndication Subtype--Indication
                    | Discrete_IntegerRange IntegerRange
                    | Discrete_FloatingRange FloatRange
-                   deriving (Eq,Ord)
+                   deriving (Eq,Ord,Show)
 
 -- |Function header information
 -- Designator (name/operator reference), interface (inputs), return type
 data Function = Function Designator [FunctionInterface] Type
-              deriving (Eq,Ord)
+              deriving (Eq,Ord,Show)
 
 -- |Function designators
 -- Can be function name (identifier) or operator
 data Designator =
    Designator_Identifier String
    | Designator_Operator Operator
-   deriving (Eq,Ord)
+   deriving (Eq,Ord,Show)
 
 -- |Interface to function
 -- ?? Need to define
-data FunctionInterface = FunctionInterface FunctionInterfaceType String SubtypeIndication
-               deriving (Eq,Ord)
+data FunctionInterface = FunctionInterface FunctionInterfaceType String Subtype--Indication
+               deriving (Eq,Ord,Show)
 
 data FunctionInterfaceType =
    FunctionInterfaceType_Constant
    | FunctionInterfaceType_Signal --SignalBus
-   deriving (Eq,Ord)
+   deriving (Eq,Ord,Show)
 
 data Statement = Statement
-   deriving (Eq,Ord)
+   deriving (Eq,Ord,Show)
 
 data Calculation =
-   Calc_SignalDelayed (String,Signal) Int64 -- save and carry out after time
-   | Calc_SignalStable (String,Signal) Int64 -- check changes over timeframe (need to record last time changed)
-   | Calc_SignalQuiet (String,Signal) Int64
-   -- ?? Signal transaction
-   | Calc_SignalEvent (String,Signal)
-   | Calc_SignalActive (String,Signal)
-   | Calc_SignalLastEvent (String,Signal)
-   | Calc_SignalLastActive (String,Signal)
-   | Calc_SignalLastValue (String,Signal) 
-   | Calc_Value Type Value
+   Calc_Value NetlistName Value
+   | Calc_FunctionCall NetlistName --Function
+   --Calc_SignalDelayed (String,Signal) Int64 -- save and carry out after time
+   -- | Calc_SignalStable (String,Signal) Int64 -- check changes over timeframe (need to record last time changed)
+   -- | Calc_SignalQuiet (String,Signal) Int64
+   -- -- ?? Signal transaction
+   -- | Calc_SignalEvent (String,Signal)
+   -- | Calc_SignalActive (String,Signal)
+   -- | Calc_SignalLastEvent (String,Signal)
+   -- | Calc_SignalLastActive (String,Signal)
+   -- | Calc_SignalLastValue (String,Signal) 
+   deriving (Show)
 
 data Value =
-   Value_Enum Enumerate
+   Value_Enum String Enumerate
    | Value_Int Int64
    | Value_Float Float
    | Value_Physical Int64
    | Value_Array [Value]
-   deriving (Eq,Ord)
+   deriving (Eq,Ord,Show)
 
 data ScalarAttributes =
    ScalarAttributes
@@ -231,7 +253,8 @@ data ArrayAttributes =
 -- |Constant representation
 -- Type of constant, constant value
 -- ?? Only can have not calculation ("deferred constant") in package (header) declaration, make separate type
-data Constant = Constant Type (Maybe Calculation)
+data Constant = Constant Type (Maybe Value)
+              deriving (Show)
 
 -- |Signal representation
 -- Resolution function body, type of signal
@@ -243,6 +266,7 @@ data Signal =
       { signalType :: Type
       , signalDefault :: Calculation
       }
+   deriving (Show)
 
 -- |Variable representation
 -- Type of variable, default value (Type'left is not included)

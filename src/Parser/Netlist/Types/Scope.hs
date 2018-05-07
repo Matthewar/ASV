@@ -24,11 +24,14 @@ import Lexer.Types.PositionWrapper
 --import Parser.Happy.Types
 --         ( SelectedName
 --         )
-import Parser.Netlist.Types.Representation (Type)
+import Parser.Netlist.Types.Representation
+         ( NetlistName
+         , Type
+         , Subtype
+         )
 import Parser.Netlist.Types.Operators (Operator)
 import Parser.Netlist.Types.Stores
-         ( NetlistName
-         , FunctionStore
+         ( FunctionStore
          , ScopeStore
          )
 
@@ -59,6 +62,8 @@ data NewScopeDeclares =
    NewScopeDeclare_Functions FunctionStore
    -- |Type to be added
    | NewScopeDeclare_Type String Type
+   -- |Subtype to be added
+   | NewScopeDeclare_Subtype String Subtype
    -- |Entire package ('Declare_All' has occured) to be added
    | NewScopeDeclare_Package ScopeStore
 

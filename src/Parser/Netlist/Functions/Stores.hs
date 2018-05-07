@@ -18,10 +18,12 @@ import Data.Maybe
          )
 
 import Parser.Netlist.Types.Representation
-         ( Function(..)
+         ( NetlistName
+         , Function(..)
          , FunctionBody
          , Designator(..)
          , Type(..)
+         , Subtype
          , Enumerate(..)
          , Constant
          , Signal(..)
@@ -31,30 +33,32 @@ import Parser.Netlist.Types.Stores
          , ScopeStore(..)
          , UnitStore(..)
          , TypeStore
+         , SubtypeStore
          , FunctionStore
          , ConstantStore
          , SignalStore
-         , NetlistName
          )
 
 -- |New package with scope
 newPackage :: ScopeStore -> Package
-newPackage scope = Package scope MapS.empty MapS.empty MapS.empty MapS.empty
+newPackage scope = Package scope MapS.empty MapS.empty MapS.empty MapS.empty MapS.empty
 
 -- |Convert package to generalised store for use in low level conversions
 convertPackageToGenericUnit :: Package -> (ScopeStore,UnitStore)
-convertPackageToGenericUnit (Package scope funcs types consts signals) =
-   let unit = UnitStore funcs types consts signals
+convertPackageToGenericUnit (Package scope funcs types subtypes consts signals) =
+   let unit = UnitStore funcs types subtypes consts signals
    in (scope,unit)
 
 -- |Convert package to scope object
 convertPackageToScope :: Package -> NetlistName -> ScopeStore
-convertPackageToScope (Package _ funcs types consts signals) packageName =
+convertPackageToScope (Package _ funcs types subtypes consts signals) packageName =
    ScopeStore
       funcs
       (newExtraScope funcs)
       types
       (newExtraScope types)
+      subtypes
+      (newExtraScope subtypes)
       consts
       (newExtraScope consts)
       signals
@@ -72,10 +76,11 @@ isEnumNameInUnit = isNameDeclaredInUnit False
 
 -- |Check if an identifier has already been defined in the current unit
 isNameDeclaredInUnit :: Bool -> UnitStore -> String -> Bool
-isNameDeclaredInUnit includeEnums (UnitStore funcs types consts signals) name =
+isNameDeclaredInUnit includeEnums (UnitStore funcs types subtypes consts signals) name =
    let allNames =
          getFunctionNames funcs
          ++ (getSomeTypeNames includeEnums types)
+         ++ getSubtypeNames subtypes
          ++ getConstantNames consts
          ++ getSignalNames signals
    in elem name allNames
@@ -111,6 +116,10 @@ getSomeTypeNames includeEnums = concat . (map convertTypes) . MapS.toList
          extractEnumNames (Enum_Identifier str) = Just str
          extractEnumNames _ = Nothing
 
+-- |Get names of subtypes
+getSubtypeNames :: SubtypeStore -> [String]
+getSubtypeNames = MapS.keys
+
 -- |Get names of constants
 getConstantNames :: ConstantStore -> [String]
 getConstantNames = MapS.keys
@@ -133,6 +142,22 @@ matchTypeNameInScope scope unit name =
       Nothing ->
          case MapS.lookup name $ scopeTypes scope of
             Just typ -> Just (typ,Just $ (scopeTypePackage scope) MapS.! name)
+            Nothing -> Nothing
+
+-- |Check if subtype name is within scope
+-- If not, returns Nothing
+-- If it is, returns tuple of:
+-- - Subtype data
+-- - Package that the subtype exists in
+--    - Nothing if directly visible
+--    - package name/library if visible by selection
+matchSubtypeNameInScope :: ScopeStore -> UnitStore -> String -> Maybe (Subtype,Maybe NetlistName)
+matchSubtypeNameInScope scope unit name =
+   case MapS.lookup name $ unitSubtypes unit of
+      Just subtype -> Just (subtype,Nothing)
+      Nothing ->
+         case MapS.lookup name $ scopeSubtypes scope of
+            Just subtype -> Just (subtype,Just $ (scopeSubtypePackage scope) MapS.! name)
             Nothing -> Nothing
 
 -- |Check if function name is within scope (ignoring types/arguments)

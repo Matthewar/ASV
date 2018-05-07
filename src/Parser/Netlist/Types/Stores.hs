@@ -3,9 +3,9 @@
    Description : Types for storing the representation of netlists
 -}
 module Parser.Netlist.Types.Stores
-   ( NetlistName(..)
-   , NetlistStore(..)
+   ( NetlistStore(..)
    , TypeStore
+   , SubtypeStore
    , FunctionStore
    , ConstantStore
    , SignalStore
@@ -20,20 +20,14 @@ module Parser.Netlist.Types.Stores
 import qualified Data.Map.Strict as MapS
 
 import Parser.Netlist.Types.Representation
-         ( Type
+         ( NetlistName
+         , Type
+         , Subtype
          , Function(..)
          , FunctionBody(..)
          , Constant
          , Signal
          )
-
--- |Netlist name representation
--- Made up of the library the unit is in and its name
-data NetlistName = NetlistName { libraryName :: String, unitName :: String }
-                 deriving (Eq,Ord)
-
-instance (Show NetlistName) where
-   show (NetlistName lib unit) = lib ++ "." ++ unit
 
 -- |Store of all netlisted data
 -- Parse tree is converted into netlist
@@ -44,9 +38,13 @@ data NetlistStore =
       { packages :: PackageStore
       --, architectures :: MapS.Map NetlistName Architecture
       }
+   deriving (Show)
 
 -- |Store of type data
 type TypeStore = MapS.Map String Type
+
+-- |Store of subtype data
+type SubtypeStore = MapS.Map String Subtype
 
 -- |Store of function data
 -- Reference using name, input types and output type
@@ -70,6 +68,7 @@ data Package =
       --ProcedureStore
       , packageFunctions :: FunctionStore
       , packageTypes :: TypeStore
+      , packageSubtypes :: SubtypeStore
       , packageConstants :: ConstantStore
       , packageSignals :: SignalStore
       --FileStore
@@ -88,12 +87,14 @@ data Package =
       --Alias
       --Use
       }
+   deriving (Show)
 
 -- |Empty package
 emptyPackage :: Package
 emptyPackage =
    Package
       emptyScopeStore
+      MapS.empty
       MapS.empty
       MapS.empty
       MapS.empty
@@ -107,6 +108,7 @@ type ScopeExtraStore a = MapS.Map a NetlistName
 -- Extra stores
 type ScopeFunctionStore = ScopeExtraStore Function
 type ScopeTypeStore = ScopeExtraStore String
+type ScopeSubtypeStore = ScopeExtraStore String
 type ScopeConstantStore = ScopeExtraStore String
 type ScopeSignalStore = ScopeExtraStore String
 
@@ -117,16 +119,21 @@ data ScopeStore =
       , scopeFunctionPackage :: ScopeFunctionStore
       , scopeTypes :: TypeStore
       , scopeTypePackage :: ScopeTypeStore
+      , scopeSubtypes :: SubtypeStore
+      , scopeSubtypePackage :: ScopeSubtypeStore
       , scopeConstants :: ConstantStore
       , scopeConstantPackage :: ScopeConstantStore
       , scopeSignals :: SignalStore
       , scopeSignalPackage :: ScopeSignalStore
       }
+   deriving (Show)
 
 -- |Empty real scope store
 emptyScopeStore :: ScopeStore
 emptyScopeStore =
    ScopeStore
+      MapS.empty
+      MapS.empty
       MapS.empty
       MapS.empty
       MapS.empty
@@ -141,6 +148,7 @@ data UnitStore =
    UnitStore
       { unitFunctions :: FunctionStore
       , unitTypes :: TypeStore
+      , unitSubtypes :: SubtypeStore
       , unitConstants :: ConstantStore
       , unitSignals :: SignalStore
       }
