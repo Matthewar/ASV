@@ -29,21 +29,23 @@ import qualified Parser.Netlist.Builtin.Netlist as InitialNetlist (netlist)
 import Manager.Types.Error (ConverterError(..))
 --import Netlister.ParseTree (convertTree)
 import Parser.Functions.Parse.DesignFile (parseDesignFile)
+import Sim.Top (outputTop)
 
 createTop :: Args.Options -> IO ()
 createTop options = do
    result <- runExceptT $ do
       withExceptT (ConverterError_Filing) $ checkArguments options
-      let (Args.Options workDir ieeeDir topModule) = options
+      let (Args.Options workDir ieeeDir buildDir topModule) = options
           createNetlistUnit = create workDir ieeeDir [] "WORK" $ map toUpper topModule
       finalNetlist <- execStateT createNetlistUnit InitialNetlist.netlist
+      outputTop buildDir finalNetlist
 
       -- ?? Other steps
 
       return finalNetlist
    case result of
       Left err -> printError err
-      Right result -> putStrLn $ show result
+      Right result -> return () --putStrLn $ show result
 -- Call create function for topmost file
 --
 -- Need state monad of current scoped and already parsed objects to be setup?

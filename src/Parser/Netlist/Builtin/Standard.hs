@@ -222,9 +222,7 @@ types =
       )
    ,  ( "STRING"
       , ArrayType
-         ( Unconstrained
-            [ subtypes MapS.! "POSITIVE" ]
-         )
+         [subtypes MapS.! "POSITIVE"]
          "STRING"
          (NetlistName "STD" "STANDARD")
          ( Subtype
@@ -237,9 +235,7 @@ types =
       )
    ,  ( "BIT_VECTOR"
       , ArrayType
-         ( Unconstrained
-            [ subtypes MapS.! "NATURAL" ]
-         )
+         [subtypes MapS.! "NATURAL"]
          "BIT"
          (NetlistName "STD" "STANDARD")
          ( Subtype

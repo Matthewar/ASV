@@ -41,12 +41,16 @@ library
                      , Parser.Netlist.Types.Operators
                      , Parser.Netlist.Types.Monad
                      , Parser.Netlist.Types.Error
+                     , Parser.Netlist.Functions.Representation
                      , Parser.Netlist.Functions.Stores
                      , Parser.Netlist.Builtin.Netlist
                      , Parser.Netlist.Builtin.Standard
                      --, Parser.Happy.Types
                      --, Parser.Happy.Functions
                      --, Parser.Happy.ParseFunctions
+                     , Sim.Top
+                     , Sim.Packages
+                     , Sim.Types
                      , Manager.NewDesignUnit
                      , Manager.Args
                      , Manager.Filing
@@ -63,6 +67,7 @@ library
                      , directory
                      , mtl >= 2.2.2
                      , bimap
+                     , filepath
   build-tools:         alex
                      , happy
   default-language:    Haskell2010

@@ -8,6 +8,8 @@ import System.Directory (doesDirectoryExist,doesFileExist,findFile)
 import Control.Monad.Except (ExceptT,throwError)
 import Control.Monad.Trans (liftIO)
 import Data.List (intersperse)
+import qualified Data.Map.Strict as MapS
+import Data.Function ((&))
 
 import qualified Manager.Args as Args (Options(..))
 
@@ -40,11 +42,21 @@ checkArguments options = do
    validWorkDir <- liftIO $ doesDirectoryExist workDir
    let ieeeDir = Args.ieeeDir options
    validIEEEDir <- liftIO $ doesDirectoryExist ieeeDir
-   case (validWorkDir,validIEEEDir) of
-      (False,False) -> throwError $ FilingError_InvalidLibDir [workDir,ieeeDir]
-      (False,True) -> throwError $ FilingError_InvalidLibDir [workDir]
-      (True,False) -> throwError $ FilingError_InvalidLibDir [ieeeDir]
-      (True,True) -> liftIO $ putStrLn "Success: Library directories found"
+   let buildDir = Args.buildDir options
+   validBuildDir <- liftIO $ doesDirectoryExist buildDir
+   let dirMap =
+         [ (workDir,validWorkDir)
+         , (ieeeDir,validIEEEDir)
+         , (buildDir,validBuildDir)
+         ]
+         & MapS.fromList
+   if any not $ MapS.elems dirMap
+      then throwError $
+               FilingError_InvalidLibDir $
+               map (\(dir,_) -> dir) $
+               MapS.toList $
+               MapS.filter not dirMap
+      else liftIO $ putStrLn "Success: Library directories found"
 
 -- |Take name of module and library, if file exists then return path
 findDesignUnit :: FilePath -> FilePath -> String -> String -> ExceptT FilingError IO FilePath

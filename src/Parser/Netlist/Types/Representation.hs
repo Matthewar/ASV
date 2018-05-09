@@ -71,7 +71,8 @@ data Type =
    -- Array of another type
    -- ?? Does this need entire subtype indication, not sure if need function and/or constraint
    | ArrayType
-      { array_bounds :: ArrayBounds
+      { array_bounds :: [Subtype]
+      --{ array_bounds :: ArrayBounds
       , array_typeName :: String
       , array_typePackage :: NetlistName
       , array_typeData :: Subtype
@@ -135,10 +136,10 @@ data Subtype =
 data ArrayBounds =
    -- |Constrained
    -- Predefined array dimensions
-   Constrained IndexConstraint
+   Constrained [(String,NetlistName,Subtype)]
    -- |Unconstrained
    -- Array dimension types defined, but not actual array size
-   | Unconstrained [Subtype]
+   | Unconstrained [(String,NetlistName,Subtype)]
    deriving (Eq,Ord,Show)
 
 -- |Function body

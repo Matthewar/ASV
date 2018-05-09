@@ -6,6 +6,7 @@ import Data.Semigroup ((<>))
 data Options = Options
    { workDir :: FilePath
    , ieeeDir :: FilePath
+   , buildDir :: FilePath
    , topModule :: FilePath
    }
 
@@ -27,6 +28,14 @@ optionsGroup = Options
       <> metavar "IEEE_LIB_PATH"
       <> action "directory"
        )
+   <*> strOption
+      ( long "build-dir"
+     <> help "Output build directory"
+     <> showDefault
+     <> value "build/"
+     <> metavar "BUILD_PATH"
+     <> action "directory"
+      )
    <*> strOption
        ( long "top"
       <> help "Top Module"
