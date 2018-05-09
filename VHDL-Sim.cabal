@@ -50,6 +50,7 @@ library
                      --, Parser.Happy.ParseFunctions
                      , Sim.Top
                      , Sim.Packages
+                     , Sim.Imports
                      , Sim.Types
                      , Manager.NewDesignUnit
                      , Manager.Args

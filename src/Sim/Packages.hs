@@ -15,6 +15,7 @@ import Parser.Netlist.Types.Stores
          , PackageStore
          )
 import Manager.Types.Error (ConverterError)
+import Sim.Imports (outputImports)
 import Sim.Types (outputTypes)
 
 newline = "\n"
@@ -30,7 +31,12 @@ outputPackages' buildDir ((netlistName@(NetlistName lib packageName),package):ot
       ++ show netlistName
       ++ " where"
       ++ newline
+   outputImports packageFileName $ packageScope package
+   --outputFunctions packageFileName $ packageFunctions package
    outputTypes packageFileName $ packageTypes package
+   --outputSubtypes packageFileName $ packageSubtypes package
+   --outputConstants packageFileName $ packageConstants package
+   --outputSignals packageFileName $ packageSignals package
    -- ?? Etc.
    outputPackages' buildDir others
 outputPackages' _ [] = return ()
