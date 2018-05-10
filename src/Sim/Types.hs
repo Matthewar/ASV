@@ -1,6 +1,9 @@
 module Sim.Types
    ( outputTypes
+   , showEnum
    ) where
+
+-- ?? Probably add instances for conversions
 
 import qualified Data.Map.Strict as MapS
 import Data.List (intersperse)
@@ -18,12 +21,6 @@ import Parser.Netlist.Types.Representation
          , FloatRange
          , Subtype(..)
          )
-import Parser.Netlist.Functions.Representation
-         ( int_scalarHigh
-         , int_scalarLow
-         , float_scalarHigh
-         , float_scalarLow
-         )
 import Parser.Netlist.Types.Stores (TypeStore)
 import Manager.Types.Error (ConverterError)
 
@@ -37,18 +34,17 @@ outputTypes' :: FilePath -> [(String,Type)] -> ExceptT ConverterError IO ()
 outputTypes' fileName ((typeName,typeData):others) = do
    case typeData of
       EnumerationType enums -> printEnumType fileName typeName enums
-      IntegerType range -> printIntType fileName typeName range
-      FloatingType range -> printFloatType fileName typeName range
-      PhysicalType range baseUnit _ -> printPhysicalType fileName typeName range baseUnit
-      ArrayType bounds subtypeName subtypePackage _ -> printArrayType fileName typeName bounds subtypeName subtypePackage
+      IntegerType -> printIntType fileName typeName
+      FloatingType -> printFloatType fileName typeName
+      PhysicalType _ _ -> printPhysicalType fileName typeName -- ?? Use base/secondary units for printing output data
+      ArrayType bounds subtypeName _ -> printArrayType fileName typeName bounds subtypeName
    outputTypes' fileName others
 outputTypes' _ [] = return ()
 
 printEnumType :: FilePath -> String -> [Enumerate] -> ExceptT ConverterError IO ()
 printEnumType file name enums =
    let typeName = "Type'" ++ name
-       convertEnum (Enum_Identifier str) = typeName ++ "'Iden'" ++ str
-       convertEnum (Enum_Char chr) = typeName ++ "'Char'" ++ (characterMap MapS.! chr)
+       convertEnum = showEnum typeName
        typeBaseFormatting = concat $ intersperse (newline ++ tab ++ "| ") $ map convertEnum enums
        typeBaseStr = "data " ++ typeName ++ " = " ++ newline ++ tab ++ typeBaseFormatting
 --       typeScalar =
@@ -86,20 +82,24 @@ printEnumType file name enums =
 --         ++ name
 --         ++ 
    in liftIO $ appendFile file $ newline ++ typeBaseStr ++ newline -- ++ typeScalar ++ newline ++ typeDiscrete
-   where --makeDiscretePosVal _ [] posStrLst valStrLst = (concat posStrLst,concat valStrLst)
-         --makeDiscretePosVal val (enum:enums) posStrLst valStrLst =
-         --   let convEnum = convertEnum enum
-         --       posStr = newline ++ tab ++ "discretePos " ++ convEnum ++ " = " ++ val
-         --       valStr = newline ++ tab ++ "discreteVal " ++ val ++ " = " ++ convEnum
-         --   in makeDiscretePosVal (val + 1) enums (posStr:posStrLst) (valStr:valStrLst)
-         --makeDiscreteLeftRight (enum1:enum2:enums) leftStr rightStr =
-         --   let convEnum1 = convertEnum enum1
-         --       convEnum2 = convertEnum enum2
-         --       left = convEnum2 ++ " = " ++ convEnum1
-         --       right = convEnum1 ++ " = " ++ convEnum2
-         --   in makeDiscreteLeftRight enums (left:leftStr) (right:rightStr)
-         --makeDiscreteLeftRight _ leftStr rightStr = (leftStr,rightStr)
-         characterMap :: MapS.Map Char String
+--   where makeDiscretePosVal _ [] posStrLst valStrLst = (concat posStrLst,concat valStrLst)
+--         makeDiscretePosVal val (enum:enums) posStrLst valStrLst =
+--            let convEnum = convertEnum enum
+--                posStr = newline ++ tab ++ "discretePos " ++ convEnum ++ " = " ++ val
+--                valStr = newline ++ tab ++ "discreteVal " ++ val ++ " = " ++ convEnum
+--            in makeDiscretePosVal (val + 1) enums (posStr:posStrLst) (valStr:valStrLst)
+--         makeDiscreteLeftRight (enum1:enum2:enums) leftStr rightStr =
+--            let convEnum1 = convertEnum enum1
+--                convEnum2 = convertEnum enum2
+--                left = convEnum2 ++ " = " ++ convEnum1
+--                right = convEnum1 ++ " = " ++ convEnum2
+--            in makeDiscreteLeftRight enums (left:leftStr) (right:rightStr)
+--         makeDiscreteLeftRight _ leftStr rightStr = (leftStr,rightStr)
+
+showEnum :: String -> Enumerate -> String
+showEnum typeName (Enum_Identifier str) = typeName ++ "'Iden'" ++ str
+showEnum typeName (Enum_Char chr) = typeName ++ "'Char'" ++ (characterMap MapS.! chr)
+   where characterMap :: MapS.Map Char String
          characterMap =
             [ (' ',"SPACE")
             , ('!',"EXCLAMATION")
@@ -199,24 +199,10 @@ printEnumType file name enums =
             ]
             & MapS.fromList
 
-printIntType :: FilePath -> String -> IntegerRange -> ExceptT ConverterError IO ()
-printIntType file name intRange =
+printIntType :: FilePath -> String -> ExceptT ConverterError IO ()
+printIntType file name =
    let typeName = "Type'" ++ name
        typeBaseStr = "newtype " ++ typeName ++ " = " ++ typeName ++ " Int64"
-       constructorStr =
-         let funcName = "mk" ++ typeName
-             highVal = show $ int_scalarHigh intRange
-             lowVal = show $ int_scalarLow intRange
-         in funcName ++ " :: Integer -> " ++ typeName
-            ++ newline
-            ++ funcName ++ " value ="
-            ++ newline ++ tab
-            ++ "if value > " ++ highVal
-            ++ " || value < " ++ lowVal
-            ++ newline ++ tab ++ tab
-            ++ "then " ++ typeName ++ " value"
-            ++ newline ++ tab ++ tab
-            ++ "else error $ \"" ++ typeName ++ " value \" ++ value ++ \" is outside of range " ++ lowVal ++ " < value < " ++ highVal ++ "\""
 --       typeScalar =
 --         "instance (VHDL_Scalar "
 --         ++ name
@@ -249,53 +235,26 @@ printIntType file name intRange =
 --         ++ " val"
 --         ++ newline ++ tab
 --         ++ "discreteSucc val = va 
-   in liftIO $ appendFile file $ newline ++ typeBaseStr ++ newline ++ constructorStr ++ newline -- ++ typeScalar ++ newline ++ typeOps ++ typeDiscrete
+   in liftIO $ appendFile file $ newline ++ typeBaseStr ++ newline -- ++ typeScalar ++ newline ++ typeOps ++ typeDiscrete
 
-printFloatType :: FilePath -> String -> FloatRange -> ExceptT ConverterError IO ()
-printFloatType file name floatRange =
+printFloatType :: FilePath -> String -> ExceptT ConverterError IO ()
+printFloatType file name =
    let typeName = "Type'" ++ name
        typeBaseStr = "newtype " ++ typeName ++ " = " ++ typeName ++ " Double"
-       constructorStr =
-         let funcName = "mk" ++ typeName
-             highVal = show $ float_scalarHigh floatRange
-             lowVal = show $ float_scalarLow floatRange
-         in funcName ++ " :: Double -> " ++ typeName
-            ++ newline
-            ++ funcName ++ " value ="
-            ++ newline ++ tab
-            ++ "case value of"
-            ++ newline ++ tab ++ tab
-            ++ "_ | isInfinite value -> error \"" ++ typeName ++ " value is outside of 64 bit IEEE 754 range\""
-            ++ newline ++ tab ++ tab
-            ++ "_ | value < " ++ lowVal ++ " || value > " ++ highVal ++ " -> error \"" ++ typeName ++ " value \" ++ value ++ \" is outside of range " ++ lowVal ++ " < value < " ++ highVal ++ "\""
-   in liftIO $ appendFile file $ newline ++ typeBaseStr ++ newline ++ constructorStr ++ newline
+   in liftIO $ appendFile file $ newline ++ typeBaseStr ++ newline
 
-printPhysicalType :: FilePath -> String -> IntegerRange -> String -> ExceptT ConverterError IO ()
-printPhysicalType fileName name intRange baseUnit =
+printPhysicalType :: FilePath -> String -> ExceptT ConverterError IO ()
+printPhysicalType fileName name =
    let typeName = "Type'" ++ name
        typeBaseStr = "newtype " ++ typeName ++ " = " ++ typeName ++ " Int64"
-       constructorStr =
-         let funcName = "mk" ++ typeName
-             highVal = show $ int_scalarHigh intRange
-             lowVal = show $ int_scalarLow intRange
-         in funcName ++ " :: Integer -> " ++ typeName
-            ++ newline
-            ++ funcName ++ " value ="
-            ++ newline ++ tab
-            ++ "if value > " ++ highVal
-            ++ " || value < " ++ lowVal
-            ++ newline ++ tab ++ tab
-            ++ "then " ++ typeName ++ " value"
-            ++ newline ++ tab ++ tab
-            ++ "else error $ \"" ++ typeName ++ " value \" ++ value ++ \" is outside of range " ++ lowVal ++ " < value < " ++ highVal ++ "\""
-   in liftIO $ appendFile fileName $ newline ++ typeBaseStr ++ newline ++ constructorStr ++ newline
+   in liftIO $ appendFile fileName $ newline ++ typeBaseStr ++ newline
 
-printArrayType :: FilePath -> String -> [Subtype] -> String -> NetlistName -> ExceptT ConverterError IO ()
-printArrayType fileName name bounds elemTypeName elemTypePackage =
+printArrayType :: FilePath -> String -> [(NetlistName,String,Subtype)] -> (NetlistName,String) -> ExceptT ConverterError IO ()
+printArrayType fileName name bounds (elemTypePackage,elemTypeName) =
    let typeName = "Type'" ++ name
        typeBaseStr =
          "newtype " ++ typeName ++ " = "
-         ++ typeName ++ " Data.Map.Strict.Map ("
-         ++ (concat $ intersperse "," $ map (\(Subtype _ subtypeName subtypePackage _ _) -> show subtypePackage ++ ".Type'" ++ subtypeName) bounds)
-         ++ ") " ++ show elemTypePackage ++ ".Type'" ++ elemTypeName
+         ++ typeName ++ " (Data.Map.Strict.Map ("
+         ++ (concat $ intersperse "," $ map (\(subtypePackage,subtypeName,_) -> show subtypePackage ++ ".Type'" ++ subtypeName) bounds)
+         ++ ") " ++ show elemTypePackage ++ ".Type'" ++ elemTypeName ++ ")"
    in liftIO $ appendFile fileName $ newline ++ typeBaseStr ++ newline

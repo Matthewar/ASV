@@ -52,6 +52,7 @@ library
                      , Sim.Packages
                      , Sim.Imports
                      , Sim.Types
+                     , Sim.Subtypes
                      , Manager.NewDesignUnit
                      , Manager.Args
                      , Manager.Filing

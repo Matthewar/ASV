@@ -12,7 +12,6 @@ module Parser.Netlist.Types.Representation
    , FloatRange(..)
    , RangeDirection(..)
    , Subtype(..)
-   , ArrayBounds(..)
    , FunctionBody(..)
    , Constraint(..)
    , IndexConstraint
@@ -20,6 +19,7 @@ module Parser.Netlist.Types.Representation
    , Function(..)
    , Designator(..)
    , Calculation(..)
+   , Value(..)
    , Signal(..)
    , Constant(..)
    ) where
@@ -57,25 +57,23 @@ data Type =
    -- |Integer type
    -- Covers some integer range
    -- Must be within implementation bounds
-   | IntegerType IntegerRange
+   | IntegerType
    -- |Floating type
    -- Covers some floating point range
    -- Must be within implementation bounds
-   | FloatingType FloatRange
+   | FloatingType
    -- |Physical type
    -- Integer range of values
    -- Name of base unit
    -- Secondary unit declarations
-   | PhysicalType IntegerRange String (MapS.Map String Int64)
+   | PhysicalType String (MapS.Map String Int64)
    -- |Array type
    -- Array of another type
    -- ?? Does this need entire subtype indication, not sure if need function and/or constraint
    | ArrayType
-      { array_bounds :: [Subtype]
-      --{ array_bounds :: ArrayBounds
-      , array_typeName :: String
-      , array_typePackage :: NetlistName
-      , array_typeData :: Subtype
+      { array_bounds :: [(NetlistName,String,Subtype)]
+      , array_elementTypeName :: (NetlistName,String)
+      , array_elementTypeData :: Subtype
       }
    deriving (Eq,Ord,Show)
 
@@ -122,24 +120,36 @@ data RangeDirection =
 -- Includes resolution function, type, constraint
 -- ?? Link to Function name or function body
 data Subtype =
-   Subtype
-      { subtype_resolutionFunction :: Maybe FunctionBody
-      , subtype_typeName :: String
-      , subtype_typePackage :: NetlistName
-      , subtype_typeData :: Type
-      , subtype_Constraint :: Maybe Constraint
+   EnumerationSubtype
+      { enumSubtype_resolutionFunction :: Maybe (NetlistName,String)
+      , enumSubtype_typeName :: (NetlistName,String)
+      , enumSubtype_enums :: [Enumerate]
+      , enumSubtype_constraint :: (Enumerate,Enumerate)
       }
-      deriving (Eq,Ord,Show)
-
--- |Array bounds
--- Range/dimensions of the array type specified
-data ArrayBounds =
-   -- |Constrained
-   -- Predefined array dimensions
-   Constrained [(String,NetlistName,Subtype)]
-   -- |Unconstrained
-   -- Array dimension types defined, but not actual array size
-   | Unconstrained [(String,NetlistName,Subtype)]
+   | IntegerSubtype
+      { intSubtype_resolutionFunction :: Maybe (NetlistName,String)
+      , intSubtype_typeName :: (NetlistName,String)
+      , intSubtype_constraint :: IntegerRange
+      }
+   | FloatingSubtype
+      { floatSubtype_resolutionFunction :: Maybe (NetlistName,String)
+      , floatSubtype_typeName :: (NetlistName,String)
+      , floatSubtype_constraint :: FloatRange
+      }
+   | PhysicalSubtype
+      { physSubtype_resolutionFunction :: Maybe (NetlistName,String)
+      , physSubtype_typeName :: (NetlistName,String)
+      , physSubtype_baseUnit :: String
+      , physSubtype_secondaryUnits :: MapS.Map String Int64
+      , physSubtype_constraint :: IntegerRange
+      }
+   | ArraySubtype
+      { arraySubtype_resolutionFunction :: Maybe (NetlistName,String)
+      , arraySubtype_typeName :: (NetlistName,String)
+      , arraySubtype_bounds :: [(NetlistName,String,Subtype)]
+      , arraySubtype_elementTypeName :: (NetlistName,String)
+      , arraySubtype_elementTypeData :: Subtype
+      }
    deriving (Eq,Ord,Show)
 
 -- |Function body
@@ -208,7 +218,7 @@ data Calculation =
    deriving (Show)
 
 data Value =
-   Value_Enum String Enumerate
+   Value_Enum String Enumerate -- ?? Is the type name String needed?
    | Value_Int Int64
    | Value_Float Float
    | Value_Physical Int64
@@ -254,8 +264,14 @@ data ArrayAttributes =
 -- |Constant representation
 -- Type of constant, constant value
 -- ?? Only can have not calculation ("deferred constant") in package (header) declaration, make separate type
-data Constant = Constant Type (Maybe Value)
-              deriving (Show)
+data Constant =
+   Constant
+      { constant_typePackage :: NetlistName
+      , constant_typeName :: String
+      , constant_typeData :: Subtype
+      , constant_Value :: Maybe Value
+      }
+   deriving (Show)
 
 -- |Signal representation
 -- Resolution function body, type of signal

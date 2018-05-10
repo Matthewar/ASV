@@ -110,7 +110,7 @@ getSomeTypeNames includeEnums = concat . (map convertTypes) . MapS.toList
             in if includeEnums
                   then (name:enumNames)
                   else [name]
-         convertTypes (name,PhysicalType _ baseUnit otherUnits) = (name:baseUnit:MapS.keys otherUnits)
+         convertTypes (name,PhysicalType baseUnit otherUnits) = (name:baseUnit:MapS.keys otherUnits)
          convertTypes (name,_) = [name]
          extractEnumNames :: Enumerate -> Maybe String
          extractEnumNames (Enum_Identifier str) = Just str

@@ -13,8 +13,6 @@ import Parser.Netlist.Types.Representation
          , Enumerate(..)
          , RangeDirection(..)
          , Subtype(..)
-         , ArrayBounds(..)
-         , Constraint(..)
          , Function(..)
          , Designator(..)
          , NetlistName(..)
@@ -33,21 +31,24 @@ import Lexer.Types.Error (getFloatBound)
 import qualified Data.Map.Strict as MapS
 import Data.Function ((&))
 
+thisPackage :: NetlistName
+thisPackage = NetlistName "STD" "STANDARD"
+
 types :: TypeStore
 types =
-   [  ( "BOOLEAN"
+   [  ( "ANON'BOOLEAN"
       , EnumerationType
          [ Enum_Identifier "FALSE"
          , Enum_Identifier "TRUE"
          ]
       )
-   ,  ( "BIT"
+   ,  ( "ANON'BIT"
       , EnumerationType
          [ Enum_Char '0'
          , Enum_Char '1'
          ]
       )
-   ,  ( "CHARACTER"
+   ,  ( "ANON'CHARACTER"
       , EnumerationType
          [ Enum_Identifier "NUL"
          , Enum_Identifier "SOH"
@@ -178,7 +179,7 @@ types =
          , Enum_Identifier "DEL"
          ]
       )
-   ,  ( "SEVERITY_LEVEL"
+   ,  ( "ANON'SEVERITY_LEVEL"
       , EnumerationType
          [ Enum_Identifier "NOTE"
          , Enum_Identifier "WARNING"
@@ -186,102 +187,165 @@ types =
          , Enum_Identifier "FAILURE"
          ]
       )
-   ,  ( "INTEGER"
-      , IntegerType $
-         IntegerRange 
-            minBound
-            maxBound
-            To
+   ,  ( "ANON'INTEGER"
+      , IntegerType
       )
-   ,  ( "REAL"
-      , FloatingType $
-         FloatRange
-            (-floatBound)
-            floatBound
-            To
+   ,  ( "ANON'REAL"
+      , FloatingType
       )
-   ,  ( "TIME"
+   ,  ( "ANON'TIME"
       , PhysicalType
+         "FS"
+         (
+            [ ("PS",1000)
+            , ("NS",10^6)
+            , ("US",10^9)
+            , ("MS",10^12)
+            , ("SEC",10^15)
+            , ("MIN",60*10^15)
+            , ("HOUR",(60^2)*(10^15))
+            ]
+            & MapS.fromList
+         )
+      )
+   ,  ( "ANON'STRING"
+      , ArrayType
+         [(thisPackage,"POSITIVE",subtypes MapS.! "POSITIVE")]
+         (thisPackage,"CHARACTER")
+         (subtypes MapS.! "CHARACTER")
+      )
+   ,  ( "ANON'BIT_VECTOR"
+      , ArrayType
+         [(thisPackage,"NATURAL",subtypes MapS.! "NATURAL")]
+         (thisPackage,"BIT")
+         (subtypes MapS.! "BIT")
+      )
+   ]
+   & MapS.fromList
+
+subtypes :: SubtypeStore
+subtypes =
+   [  ( "BOOLEAN"
+      , (types MapS.! "ANON'BOOLEAN") &
+         (\(EnumerationType enums) ->
+            EnumerationSubtype
+               Nothing
+               (thisPackage,"ANON'BOOLEAN")
+               enums
+               (head enums,last enums)
+         )
+      )
+   ,  ( "BIT"
+      , (types MapS.! "ANON'BIT") &
+         (\(EnumerationType enums) ->
+            EnumerationSubtype
+               Nothing
+               (thisPackage,"ANON'BIT")
+               enums
+               (head enums,last enums)
+         )
+      )
+   ,  ( "CHARACTER"
+      , (types MapS.! "ANON'CHARACTER") &
+         (\(EnumerationType enums) ->
+            EnumerationSubtype
+               Nothing
+               (thisPackage,"ANON'CHARACTER")
+               enums
+               (head enums,last enums)
+         )
+      )
+   ,  ( "SEVERITY_LEVEL"
+      , (types MapS.! "ANON'SEVERITY_LEVEL") &
+         (\(EnumerationType enums) ->
+            EnumerationSubtype
+               Nothing
+               (thisPackage,"ANON'SEVERITY_LEVEL")
+               enums
+               (head enums,last enums)
+         )
+      )
+   ,  ( "INTEGER"
+      , IntegerSubtype
+         Nothing
+         (thisPackage,"ANON'INTEGER")
          ( IntegerRange
             minBound
             maxBound
             To
          )
-         "fs"
+      )
+   ,  ( "REAL"
+      , FloatingSubtype
+         Nothing
+         (thisPackage,"ANON'REAL")
+         ( FloatRange
+            (-floatBound)
+            floatBound
+            To
+         )
+      )
+   ,  ( "TIME"
+      , PhysicalSubtype
+         Nothing
+         (thisPackage,"ANON'TIME")
+         "FS"
          (
-            [ ("ps",1000)
-            , ("ns",10^6)
-            , ("us",10^9)
-            , ("ms",10^12)
-            , ("sec",10^15)
-            , ("min",60*10^15)
-            , ("hour",(60^2)*(10^15))
+            [ ("PS",1000)
+            , ("NS",10^6)
+            , ("US",10^9)
+            , ("MS",10^12)
+            , ("SEC",10^15)
+            , ("MIN",60*10^15)
+            , ("HOUR",(60^2)*(10^15))
             ]
             & MapS.fromList
          )
+         ( IntegerRange
+            minBound
+            maxBound
+            To
+         )
+      )
+   ,  ( "NATURAL"
+      , IntegerSubtype
+         Nothing
+         (thisPackage,"ANON'INTEGER")
+         ( IntegerRange
+            0
+            maxBound
+            To
+         )
+      )
+   ,  ( "POSITIVE"
+      , IntegerSubtype
+         Nothing
+         (thisPackage,"ANON'INTEGER")
+         ( IntegerRange
+            1
+            maxBound
+            To
+         )
       )
    ,  ( "STRING"
-      , ArrayType
-         [subtypes MapS.! "POSITIVE"]
-         "STRING"
-         (NetlistName "STD" "STANDARD")
-         ( Subtype
-            Nothing
-            "CHARACTER"
-            (NetlistName "STD" "STANDARD")
-            (types MapS.! "CHARACTER")
-            Nothing
-         )
+      , ArraySubtype
+         Nothing
+         (thisPackage,"ANON'STRING")
+         [(thisPackage,"POSITIVE",subtypes MapS.! "POSITIVE")]
+         (thisPackage,"CHARACTER")
+         (subtypes MapS.! "CHARACTER")
       )
    ,  ( "BIT_VECTOR"
-      , ArrayType
-         [subtypes MapS.! "NATURAL"]
-         "BIT"
-         (NetlistName "STD" "STANDARD")
-         ( Subtype
-            Nothing
-            "BIT"
-            (NetlistName "STD" "STANDARD")
-            (types MapS.! "BIT")
-            Nothing
-         )
+      , ArraySubtype
+         Nothing
+         (thisPackage,"ANON'BIT_VECTOR")
+         [(thisPackage,"NATURAL",subtypes MapS.! "NATURAL")]
+         (thisPackage,"BIT")
+         (subtypes MapS.! "BIT")
       )
    ]
    & MapS.fromList
    where floatBound = getFloatBound (0.0 :: Double)
-
-subtypes :: SubtypeStore
-subtypes =
-   [  ( "NATURAL"
-      , Subtype
-         Nothing
-         "INTEGER"
-         (NetlistName "STD" "STANDARD")
-         (types MapS.! "INTEGER")
-         ( Just $
-            Constraint_IntegerRange $
-               IntegerRange
-                  0
-                  maxBound
-                  To
-         )
-      )
-   ,  ( "POSITIVE"
-      , Subtype
-         Nothing
-         "INTEGER"
-         (NetlistName "STD" "STANDARD")
-         (types MapS.! "INTEGER")
-         ( Just $
-            Constraint_IntegerRange $
-               IntegerRange
-                  1
-                  maxBound
-                  To
-         )
-      )
-   ]
-   & MapS.fromList
 
 functions :: FunctionStore
 functions =

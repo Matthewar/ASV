@@ -24,4 +24,9 @@ outputImports fileName scope =
          ++ (MapS.elems $ scopeSignalPackage scope)
        uniquePackageNames = map show $ nub packageNames
        importStr = concat $ map (\packageName -> "import qualified " ++ packageName ++ newline) uniquePackageNames
-   in liftIO $ appendFile fileName $ newline ++ importStr
+       baseImportsStr =
+         "import qualified Data.Map.Strict"
+         ++ newline
+         ++ "import Data.Int (Int64)"
+         ++ newline
+   in liftIO $ appendFile fileName $ newline ++ baseImportsStr ++ newline ++ importStr ++ newline
