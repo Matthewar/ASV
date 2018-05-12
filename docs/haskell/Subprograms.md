@@ -14,7 +14,7 @@ Names must involve types because subprograms in VHDL can be overloaded.
 ## Functions
 ### Name
 ```
-<haskell_function_name> ::= function'<designator>'<INPUT_TYPES>'<OUTPUT_TYPE>
+<haskell_function_name> ::= function'<designator>'in'<INPUT_TYPES>'out'<OUTPUT_TYPE>
 <designator> ::= op'<OP_STRING>
                | iden'<FUNCTION_NAME>
 ```
@@ -22,7 +22,7 @@ Names must involve types because subprograms in VHDL can be overloaded.
    - String representation of operators
 - `<FUNCTION_NAME>`: Identifier function name (upper case)
 - `<INPUT_TYPES>`: List of input types (upper case) separated by the `'` character
-   - IE: `<INPUT_TYPES> ::= <INPUT_TYPE>'<INPUT_TYPES>`
+   - IE: `<INPUT_TYPES> ::= <INPUT_TYPE>'_'<INPUT_TYPES>`
 - `<OUTPUT_TYPE>`: Output type name (upper case)
 
 ### Type

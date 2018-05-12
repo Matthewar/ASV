@@ -134,7 +134,7 @@ checkFunctions packageName package name pos =
 findPackageFunctionsByOperator :: Operator -> FunctionStore -> FunctionStore
 findPackageFunctionsByOperator expectedOp =
    let functionFind :: Function -> (Maybe FunctionBody) -> Bool
-       functionFind (Function (Designator_Operator op) _ _) _ = op == expectedOp
+       functionFind (Function (Designator_Operator op) _ _ _) _ = op == expectedOp
        functionFind _ _ = False
    in MapS.filterWithKey functionFind
 
@@ -142,7 +142,7 @@ findPackageFunctionsByOperator expectedOp =
 findPackageFunctionsByIdentifier :: String -> FunctionStore -> FunctionStore
 findPackageFunctionsByIdentifier expectedName =
    let functionFind :: Function -> (Maybe FunctionBody) -> Bool
-       functionFind (Function (Designator_Identifier name) _ _) _ = name == expectedName
+       functionFind (Function (Designator_Identifier name) _ _ _) _ = name == expectedName
        functionFind _ _ = False
    in MapS.filterWithKey functionFind
 

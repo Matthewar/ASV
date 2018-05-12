@@ -28,5 +28,4 @@ outputImports fileName scope =
          "import qualified Data.Map.Strict"
          ++ newline
          ++ "import Data.Int (Int64)"
-         ++ newline
-   in liftIO $ appendFile fileName $ newline ++ baseImportsStr ++ newline ++ importStr ++ newline
+   in liftIO $ appendFile fileName $ newline ++ baseImportsStr ++ newline ++ importStr

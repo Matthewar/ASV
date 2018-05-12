@@ -7,6 +7,7 @@ module Sim.Types
 
 import qualified Data.Map.Strict as MapS
 import Data.List (intersperse)
+import Data.Int (Int64)
 import Data.Function ((&))
 import Control.Monad.Except
          ( ExceptT
@@ -46,7 +47,23 @@ printEnumType file name enums =
    let typeName = "Type'" ++ name
        convertEnum = showEnum typeName
        typeBaseFormatting = concat $ intersperse (newline ++ tab ++ "| ") $ map convertEnum enums
-       typeBaseStr = "data " ++ typeName ++ " = " ++ newline ++ tab ++ typeBaseFormatting
+       typeBaseStr =
+         "data " ++ typeName ++ " ="
+         ++ newline ++ tab
+         ++ typeBaseFormatting
+         ++ newline ++ tab
+         ++ "deriving (Eq,Ord)"
+       createComparisonFunc operatorName operatorStr =
+         let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'_'" ++ typeName ++ "'out'Type'ANON'BOOLEAN"
+         in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ "Type'ANON'BOOLEAN"
+            ++ newline
+            ++ funcName ++ " value1 value2 = boolToBoolean $ value1 " ++ operatorStr ++ " value2"
+       equalStr = createComparisonFunc "EQUAL" "=="
+       nequalStr = createComparisonFunc "NEQUAL" "/="
+       lessThanStr = createComparisonFunc "LESSTHAN" "<"
+       lessThanOrEqualStr = createComparisonFunc "LESSTHANOREQUAL" "<="
+       greaterThanStr = createComparisonFunc "GREATERTHAN" ">"
+       greaterThanOrEqualStr = createComparisonFunc "GREATERTHANOREQUAL" ">="
 --       typeScalar =
 --         "instance (VHDL_Scalar "
 --         ++ name
@@ -77,11 +94,16 @@ printEnumType file name enums =
 --         ++ discretePredStr
 --         ++ discreteLeftOfStr
 --         ++ discreteRightOfStr
---       typeOps =
---         "instance (VHDL_Eq "
---         ++ name
---         ++ 
-   in liftIO $ appendFile file $ newline ++ typeBaseStr ++ newline -- ++ typeScalar ++ newline ++ typeDiscrete
+   in liftIO $ appendFile file $
+         newline ++ typeBaseStr
+         ++ newline ++ equalStr
+         ++ newline ++ nequalStr
+         ++ newline ++ lessThanStr
+         ++ newline ++ lessThanOrEqualStr
+         ++ newline ++ greaterThanStr
+         ++ newline ++ greaterThanOrEqualStr
+         ++ newline
+         -- ++ newline ++ typeScalar ++ newline ++ typeDiscrete
 --   where makeDiscretePosVal _ [] posStrLst valStrLst = (concat posStrLst,concat valStrLst)
 --         makeDiscretePosVal val (enum:enums) posStrLst valStrLst =
 --            let convEnum = convertEnum enum
@@ -202,7 +224,71 @@ showEnum typeName (Enum_Char chr) = typeName ++ "'Char'" ++ (characterMap MapS.!
 printIntType :: FilePath -> String -> ExceptT ConverterError IO ()
 printIntType file name =
    let typeName = "Type'" ++ name
-       typeBaseStr = "newtype " ++ typeName ++ " = " ++ typeName ++ " Int64"
+       typeBaseStr =
+         "newtype " ++ typeName ++ " = "
+         ++ newline ++ tab
+         ++ typeName ++ " Int64"
+         ++ newline ++ tab
+         ++ "deriving (Eq,Ord)"
+       constructorStr =
+         let funcName = "mk" ++ typeName
+             highVal = show $ (maxBound :: Int64)
+             lowVal = show $ (minBound :: Int64)
+         in funcName ++ " :: Integer -> " ++ typeName
+            ++ newline
+            ++ funcName ++ " value = "
+            ++ newline ++ tab
+            ++ "if value > " ++ highVal ++ " || value < " ++ lowVal
+            ++ newline ++ tab ++ tab
+            ++ "then " ++ typeName ++ " $ fromInteger value"
+            ++ newline ++ tab ++ tab
+            ++ "else error $ \"" ++ typeName ++ " value \" ++ show value ++ \" is outside of range " ++ lowVal ++ " < value < " ++ highVal ++ "\""
+       extractStr =
+         let funcName = "extract" ++ typeName
+         in funcName ++ " :: " ++ typeName ++ " -> Integer"
+            ++ newline
+            ++ funcName ++ "(" ++ typeName ++ " value) = toInteger value"
+       createComparisonFunc operatorName operatorStr =
+         let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'_'" ++ typeName ++ "'out'Type'ANON'BOOLEAN"
+         in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ "Type'ANON'BOOLEAN"
+            ++ newline
+            ++ funcName ++ " value1 value2 = boolToBoolean $ value1 " ++ operatorStr ++ " value2"
+       equalStr = createComparisonFunc "EQUAL" "=="
+       nequalStr = createComparisonFunc "NEQUAL" "/="
+       lessThanStr = createComparisonFunc "LESSTHAN" "<"
+       lessThanOrEqualStr = createComparisonFunc "LESSTHANOREQUAL" "<="
+       greaterThanStr = createComparisonFunc "GREATERTHAN" ">"
+       greaterThanOrEqualStr = createComparisonFunc "GREATERTHANOREQUAL" ">="
+       createArithFunc operatorName operatorStr =
+         let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'_'" ++ typeName ++ "'out'" ++ typeName
+             extractFunc = "extract" ++ typeName
+             constrFunc = "mk" ++ typeName
+         in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ typeName
+            ++ newline
+            ++ funcName ++ " value1 value2 = " ++ constrFunc ++ " $ (" ++ extractFunc ++ " value1) " ++ operatorStr ++ " (" ++ extractFunc ++ " value2)"
+       addStr = createArithFunc "PLUS" "+"
+       minusStr = createArithFunc "MINUS" "-"
+       multStr = createArithFunc "MULT" "*"
+       divStr = createArithFunc "DIV" "`div`"
+       modStr = createArithFunc "MOD" "`mod`"
+       remStr = createArithFunc "REM" "`rem`"
+       createUnaryOperation operatorName operatorStr =
+         let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'out'" ++ typeName
+             extractFunc = "extract" ++ typeName
+             constrFunc = "mk" ++ typeName
+         in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName
+            ++ newline
+            ++ funcName ++ " = " ++ constrFunc ++ " . " ++ operatorStr ++ " . " ++ extractFunc
+       absStr = createUnaryOperation "ABS" "abs"
+       plusStr = createUnaryOperation "PLUS" "(\\s -> s)"
+       negStr = createUnaryOperation "MINUS" "negate"
+       expStr =
+         let funcName = "function'op'EXP'in'" ++ typeName ++ "'_'Type'ANON'INTEGER'out'" ++ typeName
+             extractFunc = "extract" ++ typeName
+             constrFunc = "mk" ++ typeName
+         in funcName ++ " :: " ++ typeName ++ " -> Type'ANON'INTEGER -> " ++ typeName
+            ++ newline
+            ++ funcName ++ " value1 value2 = " ++ constrFunc ++ " $ round $ (fromIntegral $ " ++ extractFunc ++ " value1) ^^ (extractType'ANON'INTEGER value2)"
 --       typeScalar =
 --         "instance (VHDL_Scalar "
 --         ++ name
@@ -219,8 +305,6 @@ printIntType file name =
 --         ++ newline ++ tab
 --         ++ "scalarLow = "
 --         ++ show low
---       typeOps =
---         "instance (VHDL_Add "
 --       typeDiscrete =
 --         "instance (VHDL_Discrete "
 --         ++ typeName
@@ -235,26 +319,241 @@ printIntType file name =
 --         ++ " val"
 --         ++ newline ++ tab
 --         ++ "discreteSucc val = va 
-   in liftIO $ appendFile file $ newline ++ typeBaseStr ++ newline -- ++ typeScalar ++ newline ++ typeOps ++ typeDiscrete
+   in liftIO $ appendFile file $
+         newline ++ typeBaseStr
+         ++ newline ++ constructorStr
+         ++ newline ++ extractStr
+         ++ newline ++ equalStr
+         ++ newline ++ nequalStr
+         ++ newline ++ lessThanStr
+         ++ newline ++ lessThanOrEqualStr
+         ++ newline ++ greaterThanStr
+         ++ newline ++ greaterThanOrEqualStr
+         ++ newline ++ addStr
+         ++ newline ++ minusStr
+         ++ newline ++ multStr
+         ++ newline ++ divStr
+         ++ newline ++ modStr
+         ++ newline ++ remStr
+         ++ newline ++ absStr
+         ++ newline ++ plusStr
+         ++ newline ++ negStr
+         ++ newline ++ expStr
+         ++ newline
+         -- ++ typeScalar ++ newline ++ typeDiscrete
 
 printFloatType :: FilePath -> String -> ExceptT ConverterError IO ()
 printFloatType file name =
    let typeName = "Type'" ++ name
-       typeBaseStr = "newtype " ++ typeName ++ " = " ++ typeName ++ " Double"
-   in liftIO $ appendFile file $ newline ++ typeBaseStr ++ newline
+       typeBaseStr =
+         "newtype " ++ typeName ++ " = "
+         ++ newline ++ tab
+         ++ typeName ++ " Double"
+         ++ newline ++ tab
+         ++ "deriving (Eq,Ord)"
+       constructorStr =
+         let funcName = "mk" ++ typeName
+         in funcName ++ " :: Double -> " ++ typeName
+            ++ newline
+            ++ funcName ++ " value ="
+            ++ newline ++ tab
+            ++ "case value of"
+            ++ newline ++ tab ++ tab
+            ++ "_ | isInfinite value -> error \"" ++ typeName ++ " value is outside of 64 bit IEEE 754 (REAL implementation) range\""
+            ++ newline ++ tab ++ tab
+            ++ "_ -> " ++ typeName ++ " value"
+       extractStr =
+         let funcName = "extract" ++ typeName
+         in funcName ++ " :: " ++ typeName ++ " -> Double"
+            ++ newline
+            ++ funcName ++ "(" ++ typeName ++ " value) = value"
+       createComparisonFunc operatorName operatorStr =
+         let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'_'" ++ typeName ++ "'out'Type'ANON'BOOLEAN"
+         in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ "Type'ANON'BOOLEAN"
+            ++ newline
+            ++ funcName ++ " value1 value2 = boolToBoolean $ value1 " ++ operatorStr ++ " value2"
+       equalStr = createComparisonFunc "EQUAL" "=="
+       nequalStr = createComparisonFunc "NEQUAL" "/="
+       lessThanStr = createComparisonFunc "LESSTHAN" "<"
+       lessThanOrEqualStr = createComparisonFunc "LESSTHANOREQUAL" "<="
+       greaterThanStr = createComparisonFunc "GREATERTHAN" ">"
+       greaterThanOrEqualStr = createComparisonFunc "GREATERTHANOREQUAL" ">="
+       createArithFunc operatorName operatorStr =
+         let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'_'" ++ typeName ++ "'out'" ++ typeName
+             extractFunc = "extract" ++ typeName
+             constrFunc = "mk" ++ typeName
+         in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ typeName
+            ++ newline
+            ++ funcName ++ " value1 value2 = " ++ constrFunc ++ " $ (" ++ extractFunc ++ " value1) " ++ operatorStr ++ " (" ++ extractFunc ++ " value2)"
+       addStr = createArithFunc "PLUS" "+"
+       minusStr = createArithFunc "MINUS" "-"
+       multStr = createArithFunc "MULT" "*"
+       divStr = createArithFunc "DIV" "/"
+       createUnaryOperation operatorName operatorStr =
+         let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'out'" ++ typeName
+             extractFunc = "extract" ++ typeName
+             constrFunc = "mk" ++ typeName
+         in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName
+            ++ newline
+            ++ funcName ++ " = " ++ constrFunc ++ " . " ++ operatorStr ++ " . " ++ extractFunc
+       absStr = createUnaryOperation "ABS" "abs"
+       plusStr = createUnaryOperation "PLUS" "(\\s -> s)"
+       negStr = createUnaryOperation "MINUS" "negate"
+       expStr =
+         let funcName = "function'op'EXP'in'" ++ typeName ++ "'_'Type'ANON'INTEGER'out'" ++ typeName
+             extractFunc = "extract" ++ typeName
+             constrFunc = "mk" ++ typeName
+         in funcName ++ " :: " ++ typeName ++ " -> Type'ANON'INTEGER -> " ++ typeName
+            ++ newline
+            ++ funcName ++ " value1 value2 = " ++ constrFunc ++ " $ (" ++ extractFunc ++ " value1) ^^ (extractType'ANON'INTEGER value2)"
+   in liftIO $ appendFile file $
+         newline ++ typeBaseStr
+         ++ newline ++ constructorStr
+         ++ newline ++ extractStr
+         ++ newline ++ equalStr
+         ++ newline ++ nequalStr
+         ++ newline ++ lessThanStr
+         ++ newline ++ lessThanOrEqualStr
+         ++ newline ++ greaterThanStr
+         ++ newline ++ greaterThanOrEqualStr
+         ++ newline ++ addStr
+         ++ newline ++ minusStr
+         ++ newline ++ multStr
+         ++ newline ++ divStr
+         ++ newline ++ absStr
+         ++ newline ++ plusStr
+         ++ newline ++ negStr
+         ++ newline ++ expStr
+         ++ newline
 
 printPhysicalType :: FilePath -> String -> ExceptT ConverterError IO ()
 printPhysicalType fileName name =
    let typeName = "Type'" ++ name
-       typeBaseStr = "newtype " ++ typeName ++ " = " ++ typeName ++ " Int64"
-   in liftIO $ appendFile fileName $ newline ++ typeBaseStr ++ newline
+       typeBaseStr =
+         "newtype " ++ typeName ++ " = "
+         ++ newline ++ tab
+         ++ typeName ++ " Int64"
+         ++ newline ++ tab
+         ++ "deriving (Eq,Ord)"
+       constructorStr =
+         let funcName = "mk" ++ typeName
+             highVal = show $ (maxBound :: Int64)
+             lowVal = show $ (minBound :: Int64)
+         in funcName ++ " :: Integer -> " ++ typeName
+            ++ newline
+            ++ funcName ++ " value = "
+            ++ newline ++ tab
+            ++ "if value > " ++ highVal ++ " || value < " ++ lowVal
+            ++ newline ++ tab ++ tab
+            ++ "then " ++ typeName ++ " $ fromInteger value"
+            ++ newline ++ tab ++ tab
+            ++ "else error $ \"" ++ typeName ++ " value \" ++ show value ++ \" is outside of range " ++ lowVal ++ " < value < " ++ highVal ++ "\""
+       extractStr =
+         let funcName = "extract" ++ typeName
+         in funcName ++ " :: " ++ typeName ++ " -> Integer"
+            ++ newline
+            ++ funcName ++ "(" ++ typeName ++ " value) = toInteger value"
+       createComparisonFunc operatorName operatorStr =
+         let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'_'" ++ typeName ++ "'out'Type'ANON'BOOLEAN"
+         in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ "Type'ANON'BOOLEAN"
+            ++ newline
+            ++ funcName ++ " value1 value2 = boolToBoolean $ value1 " ++ operatorStr ++ " value2"
+       equalStr = createComparisonFunc "EQUAL" "=="
+       nequalStr = createComparisonFunc "NEQUAL" "/="
+       lessThanStr = createComparisonFunc "LESSTHAN" "<"
+       lessThanOrEqualStr = createComparisonFunc "LESSTHANOREQUAL" "<="
+       greaterThanStr = createComparisonFunc "GREATERTHAN" ">"
+       greaterThanOrEqualStr = createComparisonFunc "GREATERTHANOREQUAL" ">="
+       createArithFunc operatorName operatorStr =
+         let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'_'" ++ typeName ++ "'out'" ++ typeName
+             extractFunc = "extract" ++ typeName
+             constrFunc = "mk" ++ typeName
+         in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ typeName
+            ++ newline
+            ++ funcName ++ " value1 value2 = " ++ constrFunc ++ " $ (" ++ extractFunc ++ " value1) " ++ operatorStr ++ " (" ++ extractFunc ++ " value2)"
+       addStr = createArithFunc "PLUS" "+"
+       minusStr = createArithFunc "MINUS" "-"
+       multStr =
+         let funcName1 = "function'op'MULT'in'" ++ typeName ++ "'_'Type'ANON'INTEGER'out'" ++ typeName
+             funcName2 = "function'op'MULT'in'Type'ANON'INTEGER'_'" ++ typeName ++ "'out'" ++ typeName
+             funcName3 = "function'op'MULT'in'" ++ typeName ++ "'_'Type'ANON'REAL'out'" ++ typeName
+             funcName4 = "function'op'MULT'in'Type'ANON'REAL'_'" ++ typeName ++ "'out'" ++ typeName
+         in funcName1 ++ " :: " ++ typeName ++ " -> Type'ANON'INTEGER -> " ++ typeName
+            ++ newline
+            ++ funcName1 ++ " value1 value2 = mk" ++ typeName ++ " $ (extract" ++ typeName ++ " value1) * (extractType'ANON'INTEGER value2)"
+            ++ newline
+            ++ funcName2 ++ " :: Type'ANON'INTEGER -> " ++ typeName ++ " -> " ++ typeName
+            ++ newline
+            ++ funcName2 ++ " value1 value2 = " ++ funcName1 ++ " value2 value1"
+            ++ newline
+            ++ funcName3 ++ " :: " ++ typeName ++ " -> Type'ANON'REAL -> " ++ typeName
+            ++ newline
+            ++ funcName3 ++ " value1 value2 = mk" ++ typeName ++ " $ round $ (fromIntegral $ extract" ++ typeName ++ " value1) * (extractType'ANON'REAL value2)"
+            ++ newline
+            ++ funcName4 ++ " :: Type'ANON'REAL -> " ++ typeName ++ " -> " ++ typeName
+            ++ newline
+            ++ funcName4 ++ " value1 value2 = " ++ funcName3 ++ " value2 value1"
+       divStr =
+         let funcName1 = "function'op'DIV'in'" ++ typeName ++ "'_'Type'ANON'INTEGER'out'" ++ typeName
+             funcName2 = "function'op'DIV'in'" ++ typeName ++ "'_'Type'ANON'REAL'out'" ++ typeName
+             funcName3 = "function'op'DIV'in'" ++ typeName ++ "'_'" ++ typeName ++ "'out'UniversalInteger"
+         in funcName1 ++ " :: " ++ typeName ++ " -> Type'ANON'INTEGER -> " ++ typeName
+            ++ newline
+            ++ funcName1 ++ " value1 value2 = mk" ++ typeName ++ " $ (extract" ++ typeName ++ " value1) `div` (extractType'ANON'INTEGER value2)"
+            ++ newline
+            ++ funcName2 ++ " :: " ++ typeName ++ " -> Type'ANON'REAL -> " ++ typeName
+            ++ newline
+            ++ funcName2 ++ " value1 value2 = mk" ++ typeName ++ " $ round $ (fromIntegral $ extract" ++ typeName ++ " value1) / (extractType'ANON'REAL value2)"
+            ++ newline
+            ++ funcName3 ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> Integer"
+            ++ newline
+            ++ funcName3 ++ " value1 value2 = (extract" ++ typeName ++ " value1) `div` (extract" ++ typeName ++ " value2)"
+       createUnaryOperation operatorName operatorStr =
+         let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'out'" ++ typeName
+             extractFunc = "extract" ++ typeName
+             constrFunc = "mk" ++ typeName
+         in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName
+            ++ newline
+            ++ funcName ++ " = " ++ constrFunc ++ " . " ++ operatorStr ++ " . " ++ extractFunc
+       absStr = createUnaryOperation "ABS" "abs"
+       plusStr = createUnaryOperation "PLUS" "(\\s -> s)"
+       negStr = createUnaryOperation "MINUS" "negate"
+       expStr =
+         let funcName = "function'op'EXP'in'" ++ typeName ++ "'_'Type'ANON'INTEGER'out'" ++ typeName
+             extractFunc = "extract" ++ typeName
+             constrFunc = "mk" ++ typeName
+         in funcName ++ " :: " ++ typeName ++ " -> Type'ANON'INTEGER -> " ++ typeName
+            ++ newline
+            ++ funcName ++ " value1 value2 = " ++ constrFunc ++ " $ round $ (fromIntegral $ " ++ extractFunc ++ " value1) ^^ (extractType'ANON'INTEGER value2)"
+   in liftIO $ appendFile fileName $
+         newline ++ typeBaseStr
+         ++ newline ++ constructorStr
+         ++ newline ++ extractStr
+         ++ newline ++ equalStr
+         ++ newline ++ nequalStr
+         ++ newline ++ lessThanStr
+         ++ newline ++ lessThanOrEqualStr
+         ++ newline ++ greaterThanStr
+         ++ newline ++ greaterThanOrEqualStr
+         ++ newline ++ addStr
+         ++ newline ++ minusStr
+         ++ newline ++ multStr
+         ++ newline ++ divStr
+         ++ newline ++ absStr
+         ++ newline ++ plusStr
+         ++ newline ++ negStr
+         ++ newline ++ expStr
+         ++ newline
 
 printArrayType :: FilePath -> String -> [(NetlistName,String,Subtype)] -> (NetlistName,String) -> ExceptT ConverterError IO ()
 printArrayType fileName name bounds (elemTypePackage,elemTypeName) =
    let typeName = "Type'" ++ name
        typeBaseStr =
-         "newtype " ++ typeName ++ " = "
+         "newtype " ++ typeName ++ " ="
+         ++ newline ++ tab
          ++ typeName ++ " (Data.Map.Strict.Map ("
          ++ (concat $ intersperse "," $ map (\(subtypePackage,subtypeName,_) -> show subtypePackage ++ ".Type'" ++ subtypeName) bounds)
          ++ ") " ++ show elemTypePackage ++ ".Type'" ++ elemTypeName ++ ")"
-   in liftIO $ appendFile fileName $ newline ++ typeBaseStr ++ newline
+   in liftIO $ appendFile fileName $
+         newline ++ typeBaseStr
+         ++ newline

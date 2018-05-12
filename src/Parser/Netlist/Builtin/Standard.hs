@@ -352,59 +352,10 @@ functions =
    [  ( Function
          (Designator_Identifier "NOW")
          []
-         (types MapS.! "TIME")
+         (thisPackage,"TIME")
+         (subtypes MapS.! "TIME")
       , Nothing
       ) -- ?? MUST BE DEALT WITH IN INTERMEDIARY CONVERSION
---   ,  ( Function
---         (Designator_Operator And)
---         [ FunctionInterface FunctionInterfaceType_Constant "L" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
---         , FunctionInterface FunctionInterfaceType_Constant "R" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
---         ]
---         (types MapS.! "BOOLEAN")
---      ,
---      FunctionBody
---         [ Statement_Return $ Calculation_Index (Calculation_Const "TABLE") [(Calculation_Const "L"),(Calculation_Const "R")]
---         ]
---      )
---   ,  ( Function
---         (Designator_Operator Or)
---         [ FunctionInterface FunctionInterfaceType_Constant "L" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
---         , FunctionInterface FunctionInterfaceType_Constant "R" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
---         ]
---         (types MapS.! "BOOLEAN")
---      ,
---      )
---   ,  ( Function
---         (Designator_Operator Xor)
---         [ FunctionInterface FunctionInterfaceType_Constant "L" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
---         , FunctionInterface FunctionInterfaceType_Constant "R" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
---         ]
---         (types MapS.! "BOOLEAN")
---      ,
---      )
---   ,  ( Function
---         (Designator_Operator Nand)
---         [ FunctionInterface FunctionInterfaceType_Constant "L" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
---         , FunctionInterface FunctionInterfaceType_Constant "R" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
---         ]
---         (types MapS.! "BOOLEAN")
---      ,
---      )
---   ,  ( Function
---         (Designator_Operator Nor)
---         [ FunctionInterface FunctionInterfaceType_Constant "L" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
---         , FunctionInterface FunctionInterfaceType_Constant "R" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
---         ]
---         (types MapS.! "BOOLEAN")
---      ,
---      )
---   ,  ( Function
---         (Designator_Operator Not)
---         [ FunctionInterface FunctionInterfaceType_Constant "R" (Subtype $ SubtypeIndication Nothing (types MapS.! "BOOLEAN") Nothing)
---         ]
---         (types MapS.! "BOOLEAN")
---      ,
---      )
    ]
    & MapS.fromList
 

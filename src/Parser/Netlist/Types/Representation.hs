@@ -180,8 +180,14 @@ data DiscreteRange = Discrete_SubtypeIndication Subtype--Indication
 
 -- |Function header information
 -- Designator (name/operator reference), interface (inputs), return type
-data Function = Function Designator [FunctionInterface] Type
-              deriving (Eq,Ord,Show)
+data Function =
+   Function
+      { function_name :: Designator
+      , function_interface :: [FunctionInterface]
+      , function_returnTypeName :: (NetlistName,String)
+      , function_returnTypeData :: Subtype
+      }
+   deriving (Eq,Ord,Show)
 
 -- |Function designators
 -- Can be function name (identifier) or operator
@@ -192,8 +198,14 @@ data Designator =
 
 -- |Interface to function
 -- ?? Need to define
-data FunctionInterface = FunctionInterface FunctionInterfaceType String Subtype--Indication
-               deriving (Eq,Ord,Show)
+data FunctionInterface =
+   FunctionInterface
+      { functionInterface_kind :: FunctionInterfaceType
+      , functionInterface_name :: String
+      , functionInterface_typeName :: (NetlistName,String)
+      , functionInterface_typeData :: Subtype
+      }
+   deriving (Eq,Ord,Show)
 
 data FunctionInterfaceType =
    FunctionInterfaceType_Constant

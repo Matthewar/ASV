@@ -89,9 +89,9 @@ isNameDeclaredInUnit includeEnums (UnitStore funcs types subtypes consts signals
 -- (Non-operator functions)
 getFunctionNames :: FunctionStore -> [String]
 getFunctionNames = nub . (map extractFuncName) . (filter filterFuncs) . MapS.keys
-   where filterFuncs (Function (Designator_Operator _) _ _) = False
+   where filterFuncs (Function (Designator_Operator _) _ _ _) = False
          filterFuncs _ = True
-         extractFuncName (Function (Designator_Identifier str) _ _) = str
+         extractFuncName (Function (Designator_Identifier str) _ _ _) = str
 
 -- |Get names from types (including enumerates and physical types)
 getAllTypeNames :: TypeStore -> [String]
@@ -172,13 +172,13 @@ matchSubtypeNameInScope scope unit name =
 matchFunctionNameInScope :: ScopeStore -> UnitStore -> String -> Maybe (MapS.Map Function (Maybe FunctionBody,Maybe NetlistName))
 matchFunctionNameInScope scope unit name =
    let validUnitFuncs =
-         let filterFunction (Function (Designator_Identifier str) _ _) _ = name == str
+         let filterFunction (Function (Designator_Identifier str) _ _ _) _ = name == str
              filterFunction _ _ = False
          in MapS.map (\body -> (body,Nothing)) $ MapS.filterWithKey filterFunction $ unitFunctions unit
        validScopeFuncs =
          let zipFunction (function,body) packageName =
                case function of
-                  Function (Designator_Identifier str) _ _ | name == str ->
+                  Function (Designator_Identifier str) _ _ _ | name == str ->
                      Just (function,(body,Just packageName))
                   _ -> Nothing
              scopeDataList = MapS.toList $ scopeFunctions scope
