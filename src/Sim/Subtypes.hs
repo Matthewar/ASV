@@ -52,6 +52,7 @@ printEnumSubtype fileName name (baseTypePackage,baseTypeName) enums (lowBound,hi
        typeBaseStr = "type " ++ subtypeName ++ " = " ++ baseTypeFullName
        constructorStr =
          let funcName = "mk" ++ subtypeName
+             splitEnums False (enum:[]) [] = [enum]
              splitEnums False (enum:others) inRange =
                if enum == lowBound
                   then splitEnums True others (enum:inRange)
@@ -60,7 +61,7 @@ printEnumSubtype fileName name (baseTypePackage,baseTypeName) enums (lowBound,hi
                if enum == highBound
                   then (enum:inRange)
                   else splitEnums True others (enum:inRange)
-             validEnums = splitEnums False enums []
+             validEnums = reverse $ splitEnums False enums []
              enumError (Enum_Identifier str) = "identifier value \\\"" ++ str ++ "\\\""
              enumError (Enum_Char chr) = "identifier character '" ++ [chr] ++ "'"
          in funcName ++ " :: " ++ subtypeName ++ " -> " ++ subtypeName

@@ -74,18 +74,18 @@ parsePackage scope libraryName = do
    [nameToken,contToken] <- replicateM 2 getToken
    let name1Info = fromJust $ matchIdentifier nameToken
        basePackage = newPackage scope
+       getName = (map toUpper) . unPos
+       name1 = getName name1Info
+       netlistName = NetlistName libraryName name1
    unless (isKeywordIs contToken) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedKeywordIsInPackage contToken
-   package <- execStateT parsePackageDeclares basePackage
+   package <- execStateT (parsePackageDeclares netlistName) basePackage
    possibleNameToken <- getToken
    case matchIdentifier possibleNameToken of
       Just name2Info -> do
-         let getName = (map toUpper) . unPos
-             name1 = getName name1Info
-             name2 = getName name2Info
+         let name2 = getName name2Info
          unless (name1 == name2) $ throwError $ ConverterError_Parse $ PosnWrapper (getPos name2Info) $ ParseErr_PackageNamesNoMatch name1Info name2Info
          semiColonToken <- getToken
          unless (isSemicolon semiColonToken) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSemicolonInPackage semiColonToken
-         let netlistName = NetlistName libraryName name1
          let addPackage scope = scope { packages = MapS.insert netlistName package $ packages scope }
          modifyNetlist addPackage
       Nothing -> unless (isSemicolon possibleNameToken) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedPackageEndOfDec possibleNameToken
@@ -93,31 +93,37 @@ parsePackage scope libraryName = do
 -- |Monad stack for package building
 type PackageBuildStack = StateT Package (StateT ParserState (StateT AlexState (StateT NetlistStore (ExceptT ConverterError IO)))) ()
 
-parsePackageDeclares :: PackageBuildStack
-parsePackageDeclares = do
+parsePackageDeclares :: NetlistName -> PackageBuildStack
+parsePackageDeclares packageName = do
    (scopeStore,unitStore) <- gets convertPackageToGenericUnit
-   nextToken <- lift getToken
-   parsePackageDeclares' nextToken scopeStore unitStore
+   parsePackageDeclares' scopeStore unitStore packageName
 
-parsePackageDeclares' :: WrappedToken -> ScopeStore -> UnitStore -> PackageBuildStack
-parsePackageDeclares' token scopeStore unitStore
-   | isKeywordProcedure token = throwError $ ConverterError_NotImplemented $ passPosition "Procedure declaration" token
-   | isKeywordFunction token = throwError $ ConverterError_NotImplemented $ passPosition "Function declaration" token
-   | isKeywordType token = do
-         (typeName,newType) <- lift $ parseType scopeStore unitStore
-         let insertPackageType package = package { packageTypes = MapS.insert typeName newType $ packageTypes package }
-         modify insertPackageType
-   | isKeywordSubtype token = throwError $ ConverterError_NotImplemented $ passPosition "Subtype declaration" token
-   | isKeywordConstant token = throwError $ ConverterError_NotImplemented $ passPosition "Constant declaration" token
-         --constStore <- lift $ convertConstant scopeStore unitStore $ PosnWrapper declarePos constDeclare
-         --let insertPackageConsts package = package { packageConstants = MapS.union constStore $ packageConstants package }
-         --modify insertPackageConsts
-   | isKeywordSignal token = throwError $ ConverterError_NotImplemented $ passPosition "Signal declaration" token
-   | isKeywordFile token = throwError $ ConverterError_NotImplemented $ passPosition "File declaration" token
-   | isKeywordAlias token = throwError $ ConverterError_NotImplemented $ passPosition "Alias declaration" token
-   | isKeywordComponent token = throwError $ ConverterError_NotImplemented $ passPosition "Component declaration" token
-   | isKeywordAttribute token = throwError $ ConverterError_NotImplemented $ passPosition "Attribute declaration/specification" token
-   | isKeywordDisconnect token = throwError $ ConverterError_NotImplemented $ passPosition "Disconnection specification" token
-   | isKeywordUse token = throwError $ ConverterError_NotImplemented $ passPosition "Use" token
-   | isKeywordEnd token = return ()
-   | otherwise = throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedPackageDeclItemOrEnd token
+parsePackageDeclares' :: ScopeStore -> UnitStore -> NetlistName -> PackageBuildStack
+parsePackageDeclares' scopeStore unitStore packageName = do
+   token <- lift $ getToken
+   case token of
+      _ | isKeywordProcedure token -> throwError $ ConverterError_NotImplemented $ passPosition "Procedure declaration" token
+      _ | isKeywordFunction token -> throwError $ ConverterError_NotImplemented $ passPosition "Function declaration" token
+      _ | isKeywordType token -> do
+            (modType,modSubtype) <- lift $ parseType scopeStore unitStore packageName
+            let insertPackageType package =
+                  package
+                     { packageTypes = modType $ packageTypes package
+                     , packageSubtypes = modSubtype $ packageSubtypes package
+                     }
+            modify insertPackageType
+            parsePackageDeclares' scopeStore unitStore packageName
+      _ | isKeywordSubtype token -> throwError $ ConverterError_NotImplemented $ passPosition "Subtype declaration" token
+      _ | isKeywordConstant token -> throwError $ ConverterError_NotImplemented $ passPosition "Constant declaration" token
+            --constStore <- lift $ convertConstant scopeStore unitStore $ PosnWrapper declarePos constDeclare
+            --let insertPackageConsts package = package { packageConstants = MapS.union constStore $ packageConstants package }
+            --modify insertPackageConsts
+      _ | isKeywordSignal token -> throwError $ ConverterError_NotImplemented $ passPosition "Signal declaration" token
+      _ | isKeywordFile token -> throwError $ ConverterError_NotImplemented $ passPosition "File declaration" token
+      _ | isKeywordAlias token -> throwError $ ConverterError_NotImplemented $ passPosition "Alias declaration" token
+      _ | isKeywordComponent token -> throwError $ ConverterError_NotImplemented $ passPosition "Component declaration" token
+      _ | isKeywordAttribute token -> throwError $ ConverterError_NotImplemented $ passPosition "Attribute declaration/specification" token
+      _ | isKeywordDisconnect token -> throwError $ ConverterError_NotImplemented $ passPosition "Disconnection specification" token
+      _ | isKeywordUse token -> throwError $ ConverterError_NotImplemented $ passPosition "Use" token
+      _ | isKeywordEnd token -> return ()
+      _ -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedPackageDeclItemOrEnd token
