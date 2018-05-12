@@ -57,17 +57,17 @@ data Type'ANON'BIT =
    | Type'ANON'BIT'Char'1
    deriving (Eq,Ord)
 function'op'EQUAL'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN :: Type'ANON'BIT -> Type'ANON'BIT -> Type'ANON'BOOLEAN
-function'op'EQUAL'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 == value2
+function'op'EQUAL'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2
 function'op'NEQUAL'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN :: Type'ANON'BIT -> Type'ANON'BIT -> Type'ANON'BOOLEAN
-function'op'NEQUAL'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 /= value2
+function'op'NEQUAL'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 /= value2
 function'op'LESSTHAN'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN :: Type'ANON'BIT -> Type'ANON'BIT -> Type'ANON'BOOLEAN
-function'op'LESSTHAN'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 < value2
+function'op'LESSTHAN'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 < value2
 function'op'LESSTHANOREQUAL'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN :: Type'ANON'BIT -> Type'ANON'BIT -> Type'ANON'BOOLEAN
-function'op'LESSTHANOREQUAL'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 <= value2
+function'op'LESSTHANOREQUAL'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 <= value2
 function'op'GREATERTHAN'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN :: Type'ANON'BIT -> Type'ANON'BIT -> Type'ANON'BOOLEAN
-function'op'GREATERTHAN'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 > value2
+function'op'GREATERTHAN'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 > value2
 function'op'GREATERTHANOREQUAL'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN :: Type'ANON'BIT -> Type'ANON'BIT -> Type'ANON'BOOLEAN
-function'op'GREATERTHANOREQUAL'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 >= value2
+function'op'GREATERTHANOREQUAL'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 >= value2
 --instance VHDL_Eq BIT where
 --   eq_V BIT'CHAR'0 BIT'CHAR'0 = BOOLEAN'IDEN'TRUE
 --   eq_V BIT'CHAR'1 BIT'CHAR'1 = BOOLEAN'IDEN'TRUE
@@ -119,6 +119,13 @@ function'op'GREATERTHANOREQUAL'in'Type'ANON'BIT'_'Type'ANON'BIT'out'Type'ANON'BO
 
 newtype Type'ANON'BIT_VECTOR =
    Type'ANON'BIT_VECTOR (Data.Map.Strict.Map (STD.STANDARD.Type'NATURAL) STD.STANDARD.Type'BIT)
+mkType'ANON'BIT_VECTOR :: [((Integer),STD.STANDARD.Type'BIT)] -> Type'ANON'BIT_VECTOR
+mkType'ANON'BIT_VECTOR =
+   let modKeyFunc (value1) =
+         ( STD.STANDARD.mkType'NATURAL $ STD.STANDARD.mkType'ANON'INTEGER $ value1
+         )
+       mapFunc (key,value) = (modKeyFunc key,value)
+   in Type'ANON'BIT_VECTOR . Data.Map.Strict.fromList . map mapFunc
 --class ARRAY'BIT_VECTOR a where
 --   arrayLeft'1'BIT_VECTOR :: NATURAL
 --   arrayRight'1'BIT_VECTOR :: NATURAL
@@ -163,17 +170,17 @@ data Type'ANON'BOOLEAN =
    | Type'ANON'BOOLEAN'Iden'TRUE
    deriving (Eq,Ord)
 function'op'EQUAL'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN :: Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN
-function'op'EQUAL'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 == value2
+function'op'EQUAL'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2
 function'op'NEQUAL'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN :: Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN
-function'op'NEQUAL'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 /= value2
+function'op'NEQUAL'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 /= value2
 function'op'LESSTHAN'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN :: Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN
-function'op'LESSTHAN'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 < value2
+function'op'LESSTHAN'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 < value2
 function'op'LESSTHANOREQUAL'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN :: Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN
-function'op'LESSTHANOREQUAL'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 <= value2
+function'op'LESSTHANOREQUAL'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 <= value2
 function'op'GREATERTHAN'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN :: Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN
-function'op'GREATERTHAN'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 > value2
+function'op'GREATERTHAN'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 > value2
 function'op'GREATERTHANOREQUAL'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN :: Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN
-function'op'GREATERTHANOREQUAL'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 >= value2
+function'op'GREATERTHANOREQUAL'in'Type'ANON'BOOLEAN'_'Type'ANON'BOOLEAN'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 >= value2
 --instance VHDL_Eq BOOLEAN where
 --   eq_V BOOLEAN'IDEN'FALSE BOOLEAN'IDEN'FALSE = BOOLEAN'IDEN'TRUE
 --   eq_V BOOLEAN'IDEN'TRUE BOOLEAN'IDEN'TRUE = BOOLEAN'IDEN'TRUE
@@ -353,17 +360,17 @@ data Type'ANON'CHARACTER =
    | Type'ANON'CHARACTER'Iden'DEL
    deriving (Eq,Ord)
 function'op'EQUAL'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN :: Type'ANON'CHARACTER -> Type'ANON'CHARACTER -> Type'ANON'BOOLEAN
-function'op'EQUAL'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 == value2
+function'op'EQUAL'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2
 function'op'NEQUAL'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN :: Type'ANON'CHARACTER -> Type'ANON'CHARACTER -> Type'ANON'BOOLEAN
-function'op'NEQUAL'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 /= value2
+function'op'NEQUAL'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 /= value2
 function'op'LESSTHAN'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN :: Type'ANON'CHARACTER -> Type'ANON'CHARACTER -> Type'ANON'BOOLEAN
-function'op'LESSTHAN'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 < value2
+function'op'LESSTHAN'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 < value2
 function'op'LESSTHANOREQUAL'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN :: Type'ANON'CHARACTER -> Type'ANON'CHARACTER -> Type'ANON'BOOLEAN
-function'op'LESSTHANOREQUAL'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 <= value2
+function'op'LESSTHANOREQUAL'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 <= value2
 function'op'GREATERTHAN'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN :: Type'ANON'CHARACTER -> Type'ANON'CHARACTER -> Type'ANON'BOOLEAN
-function'op'GREATERTHAN'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 > value2
+function'op'GREATERTHAN'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 > value2
 function'op'GREATERTHANOREQUAL'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN :: Type'ANON'CHARACTER -> Type'ANON'CHARACTER -> Type'ANON'BOOLEAN
-function'op'GREATERTHANOREQUAL'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 >= value2
+function'op'GREATERTHANOREQUAL'in'Type'ANON'CHARACTER'_'Type'ANON'CHARACTER'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 >= value2
 --instance VHDL_Eq CHARACTER where
 --   eq_V CHARACTER'IDEN'NUL CHARACTER'IDEN'NUL = BOOLEAN'IDEN'TRUE
 --   eq_V CHARACTER'IDEN'SOH CHARACTER'IDEN'SOH = BOOLEAN'IDEN'TRUE
@@ -782,17 +789,17 @@ mkType'ANON'INTEGER value =
 extractType'ANON'INTEGER :: Type'ANON'INTEGER -> Integer
 extractType'ANON'INTEGER(Type'ANON'INTEGER value) = toInteger value
 function'op'EQUAL'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN :: Type'ANON'INTEGER -> Type'ANON'INTEGER -> Type'ANON'BOOLEAN
-function'op'EQUAL'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 == value2
+function'op'EQUAL'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2
 function'op'NEQUAL'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN :: Type'ANON'INTEGER -> Type'ANON'INTEGER -> Type'ANON'BOOLEAN
-function'op'NEQUAL'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 /= value2
+function'op'NEQUAL'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 /= value2
 function'op'LESSTHAN'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN :: Type'ANON'INTEGER -> Type'ANON'INTEGER -> Type'ANON'BOOLEAN
-function'op'LESSTHAN'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 < value2
+function'op'LESSTHAN'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 < value2
 function'op'LESSTHANOREQUAL'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN :: Type'ANON'INTEGER -> Type'ANON'INTEGER -> Type'ANON'BOOLEAN
-function'op'LESSTHANOREQUAL'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 <= value2
+function'op'LESSTHANOREQUAL'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 <= value2
 function'op'GREATERTHAN'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN :: Type'ANON'INTEGER -> Type'ANON'INTEGER -> Type'ANON'BOOLEAN
-function'op'GREATERTHAN'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 > value2
+function'op'GREATERTHAN'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 > value2
 function'op'GREATERTHANOREQUAL'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN :: Type'ANON'INTEGER -> Type'ANON'INTEGER -> Type'ANON'BOOLEAN
-function'op'GREATERTHANOREQUAL'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 >= value2
+function'op'GREATERTHANOREQUAL'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 >= value2
 function'op'PLUS'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'INTEGER :: Type'ANON'INTEGER -> Type'ANON'INTEGER -> Type'ANON'INTEGER
 function'op'PLUS'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'INTEGER value1 value2 = mkType'ANON'INTEGER $ (extractType'ANON'INTEGER value1) + (extractType'ANON'INTEGER value2)
 function'op'MINUS'in'Type'ANON'INTEGER'_'Type'ANON'INTEGER'out'Type'ANON'INTEGER :: Type'ANON'INTEGER -> Type'ANON'INTEGER -> Type'ANON'INTEGER
@@ -874,17 +881,17 @@ mkType'ANON'REAL value =
 extractType'ANON'REAL :: Type'ANON'REAL -> Double
 extractType'ANON'REAL(Type'ANON'REAL value) = value
 function'op'EQUAL'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN :: Type'ANON'REAL -> Type'ANON'REAL -> Type'ANON'BOOLEAN
-function'op'EQUAL'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 == value2
+function'op'EQUAL'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2
 function'op'NEQUAL'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN :: Type'ANON'REAL -> Type'ANON'REAL -> Type'ANON'BOOLEAN
-function'op'NEQUAL'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 /= value2
+function'op'NEQUAL'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 /= value2
 function'op'LESSTHAN'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN :: Type'ANON'REAL -> Type'ANON'REAL -> Type'ANON'BOOLEAN
-function'op'LESSTHAN'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 < value2
+function'op'LESSTHAN'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 < value2
 function'op'LESSTHANOREQUAL'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN :: Type'ANON'REAL -> Type'ANON'REAL -> Type'ANON'BOOLEAN
-function'op'LESSTHANOREQUAL'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 <= value2
+function'op'LESSTHANOREQUAL'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 <= value2
 function'op'GREATERTHAN'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN :: Type'ANON'REAL -> Type'ANON'REAL -> Type'ANON'BOOLEAN
-function'op'GREATERTHAN'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 > value2
+function'op'GREATERTHAN'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 > value2
 function'op'GREATERTHANOREQUAL'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN :: Type'ANON'REAL -> Type'ANON'REAL -> Type'ANON'BOOLEAN
-function'op'GREATERTHANOREQUAL'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 >= value2
+function'op'GREATERTHANOREQUAL'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 >= value2
 function'op'PLUS'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'REAL :: Type'ANON'REAL -> Type'ANON'REAL -> Type'ANON'REAL
 function'op'PLUS'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'REAL value1 value2 = mkType'ANON'REAL $ (extractType'ANON'REAL value1) + (extractType'ANON'REAL value2)
 function'op'MINUS'in'Type'ANON'REAL'_'Type'ANON'REAL'out'Type'ANON'REAL :: Type'ANON'REAL -> Type'ANON'REAL -> Type'ANON'REAL
@@ -940,17 +947,17 @@ data Type'ANON'SEVERITY_LEVEL =
    | Type'ANON'SEVERITY_LEVEL'Iden'FAILURE
    deriving (Eq,Ord)
 function'op'EQUAL'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN :: Type'ANON'SEVERITY_LEVEL -> Type'ANON'SEVERITY_LEVEL -> Type'ANON'BOOLEAN
-function'op'EQUAL'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 == value2
+function'op'EQUAL'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2
 function'op'NEQUAL'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN :: Type'ANON'SEVERITY_LEVEL -> Type'ANON'SEVERITY_LEVEL -> Type'ANON'BOOLEAN
-function'op'NEQUAL'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 /= value2
+function'op'NEQUAL'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 /= value2
 function'op'LESSTHAN'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN :: Type'ANON'SEVERITY_LEVEL -> Type'ANON'SEVERITY_LEVEL -> Type'ANON'BOOLEAN
-function'op'LESSTHAN'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 < value2
+function'op'LESSTHAN'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 < value2
 function'op'LESSTHANOREQUAL'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN :: Type'ANON'SEVERITY_LEVEL -> Type'ANON'SEVERITY_LEVEL -> Type'ANON'BOOLEAN
-function'op'LESSTHANOREQUAL'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 <= value2
+function'op'LESSTHANOREQUAL'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 <= value2
 function'op'GREATERTHAN'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN :: Type'ANON'SEVERITY_LEVEL -> Type'ANON'SEVERITY_LEVEL -> Type'ANON'BOOLEAN
-function'op'GREATERTHAN'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 > value2
+function'op'GREATERTHAN'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 > value2
 function'op'GREATERTHANOREQUAL'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN :: Type'ANON'SEVERITY_LEVEL -> Type'ANON'SEVERITY_LEVEL -> Type'ANON'BOOLEAN
-function'op'GREATERTHANOREQUAL'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 >= value2
+function'op'GREATERTHANOREQUAL'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_LEVEL'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 >= value2
 --instance VHDL_Eq SEVERITY_LEVEL where
 --   eq_V SEVERITY_LEVEL'IDEN'NOTE SEVERITY_LEVEL'IDEN'NOTE = BOOLEAN'IDEN'TRUE
 --   eq_V SEVERITY_LEVEL'IDEN'WARNING SEVERITY_LEVEL'IDEN'WARNING = BOOLEAN'IDEN'TRUE
@@ -997,6 +1004,13 @@ function'op'GREATERTHANOREQUAL'in'Type'ANON'SEVERITY_LEVEL'_'Type'ANON'SEVERITY_
 
 newtype Type'ANON'STRING =
    Type'ANON'STRING (Data.Map.Strict.Map (STD.STANDARD.Type'POSITIVE) STD.STANDARD.Type'CHARACTER)
+mkType'ANON'STRING :: [((Integer),STD.STANDARD.Type'CHARACTER)] -> Type'ANON'STRING
+mkType'ANON'STRING =
+   let modKeyFunc (value1) =
+         ( STD.STANDARD.mkType'POSITIVE $ STD.STANDARD.mkType'ANON'INTEGER $ value1
+         )
+       mapFunc (key,value) = (modKeyFunc key,value)
+   in Type'ANON'STRING . Data.Map.Strict.fromList . map mapFunc
 --class ARRAY'STRING a where
 --   arrayLeft'1'STRING :: POSITIVE
 --   arrayRight'1'STRING :: POSITIVE
@@ -1035,17 +1049,17 @@ mkType'ANON'TIME value =
 extractType'ANON'TIME :: Type'ANON'TIME -> Integer
 extractType'ANON'TIME(Type'ANON'TIME value) = toInteger value
 function'op'EQUAL'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN :: Type'ANON'TIME -> Type'ANON'TIME -> Type'ANON'BOOLEAN
-function'op'EQUAL'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 == value2
+function'op'EQUAL'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2
 function'op'NEQUAL'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN :: Type'ANON'TIME -> Type'ANON'TIME -> Type'ANON'BOOLEAN
-function'op'NEQUAL'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 /= value2
+function'op'NEQUAL'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 /= value2
 function'op'LESSTHAN'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN :: Type'ANON'TIME -> Type'ANON'TIME -> Type'ANON'BOOLEAN
-function'op'LESSTHAN'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 < value2
+function'op'LESSTHAN'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 < value2
 function'op'LESSTHANOREQUAL'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN :: Type'ANON'TIME -> Type'ANON'TIME -> Type'ANON'BOOLEAN
-function'op'LESSTHANOREQUAL'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 <= value2
+function'op'LESSTHANOREQUAL'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 <= value2
 function'op'GREATERTHAN'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN :: Type'ANON'TIME -> Type'ANON'TIME -> Type'ANON'BOOLEAN
-function'op'GREATERTHAN'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 > value2
+function'op'GREATERTHAN'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 > value2
 function'op'GREATERTHANOREQUAL'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN :: Type'ANON'TIME -> Type'ANON'TIME -> Type'ANON'BOOLEAN
-function'op'GREATERTHANOREQUAL'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN value1 value2 = boolToBoolean $ value1 >= value2
+function'op'GREATERTHANOREQUAL'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 >= value2
 function'op'PLUS'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'TIME :: Type'ANON'TIME -> Type'ANON'TIME -> Type'ANON'TIME
 function'op'PLUS'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'TIME value1 value2 = mkType'ANON'TIME $ (extractType'ANON'TIME value1) + (extractType'ANON'TIME value2)
 function'op'MINUS'in'Type'ANON'TIME'_'Type'ANON'TIME'out'Type'ANON'TIME :: Type'ANON'TIME -> Type'ANON'TIME -> Type'ANON'TIME

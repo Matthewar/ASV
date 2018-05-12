@@ -57,7 +57,7 @@ printEnumType file name enums =
          let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'_'" ++ typeName ++ "'out'Type'ANON'BOOLEAN"
          in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ "Type'ANON'BOOLEAN"
             ++ newline
-            ++ funcName ++ " value1 value2 = boolToBoolean $ value1 " ++ operatorStr ++ " value2"
+            ++ funcName ++ " value1 value2 = STD.STANDARD.boolToBoolean $ value1 " ++ operatorStr ++ " value2"
        equalStr = createComparisonFunc "EQUAL" "=="
        nequalStr = createComparisonFunc "NEQUAL" "/="
        lessThanStr = createComparisonFunc "LESSTHAN" "<"
@@ -252,7 +252,7 @@ printIntType file name =
          let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'_'" ++ typeName ++ "'out'Type'ANON'BOOLEAN"
          in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ "Type'ANON'BOOLEAN"
             ++ newline
-            ++ funcName ++ " value1 value2 = boolToBoolean $ value1 " ++ operatorStr ++ " value2"
+            ++ funcName ++ " value1 value2 = STD.STANDARD.boolToBoolean $ value1 " ++ operatorStr ++ " value2"
        equalStr = createComparisonFunc "EQUAL" "=="
        nequalStr = createComparisonFunc "NEQUAL" "/="
        lessThanStr = createComparisonFunc "LESSTHAN" "<"
@@ -371,7 +371,7 @@ printFloatType file name =
          let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'_'" ++ typeName ++ "'out'Type'ANON'BOOLEAN"
          in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ "Type'ANON'BOOLEAN"
             ++ newline
-            ++ funcName ++ " value1 value2 = boolToBoolean $ value1 " ++ operatorStr ++ " value2"
+            ++ funcName ++ " value1 value2 = STD.STANDARD.boolToBoolean $ value1 " ++ operatorStr ++ " value2"
        equalStr = createComparisonFunc "EQUAL" "=="
        nequalStr = createComparisonFunc "NEQUAL" "/="
        lessThanStr = createComparisonFunc "LESSTHAN" "<"
@@ -457,7 +457,7 @@ printPhysicalType fileName name =
          let funcName = "function'op'" ++ operatorName ++ "'in'" ++ typeName ++ "'_'" ++ typeName ++ "'out'Type'ANON'BOOLEAN"
          in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ "Type'ANON'BOOLEAN"
             ++ newline
-            ++ funcName ++ " value1 value2 = boolToBoolean $ value1 " ++ operatorStr ++ " value2"
+            ++ funcName ++ " value1 value2 = STD.STANDARD.boolToBoolean $ value1 " ++ operatorStr ++ " value2"
        equalStr = createComparisonFunc "EQUAL" "=="
        nequalStr = createComparisonFunc "NEQUAL" "/="
        lessThanStr = createComparisonFunc "LESSTHAN" "<"
@@ -554,6 +554,35 @@ printArrayType fileName name bounds (elemTypePackage,elemTypeName) =
          ++ typeName ++ " (Data.Map.Strict.Map ("
          ++ (concat $ intersperse "," $ map (\(subtypePackage,subtypeName,_) -> show subtypePackage ++ ".Type'" ++ subtypeName) bounds)
          ++ ") " ++ show elemTypePackage ++ ".Type'" ++ elemTypeName ++ ")"
+       constructorStr =
+         let funcName = "mk" ++ typeName
+             extractSubtypeType (EnumerationSubtype _ (enumPackage,enumName) _ _) = show enumPackage ++ ".Type'" ++ enumName
+             extractSubtypeType (IntegerSubtype _ _ _) = "Integer"
+             extractBaseFunc (EnumerationSubtype _ (enumPackage,enumName) _ _) = ""
+             extractBaseFunc (IntegerSubtype _ (intPackage,intName) _) = show intPackage ++ ".mkType'" ++ intName ++ " $ "
+         in funcName ++ " :: [(("
+            ++ (concat $ intersperse "," $ map (\(_,_,subtypeData) -> extractSubtypeType subtypeData) bounds)
+            ++ ")," ++ show elemTypePackage ++ ".Type'" ++ elemTypeName ++ ")] -> " ++ typeName
+            ++ newline
+            ++ funcName ++ " ="
+            ++ newline ++ tab
+            ++ "let modKeyFunc (" ++ (concat $ intersperse "," $ map (\s -> "value" ++ show s) [1..(length bounds)]) ++ ") ="
+            ++ newline ++ tab ++ tab ++ tab
+            ++ "( "
+            ++ ( concat
+               $ intersperse (newline ++ tab ++ tab ++ tab ++ ", ")
+               $ map (\((subtypePackage,subtypeName,subtypeData),valueName) -> show subtypePackage ++ ".mkType'" ++ subtypeName ++ " $ " ++ extractBaseFunc subtypeData ++ valueName)
+               $ zip bounds
+               $ map (\value -> "value" ++ show value)
+               $ [1..(length bounds)]
+               )
+            ++ newline ++ tab ++ tab ++ tab
+            ++ ")"
+            ++ newline ++ tab ++ tab
+            ++ " mapFunc (key,value) = (modKeyFunc key,value)"
+            ++ newline ++ tab
+            ++ "in " ++ typeName ++ " . Data.Map.Strict.fromList . map mapFunc"
    in liftIO $ appendFile fileName $
          newline ++ typeBaseStr
+         ++ newline ++ constructorStr
          ++ newline
