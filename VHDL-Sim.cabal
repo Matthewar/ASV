@@ -27,6 +27,8 @@ library
                      --, Parser.Parser
                      , Parser.Types.Monad
                      , Parser.Functions.Monad
+                     , Parser.Types.Expressions
+                     , Parser.Functions.Expressions
                      , Parser.Functions.IdentifyToken
                      , Parser.Functions.IdentifyName
                      , Parser.Functions.Parse.DesignFile
@@ -34,6 +36,7 @@ library
                      , Parser.Functions.Parse.Library
                      , Parser.Functions.Parse.Package
                      , Parser.Functions.Parse.Type
+                     , Parser.Functions.Parse.Expression
                      , Parser.Functions.Convert.Scope
                      , Parser.Netlist.Types.Representation
                      , Parser.Netlist.Types.Stores

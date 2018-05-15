@@ -97,6 +97,8 @@ data ParserError
    | ParseErr_ExpectedEnumLiteral Token
    -- |Expected enumeration continuation (comma to continue, right parenthesis to end)
    | ParseErr_ExpectedEnumCont Token
+   -- |Expected range direction (keywords to/downto)
+   | ParseErr_ExpectedDirection Token
    deriving (Eq)
 
 instance (Show ParserError) where

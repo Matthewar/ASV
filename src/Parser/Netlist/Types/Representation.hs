@@ -18,6 +18,8 @@ module Parser.Netlist.Types.Representation
    , DiscreteRange(..)
    , Function(..)
    , Designator(..)
+   , FunctionInterface(..)
+   , FunctionInterfaceType(..)
    , Calculation(..)
    , Value(..)
    , Signal(..)
@@ -147,6 +149,7 @@ data Subtype =
       { arraySubtype_resolutionFunction :: Maybe (NetlistName,String)
       , arraySubtype_typeName :: (NetlistName,String)
       , arraySubtype_bounds :: [(NetlistName,String,Subtype)]
+      -- , arraySubtype_size :: [ specified ranges ]
       , arraySubtype_elementTypeName :: (NetlistName,String)
       , arraySubtype_elementTypeData :: Subtype
       }
@@ -216,8 +219,9 @@ data Statement = Statement
    deriving (Eq,Ord,Show)
 
 data Calculation =
-   Calc_Value NetlistName Value
-   | Calc_FunctionCall NetlistName --Function
+   Calc_Value Value
+   | Calc_FunctionCall (NetlistName,Function) [Calculation]
+   | Calc_Const (NetlistName,String)
    --Calc_SignalDelayed (String,Signal) Int64 -- save and carry out after time
    -- | Calc_SignalStable (String,Signal) Int64 -- check changes over timeframe (need to record last time changed)
    -- | Calc_SignalQuiet (String,Signal) Int64
@@ -227,12 +231,12 @@ data Calculation =
    -- | Calc_SignalLastEvent (String,Signal)
    -- | Calc_SignalLastActive (String,Signal)
    -- | Calc_SignalLastValue (String,Signal) 
-   deriving (Show)
+   deriving (Eq,Show)
 
 data Value =
-   Value_Enum String Enumerate -- ?? Is the type name String needed?
+   Value_Enum (NetlistName,String) Enumerate -- ?? Is the type name String needed?
    | Value_Int Int64
-   | Value_Float Float
+   | Value_Float Double
    | Value_Physical Int64
    | Value_Array [Value]
    deriving (Eq,Ord,Show)
@@ -278,8 +282,7 @@ data ArrayAttributes =
 -- ?? Only can have not calculation ("deferred constant") in package (header) declaration, make separate type
 data Constant =
    Constant
-      { constant_typePackage :: NetlistName
-      , constant_typeName :: String
+      { constant_typeName :: (NetlistName,String)
       , constant_typeData :: Subtype
       , constant_Value :: Maybe Value
       }

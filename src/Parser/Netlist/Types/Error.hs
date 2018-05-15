@@ -42,6 +42,26 @@ data NetlistError =
 --   | NetlistError_TypeNotFound String
 --   -- |Type name cannot be an operator
 --   | NetlistError_InvalidTypeName_Operator
+   -- |Could not find any simple expressions that matched the type profile
+   | NetlistError_FailedSimpleExpression -- ?? Add type data of potential inputs recognised
+   -- |Physical literal unit name cannot be found
+   | NetlistError_PhysicalUnitNotFound String
+   -- |Enumerate character cannot be found
+   | NetlistError_UnrecognisedEnumChar Char
+   -- |Cannot recognise primary name
+   | NetlistError_UnrecognisedName String
+   -- |Deferred constant in a locally static expression
+   | NetlistError_DeferredConst String
+   -- |Expected an integer or floating point value in the left bound of a range type definition
+   | NetlistError_ExpectedIntOrFloatLeftBoundRange
+   -- |Expected an integer or floating point value in the right bound of a range type definition
+   | NetlistError_ExpectedIntOrFloatRightBoundRange
+   -- |Bound types of a range type definition do not match
+   | NetlistError_RangeTypeNoMatch
+   -- |Cannot determine type of the left bound of a range type definition from context
+   | NetlistError_CannotInferValueFromContextInRangeTypeLeftBound
+   -- |Cannot determine type of the right bound of a range type definition from context
+   | NetlistError_CannotInferValueFromContextInRangeTypeRightBound
    deriving (Eq)
 
 instance (Show NetlistError) where

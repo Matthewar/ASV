@@ -33,10 +33,12 @@ import Parser.Functions.IdentifyToken
          , isSemicolon
          , isKeywordAccess
          , isKeywordArray
+         , isKeywordDownto
          , isKeywordFile
          , isKeywordIs
          , isKeywordRange
          , isKeywordRecord
+         , isKeywordTo
          , matchChar
          , matchIdentifier
          )
@@ -45,6 +47,11 @@ import Parser.Netlist.Types.Representation
          , Subtype(..)
          , Enumerate(..)
          , NetlistName
+         , Calculation(..)
+         , Value(..)
+         , IntegerRange(..)
+         , FloatRange(..)
+         , RangeDirection(..)
          )
 import Parser.Netlist.Types.Stores
          ( ScopeStore
@@ -55,6 +62,11 @@ import Parser.Netlist.Functions.Stores
          ( isNameInUnit
          , isEnumNameInUnit
          )
+import Parser.Types.Expressions
+         ( Staticity(..)
+         , AllTypes(..)
+         )
+import Parser.Functions.Parse.Expression (parseSimpleExpression)
 import Manager.Types.Error (ConverterError(..))
 
 parseType :: ScopeStore -> UnitStore -> NetlistName -> ParserStack (MapS.Map String Type -> MapS.Map String Type,MapS.Map String Subtype -> MapS.Map String Subtype)
@@ -82,7 +94,35 @@ parseTypeDefinition scope unit unitName typeName = do
 
 parseTypeDefinition' :: ScopeStore -> UnitStore -> NetlistName -> String -> WrappedToken -> ParserStack (MapS.Map String Type -> MapS.Map String Type,MapS.Map String Subtype -> MapS.Map String Subtype)
 parseTypeDefinition' scope unit unitName typeName token
-   | isKeywordRange token = throwError $ ConverterError_NotImplemented $ passPosition "Universal, physical types" token
+   | isKeywordRange token = do
+      leftBound <- parseSimpleExpression LocallyStatic scope unit unitName -- ?? Parse range attribute
+      directionToken <- getToken
+      direction <- case directionToken of
+                     token | isKeywordTo token -> return To
+                     token | isKeywordDownto token -> return Downto
+                     token -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedDirection token
+      rightBound <- parseSimpleExpression LocallyStatic scope unit unitName
+      let filterTypes (_,Type_Type _ IntegerType) = True
+          filterTypes (_,Type_Type _ FloatingType) = True
+          filterTypes (_,Type_UniversalInt) = True
+          filterTypes (_,Type_UniversalReal) = True
+          filterTypes _ = False
+          applyFilter = filter filterTypes
+      (typ,subtype) <-
+         case (applyFilter leftBound,applyFilter rightBound) of
+            ([],_) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_ExpectedIntOrFloatLeftBoundRange token
+            (_,[]) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_ExpectedIntOrFloatRightBoundRange token
+            ([(Calc_Value (Value_Int left),_)],[(Calc_Value (Value_Int right),_)]) ->
+               return $ (IntegerType,IntegerSubtype Nothing (unitName,"ANON'"++typeName) (IntegerRange left right direction))
+            ([(Calc_Value (Value_Float left),_)],[(Calc_Value (Value_Float right),_)]) ->
+               return $ (FloatingType,FloatingSubtype Nothing (unitName,"ANON'"++typeName) (FloatRange left right direction))
+            ([_],[_]) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_RangeTypeNoMatch token
+            ([_],_) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_CannotInferValueFromContextInRangeTypeLeftBound token
+            (_,[_]) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_CannotInferValueFromContextInRangeTypeRightBound token
+      -- ?? Physical types if integer range
+      let valTypeFunc = MapS.insert ("ANON'"++typeName) typ
+          valSubtypeFunc = MapS.insert typeName subtype
+      return (valTypeFunc,valSubtypeFunc)
    | isLeftParen token = do
       newEnums <- parseEnumerationLiterals unit typeName
       let enumType = EnumerationType newEnums
