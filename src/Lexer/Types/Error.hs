@@ -99,6 +99,18 @@ data ParserError
    | ParseErr_ExpectedEnumCont Token
    -- |Expected range direction (keywords to/downto)
    | ParseErr_ExpectedDirection Token
+   -- |Expected base unit name (identifier) in a physical type definition
+   | ParseErr_ExpectedBaseUnitIdentifierInTypeDef Token
+   -- |Expected a semicolon in base or secondary unit declaration in a physical type definition
+   | ParseErr_ExpectedSemicolonInPhysTypeDef Token
+   -- |Expected a equals operator in the secondary unit declaration of a physical type definition
+   | ParseErr_ExpectedEqualInSecondaryUnitDecl Token
+   -- |Expected a unit name (identifier) in the secondary unit declaration of a physical type definition
+   | ParseErr_ExpectedPhysicalUnitName Token
+   -- |Expected the unit keyword in end of secondary units in a physical type definition
+   | ParseErr_ExpectedEndUnitsInPhysType Token
+   -- |Expected the next secondary unit declaration or the key keyword to mark end of secondary units in the physical type definition
+   | ParseErr_ExpectedSecondaryDeclarationOrEndInPhysType Token
    deriving (Eq)
 
 instance (Show ParserError) where

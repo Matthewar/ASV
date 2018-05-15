@@ -1,5 +1,7 @@
 module Parser.Functions.IdentifyToken where
 
+import Data.Int (Int64)
+
 import qualified Lexer.Types.Token as Tokens
 import Lexer.Types.PositionWrapper
 
@@ -432,6 +434,12 @@ matchIdentifier token =
 isInteger :: Tokens.WrappedToken -> Bool
 isInteger (PosnWrapper _ (Tokens.Literal (Tokens.Univ_Int _))) = True
 isInteger _ = False
+
+matchInteger :: Tokens.WrappedToken -> Maybe (PosnWrapper Int64)
+matchInteger token =
+   case unPos token of
+      Tokens.Literal (Tokens.Univ_Int int) -> Just $ PosnWrapper (getPos token) int
+      _ -> Nothing
 
 isReal :: Tokens.WrappedToken -> Bool
 isReal (PosnWrapper _ (Tokens.Literal (Tokens.Univ_Real _))) = True

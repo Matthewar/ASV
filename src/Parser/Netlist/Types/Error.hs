@@ -62,6 +62,18 @@ data NetlistError =
    | NetlistError_CannotInferValueFromContextInRangeTypeLeftBound
    -- |Cannot determine type of the right bound of a range type definition from context
    | NetlistError_CannotInferValueFromContextInRangeTypeRightBound
+   -- |Cannot have a floating range in a physical type definition (must be integer)
+   | NetlistError_FloatingRangeInPhysicalDefinition
+   -- |Base unit has same name as its own type declaration name
+   | NetlistError_BaseUnitNameIsTypeName String
+   -- |Physical unit name already exists in the unit
+   | NetlistError_InvalidPhysLitName String
+   -- |Secondary unit has same name as its own type declaration name
+   | NetlistError_SecondaryUnitNameIsTypeName String
+   -- |Secondary unit name already exists in the physical type
+   | NetlistError_DuplicateSecondaryUnitInPhysType String
+   -- |No unit in physical type definition with this name
+   | NetlistError_UnrecognisedPhysicalUnitName String
    deriving (Eq)
 
 instance (Show NetlistError) where
@@ -103,7 +115,58 @@ instance (Show NetlistError) where
 --      ++ typeName
 --   show NetlistError_InvalidTypeName_Operator =
 --      "type name referred to cannot be an operator "
---
+   show NetlistError_FailedSimpleExpression = -- ?? Add type data of potential inputs recognised
+      "no simple expressions found that meet required type profile"
+   show (NetlistError_PhysicalUnitNotFound unitName) =
+      "the physical unit name "
+      ++ unitName
+      ++ " has not been defined"
+   show (NetlistError_UnrecognisedEnumChar enumChar) =
+      "undefined enumerate character '"
+      ++ [enumChar]
+      ++ "'"
+   show (NetlistError_UnrecognisedName name) =
+      "unrecognised primary name "
+      ++ name
+      ++ " in expression"
+   show (NetlistError_DeferredConst name) =
+      "the deferred constant \""
+      ++ name
+      ++ "\" cannot exist in a locally static expression"
+   show NetlistError_ExpectedIntOrFloatLeftBoundRange =
+      "expected an integer or floating point value in the left bound of the range in the type definition"
+   show NetlistError_ExpectedIntOrFloatRightBoundRange =
+      "expected an integer or floating point value in the right bound of the range in the type definition"
+   show NetlistError_RangeTypeNoMatch =
+      "the types of the left and right bounds do not match, in the range definition within the type definition"
+   show NetlistError_CannotInferValueFromContextInRangeTypeLeftBound =
+      "cannot choose value from context; multiple possible values found for left bound of range in the type definition"
+   -- |Cannot determine type of the left bound of a range type definition from context
+   show NetlistError_CannotInferValueFromContextInRangeTypeRightBound =
+      "cannot choose value from context; multiple possible values found for right bound of range in the type definition"
+   show NetlistError_FloatingRangeInPhysicalDefinition =
+      "cannot have a floating point range in a physical type definition"
+   show (NetlistError_BaseUnitNameIsTypeName unit) =
+      "the base unit name \""
+      ++ unit
+      ++ "\" cannot have the same name as the type name"
+   show (NetlistError_InvalidPhysLitName unit) =
+      "the unit name \""
+      ++ unit
+      ++ "\" is already defined in this unit"
+   show (NetlistError_SecondaryUnitNameIsTypeName unit) =
+      "the secondary unit name \""
+      ++ unit
+      ++ "\" cannot have the same name as the type name"
+   show (NetlistError_DuplicateSecondaryUnitInPhysType unit) =
+      "the secondary unit declaration name \""
+      ++ unit
+      ++ "\" is already defined within this type"
+   show (NetlistError_UnrecognisedPhysicalUnitName unit) =
+      "the unit name \""
+      ++ unit
+      ++ "\" does not exist within this type definition"
+
 ---- |Print list of wrapped names
 --printNames :: [WrappedSimpleName] -> String
 --printNames = concat . (intersperse ", ") . (map show)
