@@ -219,9 +219,17 @@ data Statement = Statement
    deriving (Eq,Ord,Show)
 
 data Calculation =
+   -- |Any static value that can be calculated by netlister
    Calc_Value Value
+   -- |Function call
    | Calc_FunctionCall (NetlistName,Function) [Calculation]
+   -- |Non-static (deferred) constant in expression
    | Calc_Const (NetlistName,String)
+   -- |Builtin non-static negate call
+   | Calc_BuiltinNegate Calculation
+   | Calc_BuiltinSum Calculation Calculation
+   | Calc_BuiltinSubtract Calculation Calculation
+   | Calc_BuiltinConcat Calculation Calculation
    --Calc_SignalDelayed (String,Signal) Int64 -- save and carry out after time
    -- | Calc_SignalStable (String,Signal) Int64 -- check changes over timeframe (need to record last time changed)
    -- | Calc_SignalQuiet (String,Signal) Int64

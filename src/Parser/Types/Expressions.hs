@@ -21,6 +21,7 @@ data AllTypes =
    | Type_UniversalReal
    | Type_String String
    | Type_BitString Int
+   deriving (Eq)
 
 --data ExpectedType =
 --   ExpectedType Type
