@@ -418,12 +418,6 @@ parseMultiplicationExpression staticLevel scope unit unitName prevCalcs = do
                                           wrappedVal1
                                           wrappedVal2
                         Nothing -> nomatchCalcs
-                   convertPhysCalcs valFunc arith val1 val2 typeData =
-                     applyStaticAndNonStatic
-                        (Calc_Value $ valFunc $ arith val1 val2,typeData)
-                        (constFunctionFinder typeData1 typeData2)
-                        wrappedVal1
-                        wrappedVal2
                in case (val1,val2,mult) of
                      (Value_Int val1,Value_Int val2,Mult) -> convertCalcs Value_Int (*) val1 val2
                      (Value_Int val1,Value_Int val2,Div) -> convertCalcs Value_Int div val1 val2
@@ -508,7 +502,85 @@ parseFactor staticLevel scope unit unitName = do
    token <- getToken
    case token of
       _ | isKeywordAbs token -> throwError $ ConverterError_NotImplemented $ passPosition "abs processing in factor" token
-      _ | isKeywordNot token -> throwError $ ConverterError_NotImplemented $ passPosition "not processing in factor" token
+      _ | isKeywordNot token -> do
+         primary <- parsePrimary staticLevel scope unit unitName
+         let getNonStaticFuncs functionFinder origVal =
+               case matchFunctionInScope functionFinder scope unit unitName of
+                  Nothing -> []
+                  Just functions ->
+                     let mapper (function,(_,package)) =
+                           ( Calc_FunctionCall
+                              (package,function)
+                              [origVal]
+                           , subtypeToType $ function_returnTypeData function
+                           )
+                     in map mapper $ MapS.toList functions
+             applyNonStaticBuiltin functionFinder (calc,typeData) =
+               let fixedCalc = (Calc_BuiltinNot calc,typeData)
+               in if notLocallyStatic staticLevel
+                     then return (fixedCalc:getNonStaticFuncs functionFinder calc)
+                     else return []
+             applyNonStatic functionFinder origVal =
+               if notLocallyStatic staticLevel
+                  then return $ getNonStaticFuncs functionFinder origVal
+                  else return []
+             applyStaticAndNonStatic staticVal functionFinder origVal =
+               if notLocallyStatic staticLevel
+                  then return (staticVal:getNonStaticFuncs functionFinder origVal)
+                  else return [staticVal]
+             constFunctionFinder inputType
+               (Function (Designator_Operator Operators.Not)
+                  [ FunctionInterface FunctionInterfaceType_Constant _ _ inputSubtype
+                  ] _ _) =
+                     let inputCheck calcType funcType = case (calcType,funcType) of
+                           (Type_Type typeName IntegerType,IntegerSubtype _ baseTypeName _) -> typeName == baseTypeName
+                           (Type_UniversalInt,IntegerSubtype _ _ _) -> True
+                           (Type_Type typeName FloatingType,FloatingSubtype _ baseTypeName _) -> typeName == baseTypeName
+                           (Type_UniversalReal,FloatingSubtype _ _ _) -> True
+                           (Type_Type typeName (PhysicalType _ _),PhysicalSubtype _ baseTypeName _ _ _) -> typeName == baseTypeName
+                           -- ?? need other checks
+                           _ -> False
+                     in inputCheck inputType inputSubtype
+             applyArith :: (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
+             applyArith (wrappedVal@(Calc_Value val),typeData) =
+               let typeCheck = case typeData of
+                                 Type_Type (NetlistName "STD" "STANDARD","ANON'BIT") (EnumerationType _) -> True
+                                 Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (EnumerationType _) -> True
+                                 -- ?? Need 1D arrays of BIT and BOOLEAN
+                                 _ -> False
+                   nomatchCalcs = applyNonStatic
+                                    (constFunctionFinder typeData)
+                                    wrappedVal
+                   convertCalcs newCalc =
+                     if typeCheck
+                        then applyStaticAndNonStatic
+                              (newCalc,typeData)
+                              (constFunctionFinder typeData)
+                              wrappedVal
+                        else nomatchCalcs
+               in case val of
+                     (Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") (Enum_Char '0')) -> convertCalcs $ Calc_Value $ Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") $ Enum_Char '1'
+                     (Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") (Enum_Char '1')) -> convertCalcs $ Calc_Value $ Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") $ Enum_Char '0'
+                     (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (Enum_Identifier "FALSE")) -> convertCalcs $ Calc_Value $ Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ Enum_Identifier "TRUE"
+                     (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (Enum_Identifier "TRUE")) -> convertCalcs $ Calc_Value $ Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ Enum_Identifier "FALSE"
+                     -- ?? Need checks for bit string, bit and boolean arrays
+                     _ -> nomatchCalcs
+             applyArith (calc,typeData) =
+               let convertCalcs =
+                     applyNonStaticBuiltin
+                        (constFunctionFinder typeData)
+                        (calc,typeData)
+               in case typeData of
+                     Type_Type (NetlistName "STD" "STANDARD","ANON'BIT") (EnumerationType _) -> convertCalcs
+                     Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (EnumerationType _) -> convertCalcs
+                     -- ?? Need checks for bit string, bit and boolean arrays
+                     _ -> applyNonStatic
+                           (constFunctionFinder typeData)
+                           calc
+         allArith <- mapM applyArith primary
+         case concat allArith of
+            emptyList | null emptyList -> throwError $ ConverterError_Netlist $ passPosition NetlistError_FailedFactor token
+            nonEmpty -> return nonEmpty
       _ -> do
          saveToken token
          primary1 <- parsePrimary staticLevel scope unit unitName
@@ -578,12 +650,6 @@ parseFactor staticLevel scope unit unitName = do
                                                 wrappedVal1
                                                 wrappedVal2
                               Nothing -> nomatchCalcs
-                         convertPhysCalcs valFunc arith val1 val2 typeData =
-                           applyStaticAndNonStatic
-                              (Calc_Value $ valFunc $ arith val1 val2,typeData)
-                              (constFunctionFinder typeData1 typeData2)
-                              wrappedVal1
-                              wrappedVal2
                      in case (val1,val2) of
                            (Value_Int val1,Value_Int val2) -> convertCalcs Value_Int (\a1 a2 -> round $ a1 ^^ a2) (fromInteger val1) val2
                            (Value_Float val1,Value_Int val2) -> convertCalcs Value_Float (^^) val1 val2
