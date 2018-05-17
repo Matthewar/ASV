@@ -23,8 +23,12 @@ import Data.Bits
 import Control.Monad.Except (throwError)
 
 import Lexer.Types.PositionWrapper
-import Lexer.Functions.PositionWrapper (passPosition)
+import Lexer.Functions.PositionWrapper
+         ( passPosition
+         , raisePosition
+         )
 import qualified Lexer.Types.Token as Tokens
+import Lexer.Types.Error (ParserError(..))
 import Parser.Types.Expressions
          ( Staticity(..)
          , AllTypes(..)
@@ -53,6 +57,7 @@ import Parser.Functions.IdentifyToken
          , isLessThan
          , isLeftParen
          , isPlus
+         , isRightParen
          , isSignAssign
          , isSlash
          , isStar
@@ -1537,12 +1542,11 @@ parsePrimary staticLevel scope unit unitName = do
       _ | isKeywordNull token -> throwError $ ConverterError_NotImplemented $ passPosition "Null literal" token
       _ | isKeywordNew token -> throwError $ ConverterError_NotImplemented $ passPosition "Primary allocator" token
       _ | isLeftParen token -> do -- ?? or aggregate
-            throwError $ ConverterError_NotImplemented $ passPosition "Expression or aggregate" token
-            --expression <- parseExpression staticLevel scope unit
-            --endToken <- getToken
-            --if isRightParen endToken
-            --   then return expression
-            --   else throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedRightParenInPrimary endToken
+            expression <- parseExpression staticLevel scope unit unitName
+            endToken <- getToken
+            if isRightParen endToken
+               then return expression
+               else throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedRightParenInPrimary endToken
 
 -- ?? Currently ignoring expanded names
 parsePrimaryIdentifier :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> PosnWrapper String -> ParserStack [(Calculation,AllTypes)]

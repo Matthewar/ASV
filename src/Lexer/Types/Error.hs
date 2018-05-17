@@ -111,6 +111,8 @@ data ParserError
    | ParseErr_ExpectedEndUnitsInPhysType Token
    -- |Expected the next secondary unit declaration or the key keyword to mark end of secondary units in the physical type definition
    | ParseErr_ExpectedSecondaryDeclarationOrEndInPhysType Token
+   -- |Expected end of primary expression or aggregate (right parenthesis)
+   | ParseErr_ExpectedRightParenInPrimary Token
    deriving (Eq)
 
 instance (Show ParserError) where
