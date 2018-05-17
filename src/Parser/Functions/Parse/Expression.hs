@@ -501,7 +501,87 @@ parseFactor :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> ParserStac
 parseFactor staticLevel scope unit unitName = do
    token <- getToken
    case token of
-      _ | isKeywordAbs token -> throwError $ ConverterError_NotImplemented $ passPosition "abs processing in factor" token
+      _ | isKeywordAbs token -> do
+         primary <- parsePrimary staticLevel scope unit unitName
+         let getNonStaticFuncs functionFinder origVal =
+               case matchFunctionInScope functionFinder scope unit unitName of
+                  Nothing -> []
+                  Just functions ->
+                     let mapper (function,(_,package)) =
+                           ( Calc_FunctionCall
+                              (package,function)
+                              [origVal]
+                           , subtypeToType $ function_returnTypeData function
+                           )
+                     in map mapper $ MapS.toList functions
+             applyNonStaticBuiltin functionFinder (calc,typeData) =
+               let fixedCalc = (Calc_BuiltinAbs calc,typeData)
+               in if notLocallyStatic staticLevel
+                     then return (fixedCalc:getNonStaticFuncs functionFinder calc)
+                     else return []
+             applyNonStatic functionFinder origVal =
+               if notLocallyStatic staticLevel
+                  then return $ getNonStaticFuncs functionFinder origVal
+                  else return []
+             applyStaticAndNonStatic staticVal functionFinder origVal =
+               if notLocallyStatic staticLevel
+                  then return (staticVal:getNonStaticFuncs functionFinder origVal)
+                  else return [staticVal]
+             constFunctionFinder inputType
+               (Function (Designator_Operator Operators.Abs)
+                  [ FunctionInterface FunctionInterfaceType_Constant _ _ inputSubtype
+                  ] _ _) =
+                     let inputCheck calcType funcType = case (calcType,funcType) of
+                           (Type_Type typeName IntegerType,IntegerSubtype _ baseTypeName _) -> typeName == baseTypeName
+                           (Type_UniversalInt,IntegerSubtype _ _ _) -> True
+                           (Type_Type typeName FloatingType,FloatingSubtype _ baseTypeName _) -> typeName == baseTypeName
+                           (Type_UniversalReal,FloatingSubtype _ _ _) -> True
+                           (Type_Type typeName (PhysicalType _ _),PhysicalSubtype _ baseTypeName _ _ _) -> typeName == baseTypeName
+                           -- ?? need other checks
+                           _ -> False
+                     in inputCheck inputType inputSubtype
+             applyArith :: (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
+             applyArith (wrappedVal@(Calc_Value val),typeData) =
+               let typeCheck = case typeData of
+                                 Type_Type _ IntegerType -> True
+                                 Type_Type _ FloatingType -> True
+                                 Type_Type _ (PhysicalType _ _) -> True
+                                 Type_UniversalInt -> True
+                                 Type_UniversalReal -> True
+                                 _ -> False
+                   nomatchCalcs = applyNonStatic
+                                    (constFunctionFinder typeData)
+                                    wrappedVal
+                   convertCalcs newCalc =
+                     if typeCheck
+                        then applyStaticAndNonStatic
+                              (newCalc,typeData)
+                              (constFunctionFinder typeData)
+                              wrappedVal
+                        else nomatchCalcs
+               in case val of
+                     Value_Int val -> convertCalcs $ Calc_Value $ Value_Int $ abs val
+                     Value_Float val -> convertCalcs $ Calc_Value $ Value_Float $ abs val
+                     Value_Physical val -> convertCalcs $ Calc_Value $ Value_Physical $ abs val
+                     _ -> nomatchCalcs
+             applyArith (calc,typeData) =
+               let convertCalcs =
+                     applyNonStaticBuiltin
+                        (constFunctionFinder typeData)
+                        (calc,typeData)
+               in case typeData of
+                     Type_Type _ IntegerType -> convertCalcs
+                     Type_Type _ FloatingType -> convertCalcs
+                     Type_Type _ (PhysicalType _ _) -> convertCalcs
+                     Type_UniversalInt -> convertCalcs
+                     Type_UniversalReal -> convertCalcs
+                     _ -> applyNonStatic
+                           (constFunctionFinder typeData)
+                           calc
+         allArith <- mapM applyArith primary
+         case concat allArith of
+            emptyList | null emptyList -> throwError $ ConverterError_Netlist $ passPosition NetlistError_FailedFactor token
+            nonEmpty -> return nonEmpty
       _ | isKeywordNot token -> do
          primary <- parsePrimary staticLevel scope unit unitName
          let getNonStaticFuncs functionFinder origVal =
