@@ -532,15 +532,16 @@ parsePrimary staticLevel scope unit unitName = do
          case matchIdentifier potentialUnit of
             Nothing -> do
                saveToken potentialUnit
-               return [(Calc_Value $ Value_Int intVal,Type_UniversalInt)]
+               return [(Calc_Value $ Value_Int $ toInteger intVal,Type_UniversalInt)]
             Just (PosnWrapper pos potUnitName) ->
                let upperPotUnitName = map toUpper potUnitName
                in case matchPhysicalUnitInScope scope unit unitName upperPotUnitName of
                      Just ((typeName,typeData@(PhysicalType baseUnit otherUnits)),packageName) ->
-                        let value = if upperPotUnitName == baseUnit
-                                       then intVal
-                                       else (otherUnits MapS.! upperPotUnitName) * intVal
-                        in return [(Calc_Value $ Value_Physical $ value,Type_Type (packageName,typeName) typeData)]
+                        let integerVal = toInteger intVal
+                            value = if upperPotUnitName == baseUnit
+                                       then integerVal
+                                       else (toInteger $ otherUnits MapS.! upperPotUnitName) * integerVal
+                        in return [(Calc_Value $ Value_Physical value,Type_Type (packageName,typeName) typeData)]
                      Nothing -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_PhysicalUnitNotFound potUnitName
       token@(PosnWrapper _ (Tokens.Literal (Tokens.Univ_Real realVal))) -> do
          potentialUnit <- getToken

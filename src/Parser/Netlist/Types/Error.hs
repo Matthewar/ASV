@@ -11,6 +11,7 @@ module Parser.Netlist.Types.Error
 
 import Data.Char (toUpper)
 import Data.List (intersperse)
+import Data.Int (Int64)
 
 import Lexer.Types.PositionWrapper (PosnWrapper(..))
 import Lexer.Types.Error (getLineAndColErrStr)
@@ -76,6 +77,10 @@ data NetlistError =
    | NetlistError_UnrecognisedPhysicalUnitName String
    -- |Could not find any terms that matched the type profile
    | NetlistError_FailedTerm -- ?? Add type data of potential inputs recognised
+   -- |Values in integer type definition range are out of acceptable range
+   | NetlistError_IntegerTypeOutOfBounds Integer Integer
+   -- |Values in floating type definition range are out of acceptable range
+   | NetlistError_FloatingTypeOutOfBounds Double Double
    deriving (Eq)
 
 instance (Show NetlistError) where
@@ -170,6 +175,23 @@ instance (Show NetlistError) where
       ++ "\" does not exist within this type definition"
    show NetlistError_FailedTerm = -- ?? Add type data of potential inputs recognised
       "no terms found that meet required type profile"
+   show (NetlistError_IntegerTypeOutOfBounds leftVal rightVal) =
+      let checkVal val boundName = if val > toInteger (maxBound :: Int64) || val < toInteger (minBound :: Int64)
+                                    then boundName ++ " bound: " ++ show val
+                                    else ""
+      in "the values in the integer type definition are out of range ("
+         ++ (concat $ intersperse "," $ filter (not . null) [checkVal leftVal "left",checkVal rightVal "right"])
+         ++ ")"
+   -- |Values in floating type definition range are out of acceptable range
+   show (NetlistError_FloatingTypeOutOfBounds leftVal rightVal) =
+      "the values in the floating type definition are out of range ("
+      ++ if isInfinite leftVal
+            then "left,"
+            else ""
+      ++ if isInfinite rightVal
+            then "right"
+            else ""
+      ++ ")"
 
 ---- |Print list of wrapped names
 --printNames :: [WrappedSimpleName] -> String

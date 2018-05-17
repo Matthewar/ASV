@@ -125,14 +125,21 @@ parseTypeDefinition' scope unit unitName typeName token
           compareFunc = case direction of
                            To -> (<=)
                            Downto -> (>=)
+          withinIntRange left right =
+            let checkVal val = val <= toInteger (maxBound :: Int64) && val >= toInteger (minBound :: Int64)
+            in checkVal left && checkVal right
       range <-
          case (applyFilter leftBound,applyFilter rightBound) of
             ([],_) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_ExpectedIntOrFloatLeftBoundRange token
             (_,[]) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_ExpectedIntOrFloatRightBoundRange token
-            ([(Calc_Value (Value_Int left),_)],[(Calc_Value (Value_Int right),_)]) ->
+            ([(Calc_Value (Value_Int left),_)],[(Calc_Value (Value_Int right),_)]) | withinIntRange left right ->
                if left `compareFunc` right
-                  then return $ Right $ IntegerRange left right direction
+                  then return $ Right $ IntegerRange (fromInteger left) (fromInteger right) direction
                   else throwError $ ConverterError_NotImplemented $ passPosition "Integer null range" token
+            ([(Calc_Value (Value_Int left),_)],[(Calc_Value (Value_Int right),_)]) ->
+               throwError $ ConverterError_Netlist $ passPosition (NetlistError_IntegerTypeOutOfBounds left right) token
+            ([(Calc_Value (Value_Float left),_)],[(Calc_Value (Value_Float right),_)]) | isInfinite left || isInfinite right ->
+               throwError $ ConverterError_Netlist $ passPosition (NetlistError_FloatingTypeOutOfBounds left right) token
             ([(Calc_Value (Value_Float left),_)],[(Calc_Value (Value_Float right),_)]) ->
                if left `compareFunc` right
                   then return $ Left $ FloatRange left right direction

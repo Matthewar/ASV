@@ -247,9 +247,9 @@ data Calculation =
 
 data Value =
    Value_Enum (NetlistName,String) Enumerate -- ?? Is the type name String needed?
-   | Value_Int Int64 -- ?? Should this be integer type
+   | Value_Int Integer
    | Value_Float Double
-   | Value_Physical Int64
+   | Value_Physical Integer
    | Value_Array [Value]
    deriving (Eq,Ord,Show)
 
