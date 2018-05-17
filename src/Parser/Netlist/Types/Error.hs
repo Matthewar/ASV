@@ -81,6 +81,8 @@ data NetlistError =
    | NetlistError_IntegerTypeOutOfBounds Integer Integer
    -- |Values in floating type definition range are out of acceptable range
    | NetlistError_FloatingTypeOutOfBounds Double Double
+   -- |Could not find any factors that matched the type profile
+   | NetlistError_FailedFactor -- ?? Add type data of potential inputs recognised
    deriving (Eq)
 
 instance (Show NetlistError) where
@@ -192,6 +194,8 @@ instance (Show NetlistError) where
             then "right"
             else ""
       ++ ")"
+   show NetlistError_FailedFactor = -- ?? Add type data of potential inputs recognised
+      "no factors found that meet required type profile"
 
 ---- |Print list of wrapped names
 --printNames :: [WrappedSimpleName] -> String

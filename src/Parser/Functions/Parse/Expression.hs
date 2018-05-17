@@ -517,6 +517,103 @@ parseFactor staticLevel scope unit unitName = do
             then do
                primary2 <- parsePrimary staticLevel scope unit unitName
                throwError $ ConverterError_NotImplemented $ passPosition "exponential processing in factor" middleToken
+               let getNonStaticFuncs functionFinder origVal1 origVal2 =
+                     case matchFunctionInScope functionFinder scope unit unitName of
+                        Nothing -> []
+                        Just functions ->
+                           let mapper (function,(_,package)) =
+                                 ( Calc_FunctionCall
+                                    (package,function)
+                                    [origVal1,origVal2]
+                                 , subtypeToType $ function_returnTypeData function
+                                 )
+                           in map mapper $ MapS.toList functions
+                   applyNonStaticBuiltin functionFinder builtinCalc origVal1 origVal2 =
+                     if notLocallyStatic staticLevel
+                        then return (builtinCalc:getNonStaticFuncs functionFinder origVal1 origVal2)
+                        else return []
+                   applyNonStatic functionFinder origVal1 origVal2 =
+                     if notLocallyStatic staticLevel
+                        then return $ getNonStaticFuncs functionFinder origVal1 origVal2
+                        else return []
+                   applyStaticAndNonStatic staticVal functionFinder origVal1 origVal2 =
+                     if notLocallyStatic staticLevel
+                        then return (staticVal:getNonStaticFuncs functionFinder origVal1 origVal2)
+                        else return [staticVal]
+                   constFunctionFinder leftIn rightIn
+                     (Function (Designator_Operator Operators.DoubleStar)
+                        [ FunctionInterface FunctionInterfaceType_Constant _ _ leftSubtype
+                        , FunctionInterface FunctionInterfaceType_Constant _ _ rightSubtype
+                        ] _ _) =
+                           let inputCheck calcType funcType = case (calcType,funcType) of
+                                 (Type_Type typeName IntegerType,IntegerSubtype _ baseTypeName _) -> typeName == baseTypeName
+                                 (Type_UniversalInt,IntegerSubtype _ _ _) -> True
+                                 (Type_Type typeName FloatingType,FloatingSubtype _ baseTypeName _) -> typeName == baseTypeName
+                                 (Type_UniversalReal,FloatingSubtype _ _ _) -> True
+                                 (Type_Type typeName (PhysicalType _ _),PhysicalSubtype _ baseTypeName _ _ _) -> typeName == baseTypeName
+                                 -- ?? need other checks
+                                 _ -> False
+                           in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+                   applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
+                   applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+                     let typeCheck = case (typeData1,typeData2) of
+                                       (Type_Type _ IntegerType,Type_UniversalInt) -> Just typeData1
+                                       (Type_Type _ IntegerType,Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType) -> Just typeData1
+                                       (Type_UniversalInt,Type_UniversalInt) -> Just typeData1
+                                       (Type_UniversalInt,Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType) -> Just typeData1
+                                       (Type_Type _ FloatingType,Type_UniversalInt) -> Just typeData1
+                                       (Type_Type _ FloatingType,Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType) -> Just typeData1
+                                       (Type_UniversalReal,Type_UniversalInt) -> Just typeData1
+                                       (Type_UniversalReal,Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType) -> Just typeData1
+                                       _ -> Nothing
+                         nomatchCalcs = applyNonStatic
+                                          (constFunctionFinder typeData1 typeData2)
+                                          wrappedVal1
+                                          wrappedVal2
+                         convertCalcs valFunc arith val1 val2 =
+                           case typeCheck of
+                              Just typeData -> applyStaticAndNonStatic
+                                                (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                                (constFunctionFinder typeData1 typeData2)
+                                                wrappedVal1
+                                                wrappedVal2
+                              Nothing -> nomatchCalcs
+                         convertPhysCalcs valFunc arith val1 val2 typeData =
+                           applyStaticAndNonStatic
+                              (Calc_Value $ valFunc $ arith val1 val2,typeData)
+                              (constFunctionFinder typeData1 typeData2)
+                              wrappedVal1
+                              wrappedVal2
+                     in case (val1,val2) of
+                           (Value_Int val1,Value_Int val2) -> convertCalcs Value_Int (\a1 a2 -> round $ a1 ^^ a2) (fromInteger val1) val2
+                           (Value_Float val1,Value_Int val2) -> convertCalcs Value_Float (^^) val1 val2
+                           -- ?? Need checks for string and bitstring
+                           _ -> nomatchCalcs
+                   applyArith (calc1,typeData1) (calc2,typeData2) =
+                     let convertCalcs calcFunc typeData =
+                           applyNonStaticBuiltin
+                              (constFunctionFinder typeData1 typeData2)
+                              (calcFunc calc1 calc2,typeData)
+                              calc1
+                              calc2
+                     in case (typeData1,typeData2) of
+                           (Type_Type _ IntegerType,Type_UniversalInt) -> convertCalcs Calc_BuiltinExp typeData1
+                           (Type_Type _ IntegerType,Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType) -> convertCalcs Calc_BuiltinExp typeData1
+                           (Type_UniversalInt,Type_UniversalInt) -> convertCalcs Calc_BuiltinExp typeData1
+                           (Type_UniversalInt,Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType) -> convertCalcs Calc_BuiltinExp typeData1
+                           (Type_Type _ FloatingType,Type_UniversalInt) -> convertCalcs Calc_BuiltinExp typeData1
+                           (Type_Type _ FloatingType,Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType) -> convertCalcs Calc_BuiltinExp typeData1
+                           (Type_UniversalReal,Type_UniversalInt) -> convertCalcs Calc_BuiltinExp typeData1
+                           (Type_UniversalReal,Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType) -> convertCalcs Calc_BuiltinExp typeData1
+                           -- ?? Need checks for string and bitstring
+                           _ -> applyNonStatic
+                                 (constFunctionFinder typeData1 typeData2)
+                                 calc1
+                                 calc2
+               allArith <- mapM (\(left,right) -> applyArith left right) $ [(left,right) | left <- primary1, right <- primary2]
+               case concat allArith of
+                  emptyList | null emptyList -> throwError $ ConverterError_Netlist $ passPosition NetlistError_FailedFactor token
+                  nonEmpty -> return nonEmpty
             else do
                saveToken middleToken
                return primary1

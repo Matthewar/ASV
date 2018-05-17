@@ -234,6 +234,9 @@ data Calculation =
    | Calc_BuiltinDiv Calculation Calculation
    | Calc_BuiltinMod Calculation Calculation
    | Calc_BuiltinRem Calculation Calculation
+   | Calc_BuiltinExp Calculation Calculation
+   | Calc_BuiltinAbs Calculation
+   | Calc_BuiltinNot Calculation
    --Calc_SignalDelayed (String,Signal) Int64 -- save and carry out after time
    -- | Calc_SignalStable (String,Signal) Int64 -- check changes over timeframe (need to record last time changed)
    -- | Calc_SignalQuiet (String,Signal) Int64
