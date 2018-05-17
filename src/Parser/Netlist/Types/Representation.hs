@@ -243,6 +243,11 @@ data Calculation =
    | Calc_BuiltinLessThanOrEqual Calculation Calculation
    | Calc_BuiltinGreaterThan Calculation Calculation
    | Calc_BuiltinGreaterThanOrEqual Calculation Calculation
+   | Calc_BuiltinAnd Calculation Calculation
+   | Calc_BuiltinOr Calculation Calculation
+   | Calc_BuiltinXor Calculation Calculation
+   | Calc_BuiltinNand Calculation Calculation
+   | Calc_BuiltinNor Calculation Calculation
    --Calc_SignalDelayed (String,Signal) Int64 -- save and carry out after time
    -- | Calc_SignalStable (String,Signal) Int64 -- check changes over timeframe (need to record last time changed)
    -- | Calc_SignalQuiet (String,Signal) Int64

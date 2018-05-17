@@ -85,6 +85,8 @@ data NetlistError =
    | NetlistError_FailedFactor -- ?? Add type data of potential inputs recognised
    -- |Could not find any relations that matched the type profile
    | NetlistError_FailedRelation -- ?? Add type data of potential inputs recognised
+   -- |Could not find any expressions that matched the type profile
+   | NetlistError_FailedExpression -- ?? Add type data of potential inputs recognised
    deriving (Eq)
 
 instance (Show NetlistError) where
@@ -200,6 +202,8 @@ instance (Show NetlistError) where
       "no factors found that meet required type profile"
    show NetlistError_FailedRelation = -- ?? Add type data of potential inputs recognised
       "no relations found that meet required type profile"
+   show NetlistError_FailedExpression = -- ?? Add type data of potential inputs recognised
+      "no expressions found that meet required type profile"
 
 ---- |Print list of wrapped names
 --printNames :: [WrappedSimpleName] -> String

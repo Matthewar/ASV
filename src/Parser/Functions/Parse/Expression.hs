@@ -15,6 +15,11 @@ import Data.Maybe
          , fromJust
          )
 import Data.List (elemIndex)
+import Data.Bits
+         ( (.&.)
+         , (.|.)
+         , xor
+         )
 import Control.Monad.Except (throwError)
 
 import Lexer.Types.PositionWrapper
@@ -35,11 +40,16 @@ import Parser.Functions.IdentifyToken
          , isIdentifier
          , isInequality
          , isKeywordAbs
+         , isKeywordAnd
          , isKeywordMod
+         , isKeywordNand
          , isKeywordNew
          , isKeywordNot
+         , isKeywordNor
          , isKeywordNull
+         , isKeywordOr
          , isKeywordRem
+         , isKeywordXor
          , isLessThan
          , isLeftParen
          , isPlus
@@ -102,7 +112,487 @@ boolToBoolean bool =
    in Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ Enum_Identifier boolVal
 
 -- |Parse an expression
---parseExpression :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> ParserStack [(Calculation,AllTypes)]
+parseExpression :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> ParserStack [(Calculation,AllTypes)]
+parseExpression staticLevel scope unit unitName = do
+   relation <- parseRelation staticLevel scope unit unitName
+   logicalTok <- getToken
+   case logicalTok of
+      token | isKeywordAnd token -> parseAndExpression staticLevel scope unit unitName $ passPosition relation logicalTok
+      token | isKeywordOr token -> parseOrExpression staticLevel scope unit unitName $ passPosition relation logicalTok
+      token | isKeywordXor token -> parseXorExpression staticLevel scope unit unitName $ passPosition relation logicalTok
+      token | isKeywordNand token -> parseNandExpression staticLevel scope unit unitName $ passPosition relation logicalTok
+      token | isKeywordNor token -> parseNorExpression staticLevel scope unit unitName $ passPosition relation logicalTok
+      token -> do
+         saveToken token
+         return relation
+
+parseAndExpression :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> PosnWrapper [(Calculation,AllTypes)] -> ParserStack [(Calculation,AllTypes)]
+parseAndExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) = do
+   relation2 <- parseRelation staticLevel scope unit unitName
+   let getNonStaticFuncs functionFinder origVal1 origVal2 =
+         case matchFunctionInScope functionFinder scope unit unitName of
+            Nothing -> []
+            Just functions ->
+               let mapper (function,(_,package)) =
+                     ( Calc_FunctionCall
+                        (package,function)
+                        [origVal1,origVal2]
+                     , subtypeToType $ function_returnTypeData function
+                     )
+               in map mapper $ MapS.toList functions
+       applyNonStaticBuiltin functionFinder builtinCalc origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return (builtinCalc:getNonStaticFuncs functionFinder origVal1 origVal2)
+            else return []
+       applyNonStatic functionFinder origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return $ getNonStaticFuncs functionFinder origVal1 origVal2
+            else return []
+       applyStaticAndNonStatic staticVal functionFinder origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return (staticVal:getNonStaticFuncs functionFinder origVal1 origVal2)
+            else return [staticVal]
+       constFunctionFinder leftIn rightIn
+         (Function (Designator_Operator Operators.And)
+            [ FunctionInterface FunctionInterfaceType_Constant _ _ leftSubtype
+            , FunctionInterface FunctionInterfaceType_Constant _ _ rightSubtype
+            ] _ _) =
+               let inputCheck calcType funcType = case (calcType,funcType) of
+                     (Type_Type typeName IntegerType,IntegerSubtype _ baseTypeName _) -> typeName == baseTypeName
+                     (Type_UniversalInt,IntegerSubtype _ _ _) -> True
+                     (Type_Type typeName FloatingType,FloatingSubtype _ baseTypeName _) -> typeName == baseTypeName
+                     (Type_UniversalReal,FloatingSubtype _ _ _) -> True
+                     (Type_Type typeName (PhysicalType _ _),PhysicalSubtype _ baseTypeName _ _ _) -> typeName == baseTypeName
+                     -- ?? need other checks
+                     _ -> False
+               in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+       applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
+       applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+         let typeCheck = case (typeData1,typeData2) of
+                           -- ?? Need checks for string and bitstring
+                           _ | typeData1 == typeData2 -> Just typeData1
+                           _ -> Nothing
+             nomatchCalcs = applyNonStatic
+                              (constFunctionFinder typeData1 typeData2)
+                              wrappedVal1
+                              wrappedVal2
+             convertCalcs valFunc arith val1 val2 =
+               case typeCheck of
+                  Just typeData -> applyStaticAndNonStatic
+                                    (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                    (constFunctionFinder typeData1 typeData2)
+                                    wrappedVal1
+                                    wrappedVal2
+                  Nothing -> nomatchCalcs
+             enumToBool :: Enumerate -> Bool
+             enumToBool (Enum_Identifier "TRUE") = True
+             enumToBool (Enum_Identifier "FALSE") = False
+             enumToBool (Enum_Char '1') = True
+             enumToBool (Enum_Char '0') = False
+         in case (val1,val2) of
+               (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") val1,Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") val2) -> convertCalcs boolToBoolean (.&.) (enumToBool val1) (enumToBool val2)
+               (Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") val1,Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") val2) -> convertCalcs boolToBoolean (.&.) (enumToBool val1) (enumToBool val2)
+               -- ?? Need checks for string and bitstring, arrays
+               _ -> nomatchCalcs
+       applyArith (calc1,typeData1) (calc2,typeData2) =
+         let convertCalcs calcFunc typeData =
+               applyNonStaticBuiltin
+                  (constFunctionFinder typeData1 typeData2)
+                  (calcFunc calc1 calc2,typeData)
+                  calc1
+                  calc2
+         in case (typeData1,typeData2) of
+               (Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (EnumerationType _),Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (EnumerationType _)) ->
+                  convertCalcs Calc_BuiltinAnd typeData1
+               (Type_Type (NetlistName "STD" "STANDARD","ANON'BIT") (EnumerationType _),Type_Type (NetlistName "STD" "STANDARD","ANON'BIT") (EnumerationType _)) ->
+                  convertCalcs Calc_BuiltinAnd typeData1
+               -- ?? Need checks for string and bitstring, arrays
+               _ -> applyNonStatic
+                     (constFunctionFinder typeData1 typeData2)
+                     calc1
+                     calc2
+   allArith <- mapM (\(left,right) -> applyArith left right) $ [(left,right) | left <- prevCalcs, right <- relation2]
+   case concat allArith of
+      emptyList | null emptyList -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_FailedExpression
+      nonEmpty -> do
+         contTok <- getToken
+         case contTok of
+            token | isKeywordAnd token -> parseAndExpression staticLevel scope unit unitName $ passPosition nonEmpty contTok
+            token -> do
+               saveToken token
+               return nonEmpty
+
+parseOrExpression :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> PosnWrapper [(Calculation,AllTypes)] -> ParserStack [(Calculation,AllTypes)]
+parseOrExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) = do
+   relation2 <- parseRelation staticLevel scope unit unitName
+   let getNonStaticFuncs functionFinder origVal1 origVal2 =
+         case matchFunctionInScope functionFinder scope unit unitName of
+            Nothing -> []
+            Just functions ->
+               let mapper (function,(_,package)) =
+                     ( Calc_FunctionCall
+                        (package,function)
+                        [origVal1,origVal2]
+                     , subtypeToType $ function_returnTypeData function
+                     )
+               in map mapper $ MapS.toList functions
+       applyNonStaticBuiltin functionFinder builtinCalc origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return (builtinCalc:getNonStaticFuncs functionFinder origVal1 origVal2)
+            else return []
+       applyNonStatic functionFinder origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return $ getNonStaticFuncs functionFinder origVal1 origVal2
+            else return []
+       applyStaticAndNonStatic staticVal functionFinder origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return (staticVal:getNonStaticFuncs functionFinder origVal1 origVal2)
+            else return [staticVal]
+       constFunctionFinder leftIn rightIn
+         (Function (Designator_Operator Operators.Or)
+            [ FunctionInterface FunctionInterfaceType_Constant _ _ leftSubtype
+            , FunctionInterface FunctionInterfaceType_Constant _ _ rightSubtype
+            ] _ _) =
+               let inputCheck calcType funcType = case (calcType,funcType) of
+                     (Type_Type typeName IntegerType,IntegerSubtype _ baseTypeName _) -> typeName == baseTypeName
+                     (Type_UniversalInt,IntegerSubtype _ _ _) -> True
+                     (Type_Type typeName FloatingType,FloatingSubtype _ baseTypeName _) -> typeName == baseTypeName
+                     (Type_UniversalReal,FloatingSubtype _ _ _) -> True
+                     (Type_Type typeName (PhysicalType _ _),PhysicalSubtype _ baseTypeName _ _ _) -> typeName == baseTypeName
+                     -- ?? need other checks
+                     _ -> False
+               in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+       applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
+       applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+         let typeCheck = case (typeData1,typeData2) of
+                           -- ?? Need checks for string and bitstring
+                           _ | typeData1 == typeData2 -> Just typeData1
+                           _ -> Nothing
+             nomatchCalcs = applyNonStatic
+                              (constFunctionFinder typeData1 typeData2)
+                              wrappedVal1
+                              wrappedVal2
+             convertCalcs valFunc arith val1 val2 =
+               case typeCheck of
+                  Just typeData -> applyStaticAndNonStatic
+                                    (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                    (constFunctionFinder typeData1 typeData2)
+                                    wrappedVal1
+                                    wrappedVal2
+                  Nothing -> nomatchCalcs
+             enumToBool :: Enumerate -> Bool
+             enumToBool (Enum_Identifier "TRUE") = True
+             enumToBool (Enum_Identifier "FALSE") = False
+             enumToBool (Enum_Char '1') = True
+             enumToBool (Enum_Char '0') = False
+         in case (val1,val2) of
+               (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") val1,Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") val2) -> convertCalcs boolToBoolean (.|.) (enumToBool val1) (enumToBool val2)
+               (Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") val1,Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") val2) -> convertCalcs boolToBoolean (.|.) (enumToBool val1) (enumToBool val2)
+               -- ?? Need checks for string and bitstring, arrays
+               _ -> nomatchCalcs
+       applyArith (calc1,typeData1) (calc2,typeData2) =
+         let convertCalcs calcFunc typeData =
+               applyNonStaticBuiltin
+                  (constFunctionFinder typeData1 typeData2)
+                  (calcFunc calc1 calc2,typeData)
+                  calc1
+                  calc2
+         in case (typeData1,typeData2) of
+               (Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (EnumerationType _),Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (EnumerationType _)) ->
+                  convertCalcs Calc_BuiltinOr typeData1
+               (Type_Type (NetlistName "STD" "STANDARD","ANON'BIT") (EnumerationType _),Type_Type (NetlistName "STD" "STANDARD","ANON'BIT") (EnumerationType _)) ->
+                  convertCalcs Calc_BuiltinOr typeData1
+               -- ?? Need checks for string and bitstring, arrays
+               _ -> applyNonStatic
+                     (constFunctionFinder typeData1 typeData2)
+                     calc1
+                     calc2
+   allArith <- mapM (\(left,right) -> applyArith left right) $ [(left,right) | left <- prevCalcs, right <- relation2]
+   case concat allArith of
+      emptyList | null emptyList -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_FailedExpression
+      nonEmpty -> do
+         contTok <- getToken
+         case contTok of
+            token | isKeywordOr token -> parseOrExpression staticLevel scope unit unitName $ passPosition nonEmpty contTok
+            token -> do
+               saveToken token
+               return nonEmpty
+
+parseXorExpression :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> PosnWrapper [(Calculation,AllTypes)] -> ParserStack [(Calculation,AllTypes)]
+parseXorExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) = do
+   relation2 <- parseRelation staticLevel scope unit unitName
+   let getNonStaticFuncs functionFinder origVal1 origVal2 =
+         case matchFunctionInScope functionFinder scope unit unitName of
+            Nothing -> []
+            Just functions ->
+               let mapper (function,(_,package)) =
+                     ( Calc_FunctionCall
+                        (package,function)
+                        [origVal1,origVal2]
+                     , subtypeToType $ function_returnTypeData function
+                     )
+               in map mapper $ MapS.toList functions
+       applyNonStaticBuiltin functionFinder builtinCalc origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return (builtinCalc:getNonStaticFuncs functionFinder origVal1 origVal2)
+            else return []
+       applyNonStatic functionFinder origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return $ getNonStaticFuncs functionFinder origVal1 origVal2
+            else return []
+       applyStaticAndNonStatic staticVal functionFinder origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return (staticVal:getNonStaticFuncs functionFinder origVal1 origVal2)
+            else return [staticVal]
+       constFunctionFinder leftIn rightIn
+         (Function (Designator_Operator Operators.Xor)
+            [ FunctionInterface FunctionInterfaceType_Constant _ _ leftSubtype
+            , FunctionInterface FunctionInterfaceType_Constant _ _ rightSubtype
+            ] _ _) =
+               let inputCheck calcType funcType = case (calcType,funcType) of
+                     (Type_Type typeName IntegerType,IntegerSubtype _ baseTypeName _) -> typeName == baseTypeName
+                     (Type_UniversalInt,IntegerSubtype _ _ _) -> True
+                     (Type_Type typeName FloatingType,FloatingSubtype _ baseTypeName _) -> typeName == baseTypeName
+                     (Type_UniversalReal,FloatingSubtype _ _ _) -> True
+                     (Type_Type typeName (PhysicalType _ _),PhysicalSubtype _ baseTypeName _ _ _) -> typeName == baseTypeName
+                     -- ?? need other checks
+                     _ -> False
+               in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+       applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
+       applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+         let typeCheck = case (typeData1,typeData2) of
+                           -- ?? Need checks for string and bitstring
+                           _ | typeData1 == typeData2 -> Just typeData1
+                           _ -> Nothing
+             nomatchCalcs = applyNonStatic
+                              (constFunctionFinder typeData1 typeData2)
+                              wrappedVal1
+                              wrappedVal2
+             convertCalcs valFunc arith val1 val2 =
+               case typeCheck of
+                  Just typeData -> applyStaticAndNonStatic
+                                    (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                    (constFunctionFinder typeData1 typeData2)
+                                    wrappedVal1
+                                    wrappedVal2
+                  Nothing -> nomatchCalcs
+             enumToBool :: Enumerate -> Bool
+             enumToBool (Enum_Identifier "TRUE") = True
+             enumToBool (Enum_Identifier "FALSE") = False
+             enumToBool (Enum_Char '1') = True
+             enumToBool (Enum_Char '0') = False
+         in case (val1,val2) of
+               (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") val1,Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") val2) -> convertCalcs boolToBoolean xor (enumToBool val1) (enumToBool val2)
+               (Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") val1,Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") val2) -> convertCalcs boolToBoolean xor (enumToBool val1) (enumToBool val2)
+               -- ?? Need checks for string and bitstring, arrays
+               _ -> nomatchCalcs
+       applyArith (calc1,typeData1) (calc2,typeData2) =
+         let convertCalcs calcFunc typeData =
+               applyNonStaticBuiltin
+                  (constFunctionFinder typeData1 typeData2)
+                  (calcFunc calc1 calc2,typeData)
+                  calc1
+                  calc2
+         in case (typeData1,typeData2) of
+               (Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (EnumerationType _),Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (EnumerationType _)) ->
+                  convertCalcs Calc_BuiltinXor typeData1
+               (Type_Type (NetlistName "STD" "STANDARD","ANON'BIT") (EnumerationType _),Type_Type (NetlistName "STD" "STANDARD","ANON'BIT") (EnumerationType _)) ->
+                  convertCalcs Calc_BuiltinXor typeData1
+               -- ?? Need checks for string and bitstring, arrays
+               _ -> applyNonStatic
+                     (constFunctionFinder typeData1 typeData2)
+                     calc1
+                     calc2
+   allArith <- mapM (\(left,right) -> applyArith left right) $ [(left,right) | left <- prevCalcs, right <- relation2]
+   case concat allArith of
+      emptyList | null emptyList -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_FailedExpression
+      nonEmpty -> do
+         contTok <- getToken
+         case contTok of
+            token | isKeywordXor token -> parseXorExpression staticLevel scope unit unitName $ passPosition nonEmpty contTok
+            token -> do
+               saveToken token
+               return nonEmpty
+
+parseNandExpression :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> PosnWrapper [(Calculation,AllTypes)] -> ParserStack [(Calculation,AllTypes)]
+parseNandExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) = do
+   relation2 <- parseRelation staticLevel scope unit unitName
+   let getNonStaticFuncs functionFinder origVal1 origVal2 =
+         case matchFunctionInScope functionFinder scope unit unitName of
+            Nothing -> []
+            Just functions ->
+               let mapper (function,(_,package)) =
+                     ( Calc_FunctionCall
+                        (package,function)
+                        [origVal1,origVal2]
+                     , subtypeToType $ function_returnTypeData function
+                     )
+               in map mapper $ MapS.toList functions
+       applyNonStaticBuiltin functionFinder builtinCalc origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return (builtinCalc:getNonStaticFuncs functionFinder origVal1 origVal2)
+            else return []
+       applyNonStatic functionFinder origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return $ getNonStaticFuncs functionFinder origVal1 origVal2
+            else return []
+       applyStaticAndNonStatic staticVal functionFinder origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return (staticVal:getNonStaticFuncs functionFinder origVal1 origVal2)
+            else return [staticVal]
+       constFunctionFinder leftIn rightIn
+         (Function (Designator_Operator Operators.Nand)
+            [ FunctionInterface FunctionInterfaceType_Constant _ _ leftSubtype
+            , FunctionInterface FunctionInterfaceType_Constant _ _ rightSubtype
+            ] _ _) =
+               let inputCheck calcType funcType = case (calcType,funcType) of
+                     (Type_Type typeName IntegerType,IntegerSubtype _ baseTypeName _) -> typeName == baseTypeName
+                     (Type_UniversalInt,IntegerSubtype _ _ _) -> True
+                     (Type_Type typeName FloatingType,FloatingSubtype _ baseTypeName _) -> typeName == baseTypeName
+                     (Type_UniversalReal,FloatingSubtype _ _ _) -> True
+                     (Type_Type typeName (PhysicalType _ _),PhysicalSubtype _ baseTypeName _ _ _) -> typeName == baseTypeName
+                     -- ?? need other checks
+                     _ -> False
+               in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+       applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
+       applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+         let typeCheck = case (typeData1,typeData2) of
+                           -- ?? Need checks for string and bitstring
+                           _ | typeData1 == typeData2 -> Just typeData1
+                           _ -> Nothing
+             nomatchCalcs = applyNonStatic
+                              (constFunctionFinder typeData1 typeData2)
+                              wrappedVal1
+                              wrappedVal2
+             convertCalcs valFunc arith val1 val2 =
+               case typeCheck of
+                  Just typeData -> applyStaticAndNonStatic
+                                    (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                    (constFunctionFinder typeData1 typeData2)
+                                    wrappedVal1
+                                    wrappedVal2
+                  Nothing -> nomatchCalcs
+             enumToBool :: Enumerate -> Bool
+             enumToBool (Enum_Identifier "TRUE") = True
+             enumToBool (Enum_Identifier "FALSE") = False
+             enumToBool (Enum_Char '1') = True
+             enumToBool (Enum_Char '0') = False
+         in case (val1,val2) of
+               (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") val1,Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") val2) -> convertCalcs boolToBoolean (\a1 a2 -> not $ a1 .&. a2) (enumToBool val1) (enumToBool val2)
+               (Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") val1,Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") val2) -> convertCalcs boolToBoolean (\a1 a2 -> not $ a1 .&. a2) (enumToBool val1) (enumToBool val2)
+               -- ?? Need checks for string and bitstring, arrays
+               _ -> nomatchCalcs
+       applyArith (calc1,typeData1) (calc2,typeData2) =
+         let convertCalcs calcFunc typeData =
+               applyNonStaticBuiltin
+                  (constFunctionFinder typeData1 typeData2)
+                  (calcFunc calc1 calc2,typeData)
+                  calc1
+                  calc2
+         in case (typeData1,typeData2) of
+               (Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (EnumerationType _),Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (EnumerationType _)) ->
+                  convertCalcs Calc_BuiltinNand typeData1
+               (Type_Type (NetlistName "STD" "STANDARD","ANON'BIT") (EnumerationType _),Type_Type (NetlistName "STD" "STANDARD","ANON'BIT") (EnumerationType _)) ->
+                  convertCalcs Calc_BuiltinNand typeData1
+               -- ?? Need checks for string and bitstring, arrays
+               _ -> applyNonStatic
+                     (constFunctionFinder typeData1 typeData2)
+                     calc1
+                     calc2
+   allArith <- mapM (\(left,right) -> applyArith left right) $ [(left,right) | left <- prevCalcs, right <- relation2]
+   case concat allArith of
+      emptyList | null emptyList -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_FailedExpression
+      nonEmpty -> return nonEmpty
+
+parseNorExpression :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> PosnWrapper [(Calculation,AllTypes)] -> ParserStack [(Calculation,AllTypes)]
+parseNorExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) = do
+   relation2 <- parseRelation staticLevel scope unit unitName
+   let getNonStaticFuncs functionFinder origVal1 origVal2 =
+         case matchFunctionInScope functionFinder scope unit unitName of
+            Nothing -> []
+            Just functions ->
+               let mapper (function,(_,package)) =
+                     ( Calc_FunctionCall
+                        (package,function)
+                        [origVal1,origVal2]
+                     , subtypeToType $ function_returnTypeData function
+                     )
+               in map mapper $ MapS.toList functions
+       applyNonStaticBuiltin functionFinder builtinCalc origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return (builtinCalc:getNonStaticFuncs functionFinder origVal1 origVal2)
+            else return []
+       applyNonStatic functionFinder origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return $ getNonStaticFuncs functionFinder origVal1 origVal2
+            else return []
+       applyStaticAndNonStatic staticVal functionFinder origVal1 origVal2 =
+         if notLocallyStatic staticLevel
+            then return (staticVal:getNonStaticFuncs functionFinder origVal1 origVal2)
+            else return [staticVal]
+       constFunctionFinder leftIn rightIn
+         (Function (Designator_Operator Operators.Nor)
+            [ FunctionInterface FunctionInterfaceType_Constant _ _ leftSubtype
+            , FunctionInterface FunctionInterfaceType_Constant _ _ rightSubtype
+            ] _ _) =
+               let inputCheck calcType funcType = case (calcType,funcType) of
+                     (Type_Type typeName IntegerType,IntegerSubtype _ baseTypeName _) -> typeName == baseTypeName
+                     (Type_UniversalInt,IntegerSubtype _ _ _) -> True
+                     (Type_Type typeName FloatingType,FloatingSubtype _ baseTypeName _) -> typeName == baseTypeName
+                     (Type_UniversalReal,FloatingSubtype _ _ _) -> True
+                     (Type_Type typeName (PhysicalType _ _),PhysicalSubtype _ baseTypeName _ _ _) -> typeName == baseTypeName
+                     -- ?? need other checks
+                     _ -> False
+               in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+       applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
+       applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+         let typeCheck = case (typeData1,typeData2) of
+                           -- ?? Need checks for string and bitstring
+                           _ | typeData1 == typeData2 -> Just typeData1
+                           _ -> Nothing
+             nomatchCalcs = applyNonStatic
+                              (constFunctionFinder typeData1 typeData2)
+                              wrappedVal1
+                              wrappedVal2
+             convertCalcs valFunc arith val1 val2 =
+               case typeCheck of
+                  Just typeData -> applyStaticAndNonStatic
+                                    (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                    (constFunctionFinder typeData1 typeData2)
+                                    wrappedVal1
+                                    wrappedVal2
+                  Nothing -> nomatchCalcs
+             enumToBool :: Enumerate -> Bool
+             enumToBool (Enum_Identifier "TRUE") = True
+             enumToBool (Enum_Identifier "FALSE") = False
+             enumToBool (Enum_Char '1') = True
+             enumToBool (Enum_Char '0') = False
+         in case (val1,val2) of
+               (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") val1,Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") val2) -> convertCalcs boolToBoolean (\a1 a2 -> not $ a1 .|. a2) (enumToBool val1) (enumToBool val2)
+               (Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") val1,Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") val2) -> convertCalcs boolToBoolean (\a1 a2 -> not $ a1 .|. a2) (enumToBool val1) (enumToBool val2)
+               -- ?? Need checks for string and bitstring, arrays
+               _ -> nomatchCalcs
+       applyArith (calc1,typeData1) (calc2,typeData2) =
+         let convertCalcs calcFunc typeData =
+               applyNonStaticBuiltin
+                  (constFunctionFinder typeData1 typeData2)
+                  (calcFunc calc1 calc2,typeData)
+                  calc1
+                  calc2
+         in case (typeData1,typeData2) of
+               (Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (EnumerationType _),Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (EnumerationType _)) ->
+                  convertCalcs Calc_BuiltinNor typeData1
+               (Type_Type (NetlistName "STD" "STANDARD","ANON'BIT") (EnumerationType _),Type_Type (NetlistName "STD" "STANDARD","ANON'BIT") (EnumerationType _)) ->
+                  convertCalcs Calc_BuiltinNor typeData1
+               -- ?? Need checks for string and bitstring, arrays
+               _ -> applyNonStatic
+                     (constFunctionFinder typeData1 typeData2)
+                     calc1
+                     calc2
+   allArith <- mapM (\(left,right) -> applyArith left right) $ [(left,right) | left <- prevCalcs, right <- relation2]
+   case concat allArith of
+      emptyList | null emptyList -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_FailedExpression
+      nonEmpty -> return nonEmpty
 
 data RelationalOperator = Equal | NotEqual | LessThan | LessThanOrEqual | GreaterThan | GreaterThanOrEqual
 
