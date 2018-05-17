@@ -74,6 +74,8 @@ data NetlistError =
    | NetlistError_DuplicateSecondaryUnitInPhysType String
    -- |No unit in physical type definition with this name
    | NetlistError_UnrecognisedPhysicalUnitName String
+   -- |Could not find any terms that matched the type profile
+   | NetlistError_FailedTerm -- ?? Add type data of potential inputs recognised
    deriving (Eq)
 
 instance (Show NetlistError) where
@@ -166,6 +168,8 @@ instance (Show NetlistError) where
       "the unit name \""
       ++ unit
       ++ "\" does not exist within this type definition"
+   show NetlistError_FailedTerm = -- ?? Add type data of potential inputs recognised
+      "no terms found that meet required type profile"
 
 ---- |Print list of wrapped names
 --printNames :: [WrappedSimpleName] -> String

@@ -230,6 +230,10 @@ data Calculation =
    | Calc_BuiltinSum Calculation Calculation
    | Calc_BuiltinSubtract Calculation Calculation
    | Calc_BuiltinConcat Calculation Calculation
+   | Calc_BuiltinMult Calculation Calculation
+   | Calc_BuiltinDiv Calculation Calculation
+   | Calc_BuiltinMod Calculation Calculation
+   | Calc_BuiltinRem Calculation Calculation
    --Calc_SignalDelayed (String,Signal) Int64 -- save and carry out after time
    -- | Calc_SignalStable (String,Signal) Int64 -- check changes over timeframe (need to record last time changed)
    -- | Calc_SignalQuiet (String,Signal) Int64
@@ -243,7 +247,7 @@ data Calculation =
 
 data Value =
    Value_Enum (NetlistName,String) Enumerate -- ?? Is the type name String needed?
-   | Value_Int Int64
+   | Value_Int Int64 -- ?? Should this be integer type
    | Value_Float Double
    | Value_Physical Int64
    | Value_Array [Value]
