@@ -53,15 +53,15 @@ data NetlistError =
    | NetlistError_UnrecognisedName String
    -- |Deferred constant in a locally static expression
    | NetlistError_DeferredConst String
-   -- |Expected an integer or floating point value in the left bound of a range type definition
+   -- |Expected an integer or floating point value in the left bound of a range definition
    | NetlistError_ExpectedIntOrFloatLeftBoundRange
-   -- |Expected an integer or floating point value in the right bound of a range type definition
+   -- |Expected an integer or floating point value in the right bound of a range definition
    | NetlistError_ExpectedIntOrFloatRightBoundRange
    -- |Bound types of a range type definition do not match
    | NetlistError_RangeTypeNoMatch
-   -- |Cannot determine type of the left bound of a range type definition from context
+   -- |Cannot determine type of the left bound of a range definition from context
    | NetlistError_CannotInferValueFromContextInRangeTypeLeftBound
-   -- |Cannot determine type of the right bound of a range type definition from context
+   -- |Cannot determine type of the right bound of a range definition from context
    | NetlistError_CannotInferValueFromContextInRangeTypeRightBound
    -- |Cannot have a floating range in a physical type definition (must be integer)
    | NetlistError_FloatingRangeInPhysicalDefinition
@@ -77,9 +77,9 @@ data NetlistError =
    | NetlistError_UnrecognisedPhysicalUnitName String
    -- |Could not find any terms that matched the type profile
    | NetlistError_FailedTerm -- ?? Add type data of potential inputs recognised
-   -- |Values in integer type definition range are out of acceptable range
+   -- |Values in integer range are out of acceptable bounds
    | NetlistError_IntegerTypeOutOfBounds Integer Integer
-   -- |Values in floating type definition range are out of acceptable range
+   -- |Values in floating range are out of acceptable bounds
    | NetlistError_FloatingTypeOutOfBounds Double Double
    -- |Could not find any factors that matched the type profile
    | NetlistError_FailedFactor -- ?? Add type data of potential inputs recognised
@@ -147,16 +147,15 @@ instance (Show NetlistError) where
       ++ name
       ++ "\" cannot exist in a locally static expression"
    show NetlistError_ExpectedIntOrFloatLeftBoundRange =
-      "expected an integer or floating point value in the left bound of the range in the type definition"
+      "expected an integer or floating point value in the left bound of a range"
    show NetlistError_ExpectedIntOrFloatRightBoundRange =
-      "expected an integer or floating point value in the right bound of the range in the type definition"
+      "expected an integer or floating point value in the right bound of a range"
    show NetlistError_RangeTypeNoMatch =
-      "the types of the left and right bounds do not match, in the range definition within the type definition"
+      "the types of the left and right bounds do not match, in the range definition"
    show NetlistError_CannotInferValueFromContextInRangeTypeLeftBound =
-      "cannot choose value from context; multiple possible values found for left bound of range in the type definition"
-   -- |Cannot determine type of the left bound of a range type definition from context
+      "cannot choose value from context; multiple possible values found for left bound of range"
    show NetlistError_CannotInferValueFromContextInRangeTypeRightBound =
-      "cannot choose value from context; multiple possible values found for right bound of range in the type definition"
+      "cannot choose value from context; multiple possible values found for right bound of range"
    show NetlistError_FloatingRangeInPhysicalDefinition =
       "cannot have a floating point range in a physical type definition"
    show (NetlistError_BaseUnitNameIsTypeName unit) =
@@ -185,12 +184,12 @@ instance (Show NetlistError) where
       let checkVal val boundName = if val > toInteger (maxBound :: Int64) || val < toInteger (minBound :: Int64)
                                     then boundName ++ " bound: " ++ show val
                                     else ""
-      in "the values in the integer type definition are out of range ("
+      in "the values in the integer type range are out of bounds ("
          ++ (concat $ intersperse "," $ filter (not . null) [checkVal leftVal "left",checkVal rightVal "right"])
          ++ ")"
    -- |Values in floating type definition range are out of acceptable range
    show (NetlistError_FloatingTypeOutOfBounds leftVal rightVal) =
-      "the values in the floating type definition are out of range ("
+      "the values in the floating type range are out of bounds ("
       ++ if isInfinite leftVal
             then "left,"
             else ""
