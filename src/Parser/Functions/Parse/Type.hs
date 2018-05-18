@@ -19,6 +19,11 @@ import Data.Either
          ( isLeft
          , isRight
          )
+import Data.List
+         ( nub
+         , intersect
+         , elemIndex
+         )
 import qualified Data.Map.Strict as MapS
 
 import Lexer.Alex.Types (AlexPosn)
@@ -114,14 +119,16 @@ parseTypeDefinition' scope unit unitName typeName token
       range <- parseRange scope unit unitName $ getPos token
       unitToken <- getToken
       case (unitToken,range) of
-         (token,Right intRange) | isKeywordUnits token -> parsePhysicalType scope unit (unitName,typeName) intRange
-         (token,Left _) | isKeywordUnits token -> throwError $ ConverterError_Netlist $ passPosition NetlistError_FloatingRangeInPhysicalDefinition token
+         (token,IntegerConstraint intRange) | isKeywordUnits token -> parsePhysicalType scope unit (unitName,typeName) intRange
+         (token,FloatConstraint _) | isKeywordUnits token -> throwError $ ConverterError_Netlist $ passPosition NetlistError_FloatingRangeInPhysicalDefinition token
+         (_,EnumerationConstraint _) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_EnumRangeInTypeDef token
+         (_,PhysicalConstraint _) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_PhysRangeInTypeDef token
          (token,_) -> do
             saveToken token
             (rangeType,rangeSubtype) <-
                case range of
-                  Right intRange -> return $ (IntegerType,IntegerSubtype Nothing (unitName,"ANON'"++typeName) intRange)
-                  Left floatRange -> return $ (FloatingType,FloatingSubtype Nothing (unitName,"ANON'"++typeName) floatRange)
+                  IntegerConstraint intRange -> return $ (IntegerType,IntegerSubtype Nothing (unitName,"ANON'"++typeName) intRange)
+                  FloatConstraint floatRange -> return $ (FloatingType,FloatingSubtype Nothing (unitName,"ANON'"++typeName) floatRange)
             let rangeTypeFunc = MapS.insert ("ANON'"++typeName) rangeType
                 rangeSubtypeFunc = MapS.insert typeName rangeSubtype
             return (rangeTypeFunc,rangeSubtypeFunc)
@@ -143,7 +150,13 @@ parseTypeDefinition' scope unit unitName typeName token
    | isKeywordFile token = throwError $ ConverterError_NotImplemented $ passPosition "File type" token
    | otherwise = throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedTypeDefinition token
 
-parseRange :: ScopeStore -> UnitStore -> NetlistName -> AlexPosn -> ParserStack (Either FloatRange IntegerRange)
+data RangeConstraint =
+   FloatConstraint FloatRange
+   | IntegerConstraint IntegerRange
+   | EnumerationConstraint [(Enumerate,Enumerate,NetlistName,String,Type)]
+   | PhysicalConstraint IntegerRange
+
+parseRange :: ScopeStore -> UnitStore -> NetlistName -> AlexPosn -> ParserStack RangeConstraint
 parseRange scope unit unitName rangePos = do
    leftBound <- parseSimpleExpression LocallyStatic scope unit unitName -- ?? Parse range attribute
    directionToken <- getToken
@@ -152,12 +165,6 @@ parseRange scope unit unitName rangePos = do
                   token | isKeywordDownto token -> return Downto
                   token -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedDirection token
    rightBound <- parseSimpleExpression LocallyStatic scope unit unitName
-   let filterTypes (_,Type_Type _ IntegerType) = True
-       filterTypes (_,Type_Type _ FloatingType) = True
-       filterTypes (_,Type_UniversalInt) = True
-       filterTypes (_,Type_UniversalReal) = True
-       filterTypes _ = False
-       applyFilter = filter filterTypes
    let compareFunc :: (Num a,Ord a) => a -> a -> Bool
        compareFunc = case direction of
                         To -> (<=)
@@ -165,12 +172,36 @@ parseRange scope unit unitName rangePos = do
        withinIntRange left right =
          let checkVal val = val <= toInteger (maxBound :: Int64) && val >= toInteger (minBound :: Int64)
          in checkVal left && checkVal right
-   case (applyFilter leftBound,applyFilter rightBound) of
+       convertEnumval (Calc_Value (Value_Enum _ enum),Type_Type typeName (EnumerationType enums)) enumData =
+         if MapS.member typeName enumData
+            then MapS.adjust (\(typeEnums,selectedEnums) -> (typeEnums,nub $ enum:selectedEnums)) typeName enumData
+            else MapS.insert typeName (enums,[enum]) enumData
+       collectEnums = foldr convertEnumval MapS.empty
+       enumFilter left right = do
+         when (direction == Downto) $ throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_DownToInEnumRange
+         let leftMap = collectEnums left
+             rightMap = collectEnums right
+             keys = intersect (MapS.keys leftMap) (MapS.keys rightMap)
+             convertEnum :: (NetlistName,String) -> ParserStack (Enumerate,Enumerate,NetlistName,String,Type)
+             convertEnum key = do
+               let leftEntry = leftMap MapS.! key
+                   typeEnums = fst leftEntry
+                   (typePackage,typeName) = key
+               case (snd leftEntry,snd $ rightMap MapS.! key) of
+                  ([enum1],[enum2]) -> if (fromJust $ elemIndex enum1 typeEnums) <= (fromJust $ elemIndex enum2 typeEnums)
+                                          then return (enum1,enum2,typePackage,typeName,EnumerationType typeEnums)
+                                          else throwError $ ConverterError_NotImplemented $ PosnWrapper rangePos "Null range enumerated type"
+                  ([_],_) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_CannotInferValueFromContextInRangeTypeRightBound
+                  (_,[_]) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_CannotInferValueFromContextInRangeTypeLeftBound
+         ranges <- mapM convertEnum keys
+         return $ EnumerationConstraint ranges
+   case (leftBound,rightBound) of
+      -- ?? Can first two errors occur
       ([],_) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_ExpectedIntOrFloatLeftBoundRange
       (_,[]) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_ExpectedIntOrFloatRightBoundRange
       ([(Calc_Value (Value_Int left),_)],[(Calc_Value (Value_Int right),_)]) | withinIntRange left right ->
          if left `compareFunc` right
-            then return $ Right $ IntegerRange (fromInteger left) (fromInteger right) direction
+            then return $ IntegerConstraint $ IntegerRange (fromInteger left) (fromInteger right) direction
             else throwError $ ConverterError_NotImplemented $ PosnWrapper rangePos "Integer null range"
       ([(Calc_Value (Value_Int left),_)],[(Calc_Value (Value_Int right),_)]) ->
          throwError $ ConverterError_Netlist $ PosnWrapper rangePos $ NetlistError_IntegerTypeOutOfBounds left right
@@ -178,8 +209,14 @@ parseRange scope unit unitName rangePos = do
          throwError $ ConverterError_Netlist $ PosnWrapper rangePos $ NetlistError_FloatingTypeOutOfBounds left right
       ([(Calc_Value (Value_Float left),_)],[(Calc_Value (Value_Float right),_)]) ->
          if left `compareFunc` right
-            then return $ Left $ FloatRange left right direction
+            then return $ FloatConstraint $ FloatRange left right direction
             else throwError $ ConverterError_NotImplemented $ PosnWrapper rangePos "Floating null range"
+      ([(Calc_Value (Value_Physical left),typeData1)],[(Calc_Value (Value_Physical right),typeData2)]) | withinIntRange left right && typeData1 == typeData2 ->
+         if left `compareFunc` right
+            then return $ PhysicalConstraint $ IntegerRange (fromInteger left) (fromInteger right) direction
+            else throwError $ ConverterError_NotImplemented $ PosnWrapper rangePos "Physical null range"
+      ((Calc_Value (Value_Enum _ _),_):_,(Calc_Value (Value_Enum _ _),_):_) ->
+         enumFilter leftBound rightBound
       ([_],[_]) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_RangeTypeNoMatch
       ([_],_) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_CannotInferValueFromContextInRangeTypeLeftBound
       (_,[_]) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_CannotInferValueFromContextInRangeTypeRightBound

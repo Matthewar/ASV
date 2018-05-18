@@ -87,6 +87,12 @@ data NetlistError =
    | NetlistError_FailedRelation -- ?? Add type data of potential inputs recognised
    -- |Could not find any expressions that matched the type profile
    | NetlistError_FailedExpression -- ?? Add type data of potential inputs recognised
+   -- |Enumeration ranges are not permitted in type definitions
+   | NetlistError_EnumRangeInTypeDef
+   -- |Physical ranges are not permitted in type definitions
+   | NetlistError_PhysRangeInTypeDef
+   -- |Downto ranges are not permitted in enum ranges ?? Or are they
+   | NetlistError_DownToInEnumRange
    deriving (Eq)
 
 instance (Show NetlistError) where
@@ -203,6 +209,12 @@ instance (Show NetlistError) where
       "no relations found that meet required type profile"
    show NetlistError_FailedExpression = -- ?? Add type data of potential inputs recognised
       "no expressions found that meet required type profile"
+   show NetlistError_EnumRangeInTypeDef =
+      "enumerated ranges cannot occur in a type definition"
+   show NetlistError_PhysRangeInTypeDef =
+      "physical ranges cannot occur in a type definition"
+   show NetlistError_DownToInEnumRange =
+      "downto range cannot occur in an enumerated range"
 
 ---- |Print list of wrapped names
 --printNames :: [WrappedSimpleName] -> String
