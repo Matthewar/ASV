@@ -56,6 +56,7 @@ import Parser.Functions.IdentifyToken
          , isKeywordUse
          )
 import Parser.Functions.Parse.Type (parseType)
+import Parser.Functions.Parse.Objects (parseConstant)
 import Parser.Netlist.Types.Representation (NetlistName(..))
 import Parser.Netlist.Types.Stores
          ( ScopeStore
@@ -114,10 +115,14 @@ parsePackageDeclares' scopeStore unitStore packageName = do
             modify insertPackageType
             parsePackageDeclares' scopeStore unitStore packageName
       _ | isKeywordSubtype token -> throwError $ ConverterError_NotImplemented $ passPosition "Subtype declaration" token
-      _ | isKeywordConstant token -> throwError $ ConverterError_NotImplemented $ passPosition "Constant declaration" token
-            --constStore <- lift $ convertConstant scopeStore unitStore $ PosnWrapper declarePos constDeclare
-            --let insertPackageConsts package = package { packageConstants = MapS.union constStore $ packageConstants package }
-            --modify insertPackageConsts
+      _ | isKeywordConstant token -> do
+            (constStore,modSubtype) <- lift $ parseConstant scopeStore unitStore packageName
+            let insertPackageConsts package =
+                  package
+                     { packageConstants = MapS.union constStore $ packageConstants package
+                     , packageSubtypes = modSubtype $ packageSubtypes package
+                     }
+            modify insertPackageConsts
       _ | isKeywordSignal token -> throwError $ ConverterError_NotImplemented $ passPosition "Signal declaration" token
       _ | isKeywordFile token -> throwError $ ConverterError_NotImplemented $ passPosition "File declaration" token
       _ | isKeywordAlias token -> throwError $ ConverterError_NotImplemented $ passPosition "Alias declaration" token

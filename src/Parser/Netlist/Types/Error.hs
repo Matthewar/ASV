@@ -15,7 +15,11 @@ import Data.Int (Int64)
 
 import Lexer.Types.PositionWrapper (PosnWrapper(..))
 import Lexer.Types.Error (getLineAndColErrStr)
-import Parser.Netlist.Types.Representation (Enumerate)
+import Parser.Netlist.Types.Representation
+         ( Enumerate
+         , IntegerRange
+         , FloatRange
+         )
 
 -- |Wrapped netlist error
 -- ?? Want to have file name along with position for better error messages
@@ -93,6 +97,32 @@ data NetlistError =
    | NetlistError_PhysRangeInTypeDef
    -- |Downto ranges are not permitted in enum ranges ?? Or are they
    | NetlistError_DownToInEnumRange
+   -- |Resolution function specified in constant declaration
+   | NetlistError_ResFuncNotAllowedInConstDecl
+   -- |Type mark in constant declaration is unrecognised
+   | NetlistError_UnrecognisedNameInConstTypeIndic
+   -- |Enum value is not within the type range ?? Add type name, other useful details
+   | NetlistError_EnumValueOutOfRange Enumerate
+   -- |Integer value in not within the type range
+   | NetlistError_IntValueOutOfRange Integer
+   -- |Real value is not within the type range
+   | NetlistError_FloatValueOutOfRange Double
+   -- |Physical value is not within the type range
+   | NetlistError_PhysValueOutOfRange Integer
+   -- |Multiple possible values of the type found for a calculation
+   | NetlistError_CannotFindValueWithContext
+   -- |Constant name is already in use within the unit
+   | NetlistError_ConstNameAlreadyDefined String
+   -- |Duplicate constant names defined in the identifier list
+   | NetlistError_DuplicateConstName String
+   -- |New constraint for subtype of integer subtype is not within original
+   | NetlistError_InvalidSubtypeIntConstraint IntegerRange IntegerRange
+   -- |New constraint for subtype of floating subtype is not within original
+   | NetlistError_InvalidSubtypeFloatConstraint FloatRange FloatRange
+   -- |New constraint for subtype of physical subtype is not within original
+   | NetlistError_InvalidSubtypePhysConstraint IntegerRange IntegerRange
+   -- |No valid enumerate ranges found from constraint for specified subtype
+   | NetlistError_NoValidEnumRangeFound
    deriving (Eq)
 
 instance (Show NetlistError) where

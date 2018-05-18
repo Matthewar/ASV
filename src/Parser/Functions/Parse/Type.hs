@@ -4,6 +4,8 @@
 -}
 module Parser.Functions.Parse.Type
    ( parseType
+   , parseRange
+   , RangeConstraint(..)
    ) where
 
 import Control.Monad.Except
@@ -188,7 +190,7 @@ parseRange scope unit unitName rangePos = do
                    typeEnums = fst leftEntry
                    (typePackage,typeName) = key
                case (snd leftEntry,snd $ rightMap MapS.! key) of
-                  ([enum1],[enum2]) -> if (fromJust $ elemIndex enum1 typeEnums) <= (fromJust $ elemIndex enum2 typeEnums)
+                  ([enum1],[enum2]) -> if (fromJust $ elemIndex enum1 typeEnums) <= (fromJust $ elemIndex enum2 typeEnums) -- ?? Should this check be here or when the exact type is known, to avoid errors with ranges that are invalid for some types but not others
                                           then return (enum1,enum2,typePackage,typeName,EnumerationType typeEnums)
                                           else throwError $ ConverterError_NotImplemented $ PosnWrapper rangePos "Null range enumerated type"
                   ([_],_) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_CannotInferValueFromContextInRangeTypeRightBound

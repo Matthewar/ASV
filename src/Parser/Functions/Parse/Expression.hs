@@ -3,7 +3,8 @@
    Description : Parse and convert expressions
 -}
 module Parser.Functions.Parse.Expression
-   ( parseSimpleExpression
+   ( parseExpression
+   , parseSimpleExpression
    , Staticity(..)
    ) where
 

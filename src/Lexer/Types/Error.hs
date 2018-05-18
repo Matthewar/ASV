@@ -113,6 +113,18 @@ data ParserError
    | ParseErr_ExpectedSecondaryDeclarationOrEndInPhysType Token
    -- |Expected end of primary expression or aggregate (right parenthesis)
    | ParseErr_ExpectedRightParenInPrimary Token
+   -- |Expected colon in constant declaration to indicate start of subtybe indication
+   | ParseErr_ExpectedColonInConstDecl Token
+   -- |Expected type mark (identifier) in constant declaration
+   | ParseErr_ExpectedTypeMarkInConstDecl Token
+   -- |Expected a semicolon to end a constant declaration
+   | ParseErr_ExpectedConstEnd Token
+   -- |Expected the indicator of the start of the constant value (:= operator) or end of declaration for deferred constant (semicolon operator)
+   | ParseErr_ExpectedConstValueOrEnd Token
+   -- |Expected constant name (identifier) in constant declaration
+   | ParseErr_ExpectedConstName Token
+   -- |Range constraint not permitted for array subtype indication (should be discrete constraint)
+   | ParseErr_RangeConstraintForArrayType Token
    deriving (Eq)
 
 instance (Show ParserError) where
