@@ -21,6 +21,7 @@ import Data.Either
          )
 import qualified Data.Map.Strict as MapS
 
+import Lexer.Alex.Types (AlexPosn)
 import qualified Lexer.Types.Token as Tokens
 import Lexer.Types.Error(ParserError(..))
 import Lexer.Types.PositionWrapper
@@ -69,6 +70,8 @@ import Parser.Netlist.Types.Representation
 import Parser.Netlist.Types.Stores
          ( ScopeStore
          , UnitStore
+         , TypeStore
+         , SubtypeStore
          )
 import Parser.Netlist.Types.Error (NetlistError(..))
 import Parser.Netlist.Functions.Stores
@@ -82,7 +85,7 @@ import Parser.Types.Expressions
 import Parser.Functions.Parse.Expression (parseSimpleExpression)
 import Manager.Types.Error (ConverterError(..))
 
-parseType :: ScopeStore -> UnitStore -> NetlistName -> ParserStack (MapS.Map String Type -> MapS.Map String Type,MapS.Map String Subtype -> MapS.Map String Subtype)
+parseType :: ScopeStore -> UnitStore -> NetlistName -> ParserStack (TypeStore -> TypeStore,SubtypeStore -> SubtypeStore)
 parseType scope unit unitName = do
    -- If name is in scope, that is okay, but if name is in package, this is an error
    typeNameTok <- getToken
@@ -93,7 +96,7 @@ parseType scope unit unitName = do
    parseTypeDefinition scope unit unitName typeName
 
 -- |Convert type definition
-parseTypeDefinition :: ScopeStore -> UnitStore -> NetlistName -> String -> ParserStack (MapS.Map String Type -> MapS.Map String Type,MapS.Map String Subtype -> MapS.Map String Subtype)
+parseTypeDefinition :: ScopeStore -> UnitStore -> NetlistName -> String -> ParserStack (TypeStore -> TypeStore,SubtypeStore -> SubtypeStore)
 parseTypeDefinition scope unit unitName typeName = do
    fstToken <- getToken
    when (isSemicolon fstToken) $ throwError $ ConverterError_NotImplemented $ passPosition "Incomplete type definition" fstToken
@@ -105,48 +108,10 @@ parseTypeDefinition scope unit unitName typeName = do
       then return typeDef
       else throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSemicolonInTypeDef endToken
 
-parseTypeDefinition' :: ScopeStore -> UnitStore -> NetlistName -> String -> Tokens.WrappedToken -> ParserStack (MapS.Map String Type -> MapS.Map String Type,MapS.Map String Subtype -> MapS.Map String Subtype)
+parseTypeDefinition' :: ScopeStore -> UnitStore -> NetlistName -> String -> Tokens.WrappedToken -> ParserStack (TypeStore -> TypeStore,SubtypeStore -> SubtypeStore)
 parseTypeDefinition' scope unit unitName typeName token
    | isKeywordRange token = do
-      leftBound <- parseSimpleExpression LocallyStatic scope unit unitName -- ?? Parse range attribute
-      directionToken <- getToken
-      direction <- case directionToken of
-                     token | isKeywordTo token -> return To
-                     token | isKeywordDownto token -> return Downto
-                     token -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedDirection token
-      rightBound <- parseSimpleExpression LocallyStatic scope unit unitName
-      let filterTypes (_,Type_Type _ IntegerType) = True
-          filterTypes (_,Type_Type _ FloatingType) = True
-          filterTypes (_,Type_UniversalInt) = True
-          filterTypes (_,Type_UniversalReal) = True
-          filterTypes _ = False
-          applyFilter = filter filterTypes
-      let compareFunc :: (Num a,Ord a) => a -> a -> Bool
-          compareFunc = case direction of
-                           To -> (<=)
-                           Downto -> (>=)
-          withinIntRange left right =
-            let checkVal val = val <= toInteger (maxBound :: Int64) && val >= toInteger (minBound :: Int64)
-            in checkVal left && checkVal right
-      range <-
-         case (applyFilter leftBound,applyFilter rightBound) of
-            ([],_) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_ExpectedIntOrFloatLeftBoundRange token
-            (_,[]) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_ExpectedIntOrFloatRightBoundRange token
-            ([(Calc_Value (Value_Int left),_)],[(Calc_Value (Value_Int right),_)]) | withinIntRange left right ->
-               if left `compareFunc` right
-                  then return $ Right $ IntegerRange (fromInteger left) (fromInteger right) direction
-                  else throwError $ ConverterError_NotImplemented $ passPosition "Integer null range" token
-            ([(Calc_Value (Value_Int left),_)],[(Calc_Value (Value_Int right),_)]) ->
-               throwError $ ConverterError_Netlist $ passPosition (NetlistError_IntegerTypeOutOfBounds left right) token
-            ([(Calc_Value (Value_Float left),_)],[(Calc_Value (Value_Float right),_)]) | isInfinite left || isInfinite right ->
-               throwError $ ConverterError_Netlist $ passPosition (NetlistError_FloatingTypeOutOfBounds left right) token
-            ([(Calc_Value (Value_Float left),_)],[(Calc_Value (Value_Float right),_)]) ->
-               if left `compareFunc` right
-                  then return $ Left $ FloatRange left right direction
-                  else throwError $ ConverterError_NotImplemented $ passPosition "Floating null range" token
-            ([_],[_]) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_RangeTypeNoMatch token
-            ([_],_) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_CannotInferValueFromContextInRangeTypeLeftBound token
-            (_,[_]) -> throwError $ ConverterError_Netlist $ passPosition NetlistError_CannotInferValueFromContextInRangeTypeRightBound token
+      range <- parseRange scope unit unitName $ getPos token
       unitToken <- getToken
       case (unitToken,range) of
          (token,Right intRange) | isKeywordUnits token -> parsePhysicalType scope unit (unitName,typeName) intRange
@@ -178,7 +143,48 @@ parseTypeDefinition' scope unit unitName typeName token
    | isKeywordFile token = throwError $ ConverterError_NotImplemented $ passPosition "File type" token
    | otherwise = throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedTypeDefinition token
 
-parsePhysicalType :: ScopeStore -> UnitStore -> (NetlistName,String) -> IntegerRange -> ParserStack (MapS.Map String Type -> MapS.Map String Type,MapS.Map String Subtype -> MapS.Map String Subtype)
+parseRange :: ScopeStore -> UnitStore -> NetlistName -> AlexPosn -> ParserStack (Either FloatRange IntegerRange)
+parseRange scope unit unitName rangePos = do
+   leftBound <- parseSimpleExpression LocallyStatic scope unit unitName -- ?? Parse range attribute
+   directionToken <- getToken
+   direction <- case directionToken of
+                  token | isKeywordTo token -> return To
+                  token | isKeywordDownto token -> return Downto
+                  token -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedDirection token
+   rightBound <- parseSimpleExpression LocallyStatic scope unit unitName
+   let filterTypes (_,Type_Type _ IntegerType) = True
+       filterTypes (_,Type_Type _ FloatingType) = True
+       filterTypes (_,Type_UniversalInt) = True
+       filterTypes (_,Type_UniversalReal) = True
+       filterTypes _ = False
+       applyFilter = filter filterTypes
+   let compareFunc :: (Num a,Ord a) => a -> a -> Bool
+       compareFunc = case direction of
+                        To -> (<=)
+                        Downto -> (>=)
+       withinIntRange left right =
+         let checkVal val = val <= toInteger (maxBound :: Int64) && val >= toInteger (minBound :: Int64)
+         in checkVal left && checkVal right
+   case (applyFilter leftBound,applyFilter rightBound) of
+      ([],_) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_ExpectedIntOrFloatLeftBoundRange
+      (_,[]) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_ExpectedIntOrFloatRightBoundRange
+      ([(Calc_Value (Value_Int left),_)],[(Calc_Value (Value_Int right),_)]) | withinIntRange left right ->
+         if left `compareFunc` right
+            then return $ Right $ IntegerRange (fromInteger left) (fromInteger right) direction
+            else throwError $ ConverterError_NotImplemented $ PosnWrapper rangePos "Integer null range"
+      ([(Calc_Value (Value_Int left),_)],[(Calc_Value (Value_Int right),_)]) ->
+         throwError $ ConverterError_Netlist $ PosnWrapper rangePos $ NetlistError_IntegerTypeOutOfBounds left right
+      ([(Calc_Value (Value_Float left),_)],[(Calc_Value (Value_Float right),_)]) | isInfinite left || isInfinite right ->
+         throwError $ ConverterError_Netlist $ PosnWrapper rangePos $ NetlistError_FloatingTypeOutOfBounds left right
+      ([(Calc_Value (Value_Float left),_)],[(Calc_Value (Value_Float right),_)]) ->
+         if left `compareFunc` right
+            then return $ Left $ FloatRange left right direction
+            else throwError $ ConverterError_NotImplemented $ PosnWrapper rangePos "Floating null range"
+      ([_],[_]) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_RangeTypeNoMatch
+      ([_],_) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_CannotInferValueFromContextInRangeTypeLeftBound
+      (_,[_]) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_CannotInferValueFromContextInRangeTypeRightBound
+
+parsePhysicalType :: ScopeStore -> UnitStore -> (NetlistName,String) -> IntegerRange -> ParserStack (TypeStore -> TypeStore,SubtypeStore -> SubtypeStore)
 parsePhysicalType scope unit (unitName,typeName) range = do
    [baseUnitTok,semicolonTok] <- replicateM 2 getToken
    baseUnit <- case matchIdentifier baseUnitTok of
