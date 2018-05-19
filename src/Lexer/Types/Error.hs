@@ -116,7 +116,7 @@ data ParserError
    -- |Expected colon in constant declaration to indicate start of subtybe indication
    | ParseErr_ExpectedColonInConstDecl Token
    -- |Expected type mark (identifier) in constant declaration
-   | ParseErr_ExpectedTypeMarkInConstDecl Token
+   | ParseErr_ExpectedTypeMarkInSubtypeIndic Token
    -- |Expected a semicolon to end a constant declaration
    | ParseErr_ExpectedConstEnd Token
    -- |Expected the indicator of the start of the constant value (:= operator) or end of declaration for deferred constant (semicolon operator)
@@ -125,6 +125,12 @@ data ParserError
    | ParseErr_ExpectedConstName Token
    -- |Range constraint not permitted for array subtype indication (should be discrete constraint)
    | ParseErr_RangeConstraintForArrayType Token
+   -- |Expected subtype name (identifier) in subtype declaration
+   | ParseErr_ExpectedSubtypeName Token
+   -- |Expected keyword is to mark start of subtype indication in subtype declaration
+   | ParseErr_ExpectedKeywordIsInSubtypeDecl Token
+   -- |Expected semicolon to mark end of subtype declaration
+   | ParseErr_ExpectedSemicolonInSubtypeDecl Token
    deriving (Eq)
 
 instance (Show ParserError) where
@@ -242,6 +248,15 @@ instance (Show ParserError) where
       ++ show token
    show (ParseErr_ExpectedEnumCont token) =
       "Expected ',' or ')' to continue or end enumeration literal definition, but got "
+      ++ show token
+   show (ParseErr_ExpectedSubtypeName token) =
+      "Expected a name (identifier) in the subtype declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedKeywordIsInSubtypeDecl token) =
+      "Expected keyword is, marking the start of the subtype indication in a subtype declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedSemicolonInSubtypeDecl token) =
+      "Expected semicolon at the end of the subtype declaration, but got "
       ++ show token
 
 -- | Find largest (and by extension smallest) possible value of double

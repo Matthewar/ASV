@@ -98,9 +98,9 @@ data NetlistError =
    -- |Downto ranges are not permitted in enum ranges ?? Or are they
    | NetlistError_DownToInEnumRange
    -- |Resolution function specified in constant declaration
-   | NetlistError_ResFuncNotAllowedInConstDecl
+   | NetlistError_ResFuncNotAllowedInSubtypeIndic
    -- |Type mark in constant declaration is unrecognised
-   | NetlistError_UnrecognisedNameInConstTypeIndic
+   | NetlistError_UnrecognisedNameInSubtypeIndic
    -- |Enum value is not within the type range ?? Add type name, other useful details
    | NetlistError_EnumValueOutOfRange Enumerate
    -- |Integer value in not within the type range
@@ -123,6 +123,10 @@ data NetlistError =
    | NetlistError_InvalidSubtypePhysConstraint IntegerRange IntegerRange
    -- |No valid enumerate ranges found from constraint for specified subtype
    | NetlistError_NoValidEnumRangeFound
+   -- |Subtype name has already been defined in the unit
+   | NetlistError_SubtypeNameAlreadyDefined String
+   -- |Expected type mark in subtype indication but got a function name
+   | NetlistError_ExpectedTypeMarkButGotFunctionName
    deriving (Eq)
 
 instance (Show NetlistError) where

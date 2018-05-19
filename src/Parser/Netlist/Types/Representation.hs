@@ -22,6 +22,9 @@ module Parser.Netlist.Types.Representation
    , FunctionInterfaceType(..)
    , Calculation(..)
    , Value(..)
+   , Generic(..)
+   , Port(..)
+   , Mode(..)
    , Signal(..)
    , Constant(..)
    ) where
@@ -266,6 +269,36 @@ data Value =
    | Value_Physical Integer
    | Value_Array [Value]
    deriving (Eq,Ord,Show)
+
+-- |Generic type
+data Generic =
+   Generic
+      { generic_name :: String
+      , generic_subtypeName :: (NetlistName,String)
+      , generic_subtypeData :: Subtype
+      , generic_default :: Maybe Value
+      }
+   deriving (Show)
+
+-- |Port type
+data Port =
+   Port
+      { port_name :: String
+      , port_mode :: Mode
+      , port_subtypeName :: (NetlistName,String)
+      , port_subtypeData :: Subtype
+      -- ?? is bus
+      , port_default :: Maybe Value
+      }
+   deriving (Show)
+
+data Mode =
+   Mode_In
+   | Mode_Out
+   | Mode_Inout
+   | Mode_Buffer
+   | Mode_Linkage
+   deriving (Show)
 
 data ScalarAttributes =
    ScalarAttributes

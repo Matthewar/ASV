@@ -38,7 +38,8 @@ builtinPackages =
 netlist :: NetlistStore
 netlist =
    NetlistStore
-      { packages = builtinPackages
+      { entities = MapS.empty
+      , packages = builtinPackages
       }
 
 scope :: Scope

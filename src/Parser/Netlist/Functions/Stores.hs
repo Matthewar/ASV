@@ -4,7 +4,9 @@
 -}
 module Parser.Netlist.Functions.Stores
    ( newPackage
+   , newEntity
    , convertPackageToGenericUnit
+   , convertEntityToGenericUnit
    , convertPackageToScope
    , isNameInUnit
    , isEnumNameInUnit
@@ -35,26 +37,50 @@ import Parser.Netlist.Types.Representation
          , Enumerate(..)
          , Constant
          , Signal(..)
+         , Generic(..)
+         , Port(..)
          )
 import Parser.Netlist.Types.Stores
          ( Package(..)
+         , emptyPackage
+         , Entity(..)
+         , emptyEntity
          , ScopeStore(..)
          , UnitStore(..)
+         , emptyUnitStore
          , TypeStore
          , SubtypeStore
          , FunctionStore
          , ConstantStore
          , SignalStore
+         , GenericStore
+         , PortStore
          )
 
 -- |New package with scope
 newPackage :: ScopeStore -> Package
-newPackage scope = Package scope MapS.empty MapS.empty MapS.empty MapS.empty MapS.empty
+newPackage scope = emptyPackage { packageScope = scope }
+
+-- |New entity with scope
+newEntity :: ScopeStore -> Entity
+newEntity scope = emptyEntity { entityScope = scope }
 
 -- |Convert package to generalised store for use in low level conversions
 convertPackageToGenericUnit :: Package -> (ScopeStore,UnitStore)
 convertPackageToGenericUnit (Package scope funcs types subtypes consts signals) =
-   let unit = UnitStore funcs types subtypes consts signals
+   let unit = emptyUnitStore
+               { unitFunctions = funcs
+               , unitTypes = types
+               , unitSubtypes = subtypes
+               , unitConstants = consts
+               , unitSignals = signals
+               }
+   in (scope,unit)
+
+-- |Convert package to generalised store for use in low level conversions
+convertEntityToGenericUnit :: Entity -> (ScopeStore,UnitStore)
+convertEntityToGenericUnit (Entity scope generics ports funcs types subtypes consts signals) =
+   let unit = UnitStore generics ports funcs types subtypes consts signals
    in (scope,unit)
 
 -- |Convert package to scope object
@@ -84,14 +110,24 @@ isEnumNameInUnit = isNameDeclaredInUnit False
 
 -- |Check if an identifier has already been defined in the current unit
 isNameDeclaredInUnit :: Bool -> UnitStore -> String -> Bool
-isNameDeclaredInUnit includeEnums (UnitStore funcs types subtypes consts signals) name =
+isNameDeclaredInUnit includeEnums (UnitStore generics ports funcs types subtypes consts signals) name =
    let allNames =
-         getFunctionNames funcs
+         getGenericNames generics
+         ++ getPortNames ports
+         ++ getFunctionNames funcs
          ++ (getSomeTypeNames includeEnums types)
          ++ getSubtypeNames subtypes
          ++ getConstantNames consts
          ++ getSignalNames signals
    in elem name allNames
+
+-- |Get names of generics
+getGenericNames :: GenericStore -> [String]
+getGenericNames = map generic_name
+
+-- |Get names of ports
+getPortNames :: PortStore -> [String]
+getPortNames = map port_name
 
 -- |Get names of identifiable functions
 -- (Non-operator functions)

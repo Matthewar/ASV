@@ -9,12 +9,18 @@ module Parser.Netlist.Types.Stores
    , FunctionStore
    , ConstantStore
    , SignalStore
+   , GenericStore
+   , PortStore
+   , EntityStore
+   , Entity(..)
+   , emptyEntity
    , PackageStore
    , Package(..)
    , emptyPackage
    , ScopeStore(..)
    , emptyScopeStore
    , UnitStore(..)
+   , emptyUnitStore
    ) where
 
 import qualified Data.Map.Strict as MapS
@@ -27,15 +33,17 @@ import Parser.Netlist.Types.Representation
          , FunctionBody(..)
          , Constant
          , Signal
+         , Generic
+         , Port
          )
 
 -- |Store of all netlisted data
 -- Parse tree is converted into netlist
 data NetlistStore =
    NetlistStore
-      --{ entities :: MapS.Map NetlistName Entity -- ?? ports :: [Port], generics
+      { entities :: EntityStore
       --, configurations :: MapS.Map NetlistName Configuration
-      { packages :: PackageStore
+      , packages :: PackageStore
       --, architectures :: MapS.Map NetlistName Architecture
       }
    deriving (Show)
@@ -56,6 +64,55 @@ type ConstantStore = MapS.Map String Constant
 
 -- |Store of signal data
 type SignalStore = MapS.Map String Signal
+
+-- |Store of generics
+-- ?? How to deal with positional and named keying
+type GenericStore = [Generic]
+
+-- |Store of ports
+-- ?? How to deal with positional and named keying
+type PortStore = [Port]
+
+-- |Store of entity data
+type EntityStore = MapS.Map NetlistName Entity
+
+-- |Entity data
+-- All declares held in an entity along with its interface
+data Entity =
+   Entity
+      { entityScope :: ScopeStore -- ^ Used to link entity scope to architecture body
+      , entityGenerics :: GenericStore
+      , entityPorts :: PortStore
+      --ProcedureStore
+      , entityFunctions :: FunctionStore
+      , entityTypes :: TypeStore
+      , entitySubtypes :: SubtypeStore
+      , entityConstants :: ConstantStore
+      , entitySignals :: SignalStore
+      --FileStore
+      --AliasStore
+      --AttributeStore
+      --DisconnectStore
+      --UseStore
+
+      --Concurrent assertion statement
+      --Passive concurrent procedure call
+      --Passive process statement
+      }
+   deriving (Show)
+
+-- |Empty package
+emptyEntity :: Entity
+emptyEntity =
+   Entity
+      emptyScopeStore
+      []
+      []
+      MapS.empty
+      MapS.empty
+      MapS.empty
+      MapS.empty
+      MapS.empty
 
 -- |Store of package data
 type PackageStore = MapS.Map NetlistName Package
@@ -146,9 +203,23 @@ emptyScopeStore =
 -- |Store of unit declarations
 data UnitStore =
    UnitStore
-      { unitFunctions :: FunctionStore
+      { unitGenerics :: GenericStore
+      , unitPorts :: PortStore
+      , unitFunctions :: FunctionStore
       , unitTypes :: TypeStore
       , unitSubtypes :: SubtypeStore
       , unitConstants :: ConstantStore
       , unitSignals :: SignalStore
       }
+
+-- |Empty unit store
+emptyUnitStore :: UnitStore
+emptyUnitStore =
+   UnitStore
+      []
+      []
+      MapS.empty
+      MapS.empty
+      MapS.empty
+      MapS.empty
+      MapS.empty

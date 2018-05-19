@@ -56,6 +56,7 @@ import Parser.Functions.IdentifyToken
          , isKeywordUse
          )
 import Parser.Functions.Parse.Type (parseType)
+import Parser.Functions.Parse.Subtype (parseSubtype)
 import Parser.Functions.Parse.Objects (parseConstant)
 import Parser.Netlist.Types.Representation (NetlistName(..))
 import Parser.Netlist.Types.Stores
@@ -73,7 +74,7 @@ import Manager.Types.Error (ConverterError(..))
 parsePackage :: ScopeStore -> String -> ParserStack ()
 parsePackage scope libraryName = do
    [nameToken,contToken] <- replicateM 2 getToken
-   let name1Info = fromJust $ matchIdentifier nameToken
+   let name1Info = fromJust $ matchIdentifier nameToken -- ?? Would that throw an error if name isn't name
        basePackage = newPackage scope
        getName = (map toUpper) . unPos
        name1 = getName name1Info
@@ -96,7 +97,7 @@ type PackageBuildStack = StateT Package (StateT ParserState (StateT AlexState (S
 
 parsePackageDeclares :: NetlistName -> PackageBuildStack
 parsePackageDeclares packageName = do
-   (scopeStore,unitStore) <- gets convertPackageToGenericUnit
+   (scopeStore,unitStore) <- gets convertPackageToGenericUnit -- ?? Is it better to repeat this each time or transfer generalised unit back to package at end
    parsePackageDeclares' scopeStore unitStore packageName
 
 parsePackageDeclares' :: ScopeStore -> UnitStore -> NetlistName -> PackageBuildStack
@@ -113,8 +114,10 @@ parsePackageDeclares' scopeStore unitStore packageName = do
                      , packageSubtypes = modSubtype $ packageSubtypes package
                      }
             modify insertPackageType
-            parsePackageDeclares' scopeStore unitStore packageName
-      _ | isKeywordSubtype token -> throwError $ ConverterError_NotImplemented $ passPosition "Subtype declaration" token
+      _ | isKeywordSubtype token -> do
+         modSubtype <- lift $ parseSubtype scopeStore unitStore packageName
+         let insertPackageSubtype package = package { packageSubtypes = modSubtype $ packageSubtypes package }
+         modify insertPackageSubtype
       _ | isKeywordConstant token -> do
             (constStore,modSubtype) <- lift $ parseConstant scopeStore unitStore packageName
             let insertPackageConsts package =
@@ -132,3 +135,4 @@ parsePackageDeclares' scopeStore unitStore packageName = do
       _ | isKeywordUse token -> throwError $ ConverterError_NotImplemented $ passPosition "Use" token
       _ | isKeywordEnd token -> return ()
       _ -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedPackageDeclItemOrEnd token
+   parsePackageDeclares packageName

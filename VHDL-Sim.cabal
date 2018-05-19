@@ -36,6 +36,7 @@ library
                      , Parser.Functions.Parse.Library
                      , Parser.Functions.Parse.Package
                      , Parser.Functions.Parse.Type
+                     , Parser.Functions.Parse.Subtype
                      , Parser.Functions.Parse.Expression
                      , Parser.Functions.Parse.Objects
                      , Parser.Functions.Convert.Scope
