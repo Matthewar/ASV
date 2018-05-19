@@ -27,12 +27,6 @@ import Parser.Functions.Monad
          )
 import Parser.Netlist.Types.Representation
          ( NetlistName
-         , Subtype(..)
-         , IntegerRange(..)
-         , FloatRange(..)
-         , RangeDirection(..)
-         , Calculation(..)
-         , Value(..)
          , Constant(..)
          )
 import Parser.Netlist.Types.Stores
@@ -51,7 +45,10 @@ import Parser.Functions.IdentifyToken
          , matchIdentifier
          )
 import Parser.Functions.Parse.Subtype (parseSubtypeIndication)
-import Parser.Functions.Parse.Expression (parseExpression)
+import Parser.Functions.Parse.Expression
+         ( parseExpression
+         , staticTypeCompare
+         )
 import Manager.Types.Error (ConverterError(..))
 
 -- ?? Pass constant keyword position for error messages?
@@ -62,51 +59,11 @@ parseConstant scope unit unitName = do
    unless (isColon contTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedColonInConstDecl contTok
    (subtypePackage,subtypeName,subtypeData,modSubtype) <- parseSubtypeIndication False scope unit unitName
    valueTok <- getToken
-   let valueInIntRange :: Integer -> IntegerRange -> Bool -- ?? Should this error be dealt with earlier
-       valueInIntRange int (IntegerRange left right To) = int >= (toInteger left) && int <= (toInteger right)
-       valueInIntRange int (IntegerRange left right Downto) = int <= (toInteger left) && int >= (toInteger right)
-       valueInFloatRange :: Double -> FloatRange -> Bool
-       valueInFloatRange float (FloatRange left right To) = (not $ isInfinite float) && float >= left && float <= right
-       valueInFloatRange float (FloatRange left right Downto) = (not $ isInfinite float) && float <= left && float >= right
    case valueTok of
       token | isVarAssign token -> do
          values <- parseExpression LocallyStatic scope unit unitName
-         constant <- case subtypeData of
-            EnumerationSubtype _ baseTypeName enums (left,right) ->
-               let filterFunc (_,Type_Type name _) = name == baseTypeName
-                   filterFunc _ = False
-                   value = filter filterFunc values
-               in case value of
-                     [(Calc_Value (Value_Enum _ enum),_)] | elem enum (right:(takeWhile (/= right) $ dropWhile (/= left) enums)) -> return $ Constant (subtypePackage,subtypeName) subtypeData $ Just $ Value_Enum baseTypeName enum
-                     [(Calc_Value (Value_Enum _ enum),_)] -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_EnumValueOutOfRange enum) token
-                     _ -> throwError $ ConverterError_Netlist $ passPosition NetlistError_CannotFindValueWithContext token
-            IntegerSubtype _ baseTypeName range ->
-               let filterFunc (_,Type_Type name _) = name == baseTypeName
-                   filterFunc (_,Type_UniversalInt) = True
-                   filterFunc _ = False
-                   value = filter filterFunc values
-               in case value of
-                     [(Calc_Value (Value_Int int),_)] | valueInIntRange int range -> return $ Constant (subtypePackage,subtypeName) subtypeData $ Just $ Value_Int int
-                     [(Calc_Value (Value_Int int),_)] -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_IntValueOutOfRange int) token
-                     _ -> throwError $ ConverterError_Netlist $ passPosition NetlistError_CannotFindValueWithContext token
-            FloatingSubtype _ baseTypeName range ->
-               let filterFunc (_,Type_Type name _) = name == baseTypeName
-                   filterFunc (_,Type_UniversalReal) = True
-                   filterFunc _ = False
-                   value = filter filterFunc values
-               in case value of
-                     [(Calc_Value (Value_Float float),_)] | valueInFloatRange float range -> return $ Constant (subtypePackage,subtypeName) subtypeData $ Just $ Value_Float float
-                     [(Calc_Value (Value_Float float),_)] -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_FloatValueOutOfRange float) token
-                     _ -> throwError $ ConverterError_Netlist $ passPosition NetlistError_CannotFindValueWithContext token
-            PhysicalSubtype _ baseTypeName _ _ range ->
-               let filterFunc (_,Type_Type name _) = name == baseTypeName
-                   filterFunc _ = False
-                   value = filter filterFunc values
-               in case value of
-                     [(Calc_Value (Value_Physical int),_)] | valueInIntRange int range -> return $ Constant (subtypePackage,subtypeName) subtypeData $ Just $ Value_Physical int
-                     [(Calc_Value (Value_Physical int),_)] -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_PhysValueOutOfRange int) token
-                     _ -> throwError $ ConverterError_Netlist $ passPosition NetlistError_CannotFindValueWithContext token
-            --ArraySubtype
+         value <- staticTypeCompare subtypeData values $ getPos token
+         let constant = Constant (subtypePackage,subtypeName) subtypeData $ Just $ value
          finalTok <- getToken
          unless (isSemicolon finalTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedConstEnd finalTok
          let newConsts = MapS.fromList $ zip idenList $ repeat constant

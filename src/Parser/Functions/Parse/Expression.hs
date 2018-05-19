@@ -5,6 +5,7 @@
 module Parser.Functions.Parse.Expression
    ( parseExpression
    , parseSimpleExpression
+   , staticTypeCompare
    , Staticity(..)
    ) where
 
@@ -29,6 +30,7 @@ import Lexer.Functions.PositionWrapper
          , raisePosition
          )
 import qualified Lexer.Types.Token as Tokens
+import Lexer.Alex.Types (AlexPosn) 
 import Lexer.Types.Error (ParserError(..))
 import Parser.Types.Expressions
          ( Staticity(..)
@@ -74,6 +76,9 @@ import Parser.Netlist.Types.Representation
          , FunctionInterface(..)
          , FunctionInterfaceType(..)
          , FunctionBody
+         , IntegerRange(..)
+         , FloatRange(..)
+         , RangeDirection(..)
          , Calculation(..)
          , Constant(..)
          , Value(..)
@@ -1675,3 +1680,48 @@ data AssociationType =
 
 --parseTypeAttribute :: Staticity -> ScopeStore -> UnitStore -> Type -> NetlistName -> String -> PosnWrapper String -> ParserStack [(Calculation,AllTypes)]
 --parseTypeAttribute staticLevel scope unit typ packageName typeName (PosnWrapper pos attrName) = do
+
+staticTypeCompare :: Subtype -> [(Calculation,AllTypes)] -> AlexPosn -> ParserStack Value
+staticTypeCompare subtypeData values pos =
+   case subtypeData of
+      EnumerationSubtype _ baseTypeName enums (left,right) ->
+         let filterFunc (_,Type_Type name _) = name == baseTypeName
+             filterFunc _ = False
+             value = filter filterFunc values
+         in case value of
+               [(Calc_Value (Value_Enum _ enum),_)] | elem enum (right:(takeWhile (/= right) $ dropWhile (/= left) enums)) -> return $ Value_Enum baseTypeName enum
+               [(Calc_Value (Value_Enum _ enum),_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_EnumValueOutOfRange enum
+               _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_CannotFindValueWithContext
+      IntegerSubtype _ baseTypeName range ->
+         let filterFunc (_,Type_Type name _) = name == baseTypeName
+             filterFunc (_,Type_UniversalInt) = True
+             filterFunc _ = False
+             value = filter filterFunc values
+         in case value of
+               [(Calc_Value (Value_Int int),_)] | valueInIntRange int range -> return $ Value_Int int
+               [(Calc_Value (Value_Int int),_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_IntValueOutOfRange int
+               _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_CannotFindValueWithContext
+      FloatingSubtype _ baseTypeName range ->
+         let filterFunc (_,Type_Type name _) = name == baseTypeName
+             filterFunc (_,Type_UniversalReal) = True
+             filterFunc _ = False
+             value = filter filterFunc values
+         in case value of
+               [(Calc_Value (Value_Float float),_)] | valueInFloatRange float range -> return $ Value_Float float
+               [(Calc_Value (Value_Float float),_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_FloatValueOutOfRange float
+               _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_CannotFindValueWithContext
+      PhysicalSubtype _ baseTypeName _ _ range ->
+         let filterFunc (_,Type_Type name _) = name == baseTypeName
+             filterFunc _ = False
+             value = filter filterFunc values
+         in case value of
+               [(Calc_Value (Value_Physical int),_)] | valueInIntRange int range -> return $ Value_Physical int
+               [(Calc_Value (Value_Physical int),_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_PhysValueOutOfRange int
+               _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_CannotFindValueWithContext
+      --ArraySubtype
+   where valueInIntRange :: Integer -> IntegerRange -> Bool -- ?? Should this error be dealt with earlier
+         valueInIntRange int (IntegerRange left right To) = int >= (toInteger left) && int <= (toInteger right)
+         valueInIntRange int (IntegerRange left right Downto) = int <= (toInteger left) && int >= (toInteger right)
+         valueInFloatRange :: Double -> FloatRange -> Bool
+         valueInFloatRange float (FloatRange left right To) = (not $ isInfinite float) && float >= left && float <= right
+         valueInFloatRange float (FloatRange left right Downto) = (not $ isInfinite float) && float <= left && float >= right
