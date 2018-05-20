@@ -86,5 +86,5 @@ parseIdentifierList scope unit =
             token | isComma token -> parseIdentifierList' (constName:identifierList)
             token -> do
                saveToken token
-               return $ reverse identifierList
+               return $ reverse (constName:identifierList)
    in parseIdentifierList' []

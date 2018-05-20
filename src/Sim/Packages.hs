@@ -18,6 +18,7 @@ import Manager.Types.Error (ConverterError)
 import Sim.Imports (outputImports)
 import Sim.Types (outputTypes)
 import Sim.Subtypes (outputSubtypes)
+import Sim.Constants (outputConstants)
 
 newline = "\n"
 
@@ -34,9 +35,9 @@ outputPackages' buildDir ((netlistName@(NetlistName lib packageName),package):ot
       ++ newline
    outputImports packageFileName $ packageScope package
    --outputFunctions packageFileName $ packageFunctions package
-   outputTypes packageFileName $ packageTypes package
+   outputTypes packageFileName netlistName $ packageTypes package
    outputSubtypes packageFileName $ packageSubtypes package
-   --outputConstants packageFileName $ packageConstants package
+   outputConstants packageFileName $ packageConstants package
    --outputSignals packageFileName $ packageSignals package
    -- ?? Etc.
    outputPackages' buildDir others

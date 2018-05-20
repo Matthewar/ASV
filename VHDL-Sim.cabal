@@ -54,10 +54,13 @@ library
                      --, Parser.Happy.Functions
                      --, Parser.Happy.ParseFunctions
                      , Sim.Top
+                     , Sim.Entities
                      , Sim.Packages
                      , Sim.Imports
                      , Sim.Types
                      , Sim.Subtypes
+                     , Sim.Constants
+                     , Sim.Error
                      , Manager.NewDesignUnit
                      , Manager.Args
                      , Manager.Filing

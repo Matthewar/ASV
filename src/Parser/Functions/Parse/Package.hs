@@ -135,4 +135,4 @@ parsePackageDeclares' scopeStore unitStore packageName = do
       _ | isKeywordUse token -> throwError $ ConverterError_NotImplemented $ passPosition "Use" token
       _ | isKeywordEnd token -> return ()
       _ -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedPackageDeclItemOrEnd token
-   parsePackageDeclares packageName
+   unless (isKeywordEnd token) $ parsePackageDeclares packageName

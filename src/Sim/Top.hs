@@ -15,11 +15,13 @@ import Data.List (nub)
 import Parser.Netlist.Types.Representation (NetlistName(..))
 import Parser.Netlist.Types.Stores (NetlistStore(..))
 import Manager.Types.Error (ConverterError)
+import Sim.Entities (outputEntities)
 import Sim.Packages (outputPackages)
 
 outputTop :: FilePath -> NetlistStore -> ExceptT ConverterError IO ()
 outputTop buildDir netlist = do
    liftIO $ makeDirectories buildDir netlist
+   outputEntities buildDir $ entities netlist
    outputPackages buildDir $ packages netlist
 
 makeDirectories :: FilePath -> NetlistStore -> IO ()

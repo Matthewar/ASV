@@ -16,6 +16,7 @@ import Lexer.Types.PositionWrapper
 import Parser.Netlist.Types.Scope (WrappedScopeConverterError)
 import Parser.Netlist.Types.Error (WrappedNetlistError)
 import Manager.Filing (FilingError)
+import Sim.Error (SimOutputError)
 
 -- |Errors that can occur within the converter
 data ConverterError =
@@ -30,6 +31,8 @@ data ConverterError =
    | ConverterError_Netlist WrappedNetlistError
    -- |Error for not implemented features
    | ConverterError_NotImplemented (PosnWrapper String)
+   -- |Error for simulation output generation
+   | ConverterError_Sim SimOutputError
    deriving (Eq)
 
 instance (Show ConverterError) where
