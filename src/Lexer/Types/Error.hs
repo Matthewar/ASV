@@ -131,6 +131,12 @@ data ParserError
    | ParseErr_ExpectedKeywordIsInSubtypeDecl Token
    -- |Expected semicolon to mark end of subtype declaration
    | ParseErr_ExpectedSemicolonInSubtypeDecl Token
+   -- |Expected colon in signal declaration to indicate start of subtype indication
+   | ParseErr_ExpectedColonInSigDecl Token
+   -- |Expected a semicolon to end a signal declaration
+   | ParseErr_ExpectedSigEnd Token
+   -- |Expected the indicator of the start of the signal value (:= operator) or end of declaration for default signal (semicolon operator)
+   | ParseErr_ExpectedSigValueOrEnd Token
    deriving (Eq)
 
 instance (Show ParserError) where

@@ -354,8 +354,9 @@ data Constant =
 -- Type cannot be file or access
 data Signal =
    Signal
-      { signalType :: Type
-      , signalDefault :: Calculation
+      { signal_typeName :: (NetlistName,String)
+      , signal_typeData :: Subtype
+      , signal_value :: Value
       }
    deriving (Show)
 

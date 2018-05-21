@@ -1,5 +1,6 @@
 module Parser.Functions.Parse.Objects
    ( parseConstant
+   , parseSignal
    ) where
 
 import qualified Data.Map.Strict as MapS
@@ -28,18 +29,26 @@ import Parser.Functions.Monad
 import Parser.Netlist.Types.Representation
          ( NetlistName
          , Constant(..)
+         , Signal(..)
+         , Subtype(..)
+         , IntegerRange(..)
+         , FloatRange(..)
+         , Value(..)
          )
 import Parser.Netlist.Types.Stores
          ( ScopeStore
          , UnitStore
          , ConstantStore
          , SubtypeStore
+         , SignalStore
          )
 import Parser.Netlist.Functions.Stores (isNameInUnit)
 import Parser.Netlist.Types.Error (NetlistError(..))
 import Parser.Functions.IdentifyToken
          ( isColon
          , isComma
+         , isKeywordBus
+         , isKeywordRegister
          , isSemicolon
          , isVarAssign
          , matchIdentifier
@@ -70,6 +79,32 @@ parseConstant scope unit unitName = do
          return (newConsts,modSubtype)
       token | isSemicolon token -> throwError $ ConverterError_NotImplemented $ passPosition "Deferred constants" token
       token -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedConstValueOrEnd token
+
+parseSignal :: ScopeStore -> UnitStore -> NetlistName -> ParserStack (SignalStore,SubtypeStore -> SubtypeStore)
+parseSignal scope unit unitName = do
+   idenList <- parseIdentifierList scope unit
+   contTok <- getToken
+   unless (isColon contTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedColonInSigDecl contTok
+   (subtypePackage,subtypeName,subtypeData,modSubtype) <- parseSubtypeIndication False scope unit unitName -- ?? False should be true
+   valueTok <- getToken
+   value <- case valueTok of
+      token | isVarAssign token -> do
+         values <- parseExpression LocallyStatic scope unit unitName
+         staticTypeCompare subtypeData values $ getPos token
+      token | isSemicolon token ->
+         case subtypeData of
+            EnumerationSubtype _ baseTypeName _ (left,_) -> return $ Value_Enum baseTypeName left
+            IntegerSubtype _ _ (IntegerRange left _ _) -> return $ Value_Int $ toInteger left
+            FloatingSubtype _ _ (FloatRange left _ _) -> return $ Value_Float left
+            PhysicalSubtype _ _ _ _ (IntegerRange left _ _) -> return $ Value_Physical $ toInteger left
+            ArraySubtype _ _ _ _ _ -> throwError $ ConverterError_NotImplemented $ passPosition "Array type" token
+      token | isKeywordRegister token || isKeywordBus token -> throwError $ ConverterError_NotImplemented $ passPosition "Guarded signals" token -- ?? Signal kind support
+      token -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSigValueOrEnd token
+   let signal = Signal (subtypePackage,subtypeName) subtypeData value
+   finalTok <- getToken
+   unless (isSemicolon finalTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSigEnd finalTok
+   let newSigs = MapS.fromList $ zip idenList $ repeat signal
+   return (newSigs,modSubtype)
 
 parseIdentifierList :: ScopeStore -> UnitStore -> ParserStack [String]
 parseIdentifierList scope unit =

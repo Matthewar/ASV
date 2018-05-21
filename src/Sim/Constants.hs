@@ -13,7 +13,6 @@ import Numeric (showFFloat)
 import Parser.Netlist.Types.Representation
          ( Constant(..)
          , Value(..)
-         , Subtype(..)
          )
 import Parser.Netlist.Types.Stores (ConstantStore)
 import Manager.Types.Error (ConverterError(..))
@@ -36,8 +35,8 @@ outputConstants' fileName ((name,Constant (packageName,typeName) subtype value):
                         Nothing -> throwError $ ConverterError_Sim $ SimErr_ConstantNoValue name
    let valueStr =
          case extractedValue of
-            Value_Enum _ enum ->
-               let baseTypeStr = case subtype of EnumerationSubtype _ (baseTypePackage,baseTypeName) _ _ -> show baseTypePackage ++ ".Type'" ++ baseTypeName
+            Value_Enum (baseTypePackage,baseTypeName) enum ->
+               let baseTypeStr = show baseTypePackage ++ ".Type'" ++ baseTypeName
                in showEnum baseTypeStr enum
             Value_Int intVal -> show packageName ++ ".mkType'" ++ typeName ++ " " ++ show intVal
             Value_Float floatVal -> show packageName ++ ".mkType'" ++ typeName ++ " " ++ (showFFloat Nothing floatVal "")
