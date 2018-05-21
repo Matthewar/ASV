@@ -4,6 +4,7 @@ module Parser.Functions.Parse.Context
 
 import Control.Monad.Except
          ( unless
+         , when
          , lift
          , throwError
          , replicateM
@@ -44,11 +45,14 @@ import Manager.Types.Error (ConverterError(..))
 parseContext :: ScopeStack ()
 parseContext = do
    contextToken <- lift getToken
-   if isKeywordLibrary contextToken
-      then parseLibraryContext
-      else if isKeywordUse contextToken
-         then parseUseContext
-         else lift $ saveToken contextToken
+   case contextToken of
+      token | isKeywordLibrary token -> parseLibraryContext
+      token | isKeywordUse token -> parseUseContext
+      token -> lift $ saveToken token
+   when (isKeywordLibrary contextToken || isKeywordUse contextToken) $ do
+      endTok <- lift getToken
+      unless (isSemicolon endTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSemicolonInContextStatement endTok
+      parseContext
 
 parseLibraryContext :: ScopeStack ()
 parseLibraryContext = do

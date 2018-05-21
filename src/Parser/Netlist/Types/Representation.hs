@@ -288,7 +288,7 @@ data Port =
       , port_subtypeName :: (NetlistName,String)
       , port_subtypeData :: Subtype
       -- ?? is bus
-      , port_default :: Maybe Value
+      , port_default :: Value
       }
    deriving (Show)
 
@@ -298,7 +298,7 @@ data Mode =
    | Mode_Inout
    | Mode_Buffer
    | Mode_Linkage
-   deriving (Show)
+   deriving (Eq,Show)
 
 data ScalarAttributes =
    ScalarAttributes

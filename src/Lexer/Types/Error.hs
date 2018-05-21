@@ -137,6 +137,40 @@ data ParserError
    | ParseErr_ExpectedSigEnd Token
    -- |Expected the indicator of the start of the signal value (:= operator) or end of declaration for default signal (semicolon operator)
    | ParseErr_ExpectedSigValueOrEnd Token
+   -- |Expected entity name (identifier)
+   | ParseErr_ExpectedEntityName Token
+   -- |Expected is keyword to signify start of entity internals
+   | ParseErr_ExpectedKeywordIsInEntity Token
+   -- |Entity identifiers (if both provided) must match
+   | ParseErr_EntityNamesNoMatch (PosnWrapper String) (PosnWrapper String)
+   -- |Expected semicolon to signify end of an entity
+   | ParseErr_ExpectedSemicolonInEntity Token
+   -- |Expected semicolon to end entity declaration
+   | ParseErr_ExpectedEntityEndOfDec Token
+   -- |Expected begin keyword to mark start of entity statements, or end keyword to mark end of entity inner region
+   | ParseErr_ExpectedKeywordBeginOrEndInEntity Token
+   -- |Expected left parenthesis in beginning of entity generic clause
+   | ParseErr_ExpectedLeftParenInEntityGenericHeader Token
+   -- |Expected semicolon to end entity generic clause
+   | ParseErr_ExpectedSemicolonInEntityGenericHeaderEnd Token
+   -- |Expected colon in interface declaration to mark start of subtype indication
+   | ParseErr_ExpectedColonInInterfaceDecl Token
+   -- |Expected interface continuation (semicolon) or end (right parenthesis)
+   | ParseErr_ExpectedInterfaceContOrEnd Token
+   -- |Expected left parenthesis in beginning of entity port clause
+   | ParseErr_ExpectedLeftParenInEntityPortHeader Token
+   -- |Expected semicolon to end entity port clause
+   | ParseErr_ExpectedSemicolonInEntityPortHeaderEnd Token
+   -- |Expected entity declarative item marker (certain keywords) or keywords begin or end to mark end of declarative region
+   | ParseErr_ExpectedEntityDeclItemOrEnd Token
+   -- |Expected colon in entity statement (following label)
+   | ParseErr_ExpectedColonInEntityStatement Token
+   -- |Expected entity statement item marker (certain keywords) after label of entity statement
+   | ParseErr_ExpectedEntityStatementItem Token
+   -- |Expected entity statement item marker (certain keywords or identifier) or keyword end to mark end of statement region
+   | ParseErr_ExpectedEntityStatementItemOrEnd Token
+   -- |Expected semicolon to end a context statement
+   | ParseErr_ExpectedSemicolonInContextStatement Token
    deriving (Eq)
 
 instance (Show ParserError) where

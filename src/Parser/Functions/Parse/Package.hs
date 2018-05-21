@@ -75,7 +75,7 @@ import Parser.Netlist.Functions.Stores
 import Manager.Types.Error (ConverterError(..))
 
 parsePackage :: ScopeStore -> String -> ParserStack ()
-parsePackage scope libraryName = do
+parsePackage scope libraryName = do -- ?? Need to check name is as expected
    [nameToken,contToken] <- replicateM 2 getToken
    let name1Info = fromJust $ matchIdentifier nameToken -- ?? Would that throw an error if name isn't name
        basePackage = newPackage scope

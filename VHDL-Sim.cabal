@@ -35,6 +35,7 @@ library
                      , Parser.Functions.Parse.Context
                      , Parser.Functions.Parse.Library
                      , Parser.Functions.Parse.Package
+                     , Parser.Functions.Parse.Entity
                      , Parser.Functions.Parse.Type
                      , Parser.Functions.Parse.Subtype
                      , Parser.Functions.Parse.Expression

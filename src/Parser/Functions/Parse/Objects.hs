@@ -1,6 +1,7 @@
 module Parser.Functions.Parse.Objects
    ( parseConstant
    , parseSignal
+   , parseIdentifierList
    ) where
 
 import qualified Data.Map.Strict as MapS
