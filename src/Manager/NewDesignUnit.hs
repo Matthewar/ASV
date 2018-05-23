@@ -29,7 +29,7 @@ import qualified Parser.Netlist.Builtin.Netlist as InitialNetlist (netlist)
 import Manager.Types.Error (ConverterError(..))
 --import Netlister.ParseTree (convertTree)
 import Parser.Functions.Parse.DesignFile (parseDesignFile)
-import Sim.Top (outputTop)
+import Sim.Output.Top (outputTop)
 
 createTop :: Args.Options -> IO ()
 createTop options = do

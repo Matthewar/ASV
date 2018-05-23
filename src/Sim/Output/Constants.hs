@@ -1,4 +1,4 @@
-module Sim.Constants
+module Sim.Output.Constants
    ( outputConstants
    ) where
 
@@ -16,8 +16,8 @@ import Parser.Netlist.Types.Representation
          )
 import Parser.Netlist.Types.Stores (ConstantStore)
 import Manager.Types.Error (ConverterError(..))
-import Sim.Types (showEnum)
-import Sim.Error (SimOutputError(..))
+import Sim.Output.Types (showEnum)
+import Sim.Types.Error (SimOutputError(..))
 
 newline = "\n"
 tab = "   "

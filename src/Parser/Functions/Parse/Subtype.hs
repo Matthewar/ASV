@@ -58,7 +58,7 @@ import Parser.Functions.Parse.Type
          , RangeConstraint(..)
          )
 import Manager.Types.Error (ConverterError(..))
-import Sim.Types (showEnum)
+import Sim.Output.Types (showEnum)
 
 parseSubtype :: ScopeStore -> UnitStore -> NetlistName -> ParserStack (SubtypeStore -> SubtypeStore)
 parseSubtype scope unit unitName = do

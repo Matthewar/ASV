@@ -1,4 +1,4 @@
-module Sim.Subtypes
+module Sim.Output.Subtypes
    ( outputSubtypes
    ) where
 
@@ -25,7 +25,7 @@ import Parser.Netlist.Functions.Representation
 import Parser.Netlist.Types.Stores
          ( SubtypeStore
          )
-import Sim.Types (showEnum)
+import Sim.Output.Types (showEnum)
 import Manager.Types.Error (ConverterError)
 
 newline = "\n"

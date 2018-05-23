@@ -1,4 +1,4 @@
-module Sim.Error
+module Sim.Types.Error
    ( SimOutputError(..)
    ) where
 

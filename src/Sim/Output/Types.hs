@@ -1,4 +1,4 @@
-module Sim.Types
+module Sim.Output.Types
    ( outputTypes
    , showEnum
    ) where

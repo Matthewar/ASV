@@ -1,4 +1,4 @@
-module Sim.Imports
+module Sim.Output.Imports
    ( outputImports
    ) where
 

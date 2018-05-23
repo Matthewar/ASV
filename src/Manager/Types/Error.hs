@@ -16,7 +16,7 @@ import Lexer.Types.PositionWrapper
 import Parser.Netlist.Types.Scope (WrappedScopeConverterError)
 import Parser.Netlist.Types.Error (WrappedNetlistError)
 import Manager.Filing (FilingError)
-import Sim.Error (SimOutputError)
+import Sim.Types.Error (SimOutputError)
 
 -- |Errors that can occur within the converter
 data ConverterError =

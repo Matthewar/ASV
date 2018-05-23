@@ -1,4 +1,4 @@
-module Sim.Entities
+module Sim.Output.Entities
    ( outputEntities
    ) where
 
@@ -23,10 +23,11 @@ import Parser.Netlist.Types.Stores
          , SignalStore
          )
 import Manager.Types.Error (ConverterError)
-import Sim.Imports (outputImports)
-import Sim.Types (outputTypes)
-import Sim.Subtypes (outputSubtypes)
-import Sim.Constants (outputConstants)
+import Sim.Output.Imports (outputImports)
+import Sim.Output.Types (outputTypes)
+import Sim.Output.Subtypes (outputSubtypes)
+import Sim.Output.Constants (outputConstants)
+--import Sim.Output.Processes (outputProcesses)
 
 newline = "\n"
 tab = "   "
@@ -48,6 +49,7 @@ outputEntities' buildDir ((netlistName@(NetlistName lib entityName),entity):othe
    outputTypes entityFileName netlistName $ entityTypes entity
    outputSubtypes entityFileName $ entitySubtypes entity
    outputConstants entityFileName $ entityConstants entity
+   --outputProcesses entityFileName $ entityProcesses entity
    -- ?? Etc.
    outputEntityControl entityFileName (entityGenerics entity) (entityPorts entity) $ entitySignals entity
    outputEntities' buildDir others

@@ -1,4 +1,4 @@
-module Sim.Packages
+module Sim.Output.Packages
    ( outputPackages
    ) where
 
@@ -15,10 +15,10 @@ import Parser.Netlist.Types.Stores
          , PackageStore
          )
 import Manager.Types.Error (ConverterError)
-import Sim.Imports (outputImports)
-import Sim.Types (outputTypes)
-import Sim.Subtypes (outputSubtypes)
-import Sim.Constants (outputConstants)
+import Sim.Output.Imports (outputImports)
+import Sim.Output.Types (outputTypes)
+import Sim.Output.Subtypes (outputSubtypes)
+import Sim.Output.Constants (outputConstants)
 
 newline = "\n"
 
