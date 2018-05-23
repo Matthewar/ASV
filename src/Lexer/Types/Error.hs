@@ -171,6 +171,28 @@ data ParserError
    | ParseErr_ExpectedEntityStatementItemOrEnd Token
    -- |Expected semicolon to end a context statement
    | ParseErr_ExpectedSemicolonInContextStatement Token
+   -- |Expected semicolon to end wait statement
+   | ParseErr_ExpectedSemicolonInWaitStatement Token
+   -- |Expected semicolon to end assertion statement
+   | ParseErr_ExpectedSemicolonInAssert Token
+   -- |Expected report clause (report keyword), severity clause (severity keyword), or semicolon to end assertion statement
+   | ParseErr_ExpectedReportOrSeverityOrEndInAssert Token
+   -- |Expected signal name (identifier) in sensitivity list
+   | ParseErr_ExpectedSignalNameInSensitivityList Token
+   -- |Expected right parenthesis to terminate the sensitivity list of a process
+   | ParseErr_ExpectedRightParenToEndProcessSensitivityList Token
+   -- |Expected the process keyword in the end of a process statement
+   | ParseErr_ExpectedKeywordProcessInEndProcess Token
+   -- |Expected semicolon to end a process statement
+   | ParseErr_ExpectedSemicolonInEndProcess Token
+   -- |Expected no label in end of a process statement (because no label at the start)
+   | ParseErr_ExpectedNoLabelInEndProcess Token
+   -- |Process labels (if both provided) must match
+   | ParseErr_ProcessLabelsNoMatch (PosnWrapper String) (PosnWrapper String)
+   -- |Expected process declarative item marker (certain keywords) or keywords begin to mark end of declarative region
+   | ParseErr_ExpectedProcessDeclItemOrEnd Token
+   -- |The wait sequential statement can only occur in a sensitivity list under certain circumstances
+   | ParseErr_WaitSeqStatementNotAllowedWithSensitivityList Token
    deriving (Eq)
 
 instance (Show ParserError) where

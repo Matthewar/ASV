@@ -20,6 +20,8 @@ module Parser.Netlist.Types.Representation
    , Designator(..)
    , FunctionInterface(..)
    , FunctionInterfaceType(..)
+   , SignalType(..)
+   , SequentialStatement(..)
    , Calculation(..)
    , Value(..)
    , Generic(..)
@@ -220,6 +222,27 @@ data FunctionInterfaceType =
 
 data Statement = Statement
    deriving (Eq,Ord,Show)
+
+data SignalType =
+   InternalSignal
+   | PortIn
+   | PortOut
+   deriving (Eq,Show)
+
+data SequentialStatement =
+   WaitStatement [(SignalType,String)] Calculation (Maybe Calculation)
+   | AssertStatement Calculation Calculation Calculation
+   -- | SignalAssignStatement
+   -- | VariableAssignStatement
+   -- | ProcedureCallStatement
+   -- | IfStatement
+   -- | CaseStatement
+   -- | LoopStatement
+   -- | NextStatement
+   -- | ExitStatement
+   -- | ReturnStatement
+   | NullStatement
+   deriving (Eq,Show)
 
 data Calculation =
    -- |Any static value that can be calculated by netlister

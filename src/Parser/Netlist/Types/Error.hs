@@ -127,6 +127,16 @@ data NetlistError =
    | NetlistError_SubtypeNameAlreadyDefined String
    -- |Expected type mark in subtype indication but got a function name
    | NetlistError_ExpectedTypeMarkButGotFunctionName
+   -- |No expression found with a boolean result
+   | NetlistError_NoConditionFound
+   -- |No expression found with a time result
+   | NetlistError_NoTimeResultExpressionFound
+   -- |No expression found with a severity_level result
+   | NetlistError_NoSeverityResultExpressionFound
+   -- |Expected a signal name in the sensitivity list
+   | NetlistError_ExpectedSignalNameInSensitivityList String
+   -- |Expected a readable signal in the sensitivity list
+   | NetlistError_ExpectedReadableSignalInSensitivityList
    deriving (Eq)
 
 instance (Show NetlistError) where

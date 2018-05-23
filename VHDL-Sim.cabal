@@ -40,6 +40,8 @@ library
                      , Parser.Functions.Parse.Subtype
                      , Parser.Functions.Parse.Expression
                      , Parser.Functions.Parse.Objects
+                     , Parser.Functions.Parse.Process
+                     , Parser.Functions.Parse.SequentialStatements
                      , Parser.Functions.Convert.Scope
                      , Parser.Netlist.Types.Representation
                      , Parser.Netlist.Types.Stores

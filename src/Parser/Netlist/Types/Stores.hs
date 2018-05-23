@@ -17,6 +17,9 @@ module Parser.Netlist.Types.Stores
    , PackageStore
    , Package(..)
    , emptyPackage
+   , ProcessStore
+   , Process(..)
+   , emptyProcess
    , ScopeStore(..)
    , emptyScopeStore
    , UnitStore(..)
@@ -35,6 +38,7 @@ import Parser.Netlist.Types.Representation
          , Signal
          , Generic
          , Port
+         , SequentialStatement
          )
 
 -- |Store of all netlisted data
@@ -97,7 +101,7 @@ data Entity =
 
       --Concurrent assertion statement
       --Passive concurrent procedure call
-      --Passive process statement
+      , entityProcesses :: ProcessStore
       }
    deriving (Show)
 
@@ -108,6 +112,7 @@ emptyEntity =
       emptyScopeStore
       []
       []
+      MapS.empty
       MapS.empty
       MapS.empty
       MapS.empty
@@ -156,6 +161,37 @@ emptyPackage =
       MapS.empty
       MapS.empty
       MapS.empty
+
+-- |Store of process data
+type ProcessStore = MapS.Map String Process
+
+-- |Process data
+-- All declares held in a process
+data Process =
+   Process
+      --{ processScope
+      --ProcedureStore
+      { processFunctions :: FunctionStore
+      , processTypes :: TypeStore
+      , processSubtypes :: SubtypeStore
+      , processConstants :: ConstantStore
+      --VariableStore
+      --FileStore
+      --AliasStore
+      --AttributeStore
+      --UseStore
+      , processStatements :: [SequentialStatement]
+      }
+   deriving (Show)
+
+emptyProcess :: Process
+emptyProcess =
+   Process
+      MapS.empty
+      MapS.empty
+      MapS.empty
+      MapS.empty
+      []
 
 -- |Special stores for scoped declarations
 -- Scoped items need to associate their package entity
@@ -210,6 +246,7 @@ data UnitStore =
       , unitSubtypes :: SubtypeStore
       , unitConstants :: ConstantStore
       , unitSignals :: SignalStore
+      , unitProcesses :: ProcessStore
       }
 
 -- |Empty unit store
@@ -218,6 +255,7 @@ emptyUnitStore =
    UnitStore
       []
       []
+      MapS.empty
       MapS.empty
       MapS.empty
       MapS.empty

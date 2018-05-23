@@ -84,6 +84,7 @@ import Parser.Functions.Parse.Expression
          , Staticity(..)
          , staticTypeCompare
          )
+import Parser.Functions.Parse.Process (parseProcess)
 import Parser.Netlist.Types.Representation
          ( NetlistName(..)
          , Subtype(..)
@@ -333,7 +334,8 @@ parseEntityStatements entityName = do
    (scopeStore,unitStore) <- gets convertEntityToGenericUnit
    token <- lift getToken
    case matchIdentifier token of
-      Just label -> do
+      Just (PosnWrapper pos label) -> do
+         let upperLabel = PosnWrapper pos $ map toUpper label
          nextTok <- lift getToken
          case nextTok of
             token | isColon token -> do
@@ -341,7 +343,10 @@ parseEntityStatements entityName = do
                case keywordTok of
                   token | isKeywordAssert token -> throwError $ ConverterError_NotImplemented $ passPosition "Concurrent assertion statement" token
                   token | isIdentifier token -> throwError $ ConverterError_NotImplemented $ passPosition "Passive concurrent procedure call" token
-                  token | isKeywordProcess token -> throwError $ ConverterError_NotImplemented $ passPosition "Passive process statement" token
+                  token | isKeywordProcess token -> do
+                     (label,newProcess) <- lift $ parseProcess scopeStore unitStore entityName True $ Just upperLabel
+                     let insertProcess entity = entity { entityProcesses = MapS.insert label newProcess $ entityProcesses entity }
+                     modify insertProcess
                   token -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedEntityStatementItem token
             _ | isLeftParen nextTok || isSemicolon nextTok -> do
                lift $ saveToken nextTok
@@ -349,7 +354,10 @@ parseEntityStatements entityName = do
                throwError $ ConverterError_NotImplemented $ passPosition "Passive concurrent procedure call" token
             _ -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedColonInEntityStatement nextTok -- ?? This error could also be malformed procedure call with no label
       Nothing | isKeywordAssert token -> throwError $ ConverterError_NotImplemented $ passPosition "Concurrent assertion statement" token
-      Nothing | isKeywordProcess token -> throwError $ ConverterError_NotImplemented $ passPosition "Passive process statement" token
+      Nothing | isKeywordProcess token -> do
+         (autoLabel,newProcess) <- lift $ parseProcess scopeStore unitStore entityName True Nothing
+         let insertProcess entity = entity { entityProcesses = MapS.insert autoLabel newProcess $ entityProcesses entity }
+         modify insertProcess
       Nothing | isKeywordEnd token -> return ()
       _ -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedEntityStatementItemOrEnd token
    unless (isKeywordEnd token) $ parseEntityStatements entityName

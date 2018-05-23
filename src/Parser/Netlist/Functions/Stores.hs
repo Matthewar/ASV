@@ -7,6 +7,7 @@ module Parser.Netlist.Functions.Stores
    , newEntity
    , convertPackageToGenericUnit
    , convertEntityToGenericUnit
+   , convertProcessToGenericUnit
    , convertPackageToScope
    , isNameInUnit
    , isEnumNameInUnit
@@ -20,6 +21,7 @@ module Parser.Netlist.Functions.Stores
    , matchPhysicalUnitInScope
    , matchConstantNameInScope
    , matchSignalNameInScope
+   , mergeUnits
    ) where
 
 import qualified Data.Map.Strict as MapS
@@ -45,6 +47,7 @@ import Parser.Netlist.Types.Stores
          , emptyPackage
          , Entity(..)
          , emptyEntity
+         , Process(..)
          , ScopeStore(..)
          , UnitStore(..)
          , emptyUnitStore
@@ -55,6 +58,7 @@ import Parser.Netlist.Types.Stores
          , SignalStore
          , GenericStore
          , PortStore
+         , ProcessStore
          )
 
 -- |New package with scope
@@ -79,9 +83,18 @@ convertPackageToGenericUnit (Package scope funcs types subtypes consts signals) 
 
 -- |Convert package to generalised store for use in low level conversions
 convertEntityToGenericUnit :: Entity -> (ScopeStore,UnitStore)
-convertEntityToGenericUnit (Entity scope generics ports funcs types subtypes consts signals) =
-   let unit = UnitStore generics ports funcs types subtypes consts signals
+convertEntityToGenericUnit (Entity scope generics ports funcs types subtypes consts signals processes) =
+   let unit = UnitStore generics ports funcs types subtypes consts signals processes
    in (scope,unit)
+
+convertProcessToGenericUnit :: Process -> UnitStore
+convertProcessToGenericUnit (Process funcs types subtypes consts _) =
+   emptyUnitStore
+      { unitFunctions = funcs
+      , unitTypes = types
+      , unitSubtypes = subtypes
+      , unitConstants = consts
+      }
 
 -- |Convert package to scope object
 convertPackageToScope :: Package -> NetlistName -> ScopeStore
@@ -110,7 +123,7 @@ isEnumNameInUnit = isNameDeclaredInUnit False
 
 -- |Check if an identifier has already been defined in the current unit
 isNameDeclaredInUnit :: Bool -> UnitStore -> String -> Bool
-isNameDeclaredInUnit includeEnums (UnitStore generics ports funcs types subtypes consts signals) name =
+isNameDeclaredInUnit includeEnums (UnitStore generics ports funcs types subtypes consts signals processes) name =
    let allNames =
          getGenericNames generics
          ++ getPortNames ports
@@ -119,6 +132,7 @@ isNameDeclaredInUnit includeEnums (UnitStore generics ports funcs types subtypes
          ++ getSubtypeNames subtypes
          ++ getConstantNames consts
          ++ getSignalNames signals
+         ++ getProcessNames processes
    in elem name allNames
 
 -- |Get names of generics
@@ -171,6 +185,10 @@ getConstantNames = MapS.keys
 -- |Get names of signals
 getSignalNames :: SignalStore -> [String]
 getSignalNames = MapS.keys
+
+-- |Get names of processes
+getProcessNames :: ProcessStore -> [String]
+getProcessNames = MapS.keys
 
 -- |Check if type name is within scope
 -- If not, returns Nothing
@@ -312,3 +330,18 @@ matchSignalNameInScope scope unit unitName name =
             Nothing -> Nothing
 
 --matchVariableNameInScope :: ScopeStore -> UnitStore -> String -> Maybe (Type,VariableValue)
+
+-- | Merge unit stores
+mergeUnits :: UnitStore -> UnitStore -> UnitStore
+mergeUnits unit1 unit2 = -- No overlap checks required
+   let unionStore unionFunc = MapS.union (unionFunc unit1) (unionFunc unit2)
+       unionList unionFunc = (++) (unionFunc unit1) (unionFunc unit2)
+   in UnitStore
+         (unionList unitGenerics)
+         (unionList unitPorts)
+         (unionStore unitFunctions)
+         (unionStore unitTypes)
+         (unionStore unitSubtypes)
+         (unionStore unitConstants)
+         (unionStore unitSignals)
+         (unionStore unitProcesses)

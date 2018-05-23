@@ -105,7 +105,7 @@ parsePackageDeclares packageName = do
 
 parsePackageDeclares' :: ScopeStore -> UnitStore -> NetlistName -> PackageBuildStack
 parsePackageDeclares' scopeStore unitStore packageName = do
-   token <- lift $ getToken
+   token <- lift getToken
    case token of
       _ | isKeywordProcedure token -> throwError $ ConverterError_NotImplemented $ passPosition "Procedure declaration" token
       _ | isKeywordFunction token -> throwError $ ConverterError_NotImplemented $ passPosition "Function declaration" token
