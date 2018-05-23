@@ -1557,8 +1557,9 @@ parsePrimary staticLevel scope unit unitName = do
 -- ?? Currently ignoring expanded names
 parsePrimaryIdentifier :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> PosnWrapper String -> ParserStack [(Calculation,AllTypes)]
 parsePrimaryIdentifier staticLevel scope unit unitName (PosnWrapper pos iden) =
-   let --checkTypes =
-       --  case matchTypeNameInScope scope unit unitName iden of
+   let upperIden = map toUpper iden
+       --checkTypes =
+       --  case matchTypeNameInScope scope unit unitName upperIden of
        --     Just (typ,netlistName) -> do
        --        nextToken <- getToken
        --        case nextToken of
@@ -1568,39 +1569,39 @@ parsePrimaryIdentifier staticLevel scope unit unitName (PosnWrapper pos iden) =
        --              reviewToken <- getToken
        --              case matchIdentifier reviewToken of
        --                 Just wrappedAttributeName ->
-       --                    parseTypeAttribute staticLevel scope unit typ netlistName iden wrappedAttributeName
+       --                    parseTypeAttribute staticLevel scope unit typ netlistName upperIden wrappedAttributeName
        --                 Nothing | isLeftParen reviewToken -> -- qualified expressions
        --                    throwError $ ConverterError_NotImplemented $ passPosition "Qualified type expressions" reviewToken
        --                 Nothing -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedAttrOrTypeConv reviewToken
        --           _ -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedTypeExpression nextToken
        --     Nothing -> checkSubtypes
        --checkSubtypes =
-       --  case matchSubtypeNameInScope scope unit unitName iden of
+       --  case matchSubtypeNameInScope scope unit unitName upperIden of
        --     Just (subtype,netlistName) -> --qualified expressions, attributes
        --     Nothing -> checkFunctions
        --checkFunctions =
-       --  case matchFunctionNameInScope scope unit unitName iden of
+       --  case matchFunctionNameInScope scope unit unitName upperIden of
        --     Just funcMap ->
        --        throwError $ ConverterError_NotImplemented $ PosnWrapper pos "Function call in expression"
-       --        --readFuncCall scope unit funcMap (PosnWrapper pos iden)
+       --        --readFuncCall scope unit funcMap (PosnWrapper pos upperIden)
        --     Nothing -> checkEnums
        checkEnums =
-         case matchEnumNameInScope iden scope unit unitName of
+         case matchEnumNameInScope upperIden scope unit unitName of
             Just enumMap ->
                MapS.toList enumMap
-               & map (\(typeName,(typ,packageName)) -> (Calc_Value $ Value_Enum (packageName,typeName) $ Enum_Identifier iden,Type_Type (packageName,typeName) typ))
+               & map (\(typeName,(typ,packageName)) -> (Calc_Value $ Value_Enum (packageName,typeName) $ Enum_Identifier upperIden,Type_Type (packageName,typeName) typ))
                & return
             Nothing -> checkConstants
        checkConstants =
-         case matchConstantNameInScope scope unit unitName iden of -- ?? need attributes, indexed
-            Just (Constant _ subtype Nothing,constPackage) | notLocallyStatic staticLevel -> return $ [(Calc_Const (constPackage,iden),subtypeToType subtype)]
-            Just (Constant _ _ Nothing,_) -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_DeferredConst iden
+         case matchConstantNameInScope scope unit unitName upperIden of -- ?? need attributes, indexed
+            Just (Constant _ subtype Nothing,constPackage) | notLocallyStatic staticLevel -> return $ [(Calc_Const (constPackage,upperIden),subtypeToType subtype)]
+            Just (Constant _ _ Nothing,_) -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_DeferredConst upperIden
             Just (Constant _ subtype (Just val),_) -> return [(Calc_Value val,subtypeToType subtype)]
             Nothing -> checkSignals
        checkSignals =
-         case matchSignalNameInScope scope unit unitName iden of
-            Just (sig,packageName) -> throwError $ ConverterError_NotImplemented $ PosnWrapper pos "Signal name in expression" -- attributes, return $ [(Calc_Signal iden,typ)]
-            Nothing -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_UnrecognisedName iden
+         case matchSignalNameInScope scope unit unitName upperIden of
+            Just (sig,packageName) -> throwError $ ConverterError_NotImplemented $ PosnWrapper pos "Signal name in expression" -- attributes, return $ [(Calc_Signal upperIden,typ)]
+            Nothing -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_UnrecognisedName upperIden
    in checkEnums --checkTypes
 
 --readFuncCall :: Staticity -> ExpectedType -> ScopeStore -> UnitStore -> MapS.Map Function (Maybe FunctionBody,Maybe NetlistName) -> PosnWrapper String -> ParserStack [(Calculation,AllTypes)]
