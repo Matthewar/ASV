@@ -48,8 +48,10 @@ import Parser.Netlist.Types.Representation
 import Parser.Netlist.Types.Stores
          ( ScopeStore
          , UnitStore(..)
+         , Package(..)
          )
 import Parser.Netlist.Types.Error (NetlistError(..))
+import Parser.Netlist.Builtin.Standard (standardPackage)
 import Manager.Types.Error (ConverterError(..))
 
 parseWaitStatement :: ScopeStore -> UnitStore -> NetlistName -> ParserStack ([(SignalType,String)],Calculation,Maybe Calculation)
@@ -73,7 +75,7 @@ parseWaitStatement scope unit unitName = do
             Nothing -> throwError $ ConverterError_Netlist $ passPosition NetlistError_NoConditionFound token
       token -> do
          saveToken token
-         return $ Calc_Value $ Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ Enum_Identifier "TRUE"
+         return $ Calc_Value (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ Enum_Identifier "TRUE") $ Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ (packageTypes standardPackage) MapS.! "ANON'BOOLEAN"
    sensitivity <- case initialSensitivity of
       Nothing -> throwError $ ConverterError_NotImplemented $ passPosition "Auto sensitivity list" onTok -- searchCalcForSignals 
       Just list -> return list
@@ -105,8 +107,8 @@ parseAssertionStatement scope unit unitName = do
       Nothing -> throwError $ ConverterError_Netlist $ passPosition NetlistError_NoConditionFound firstToken
    let reportEnum :: Char -> Value
        reportEnum = (Value_Enum (NetlistName "STD" "STANDARD","ANON'CHARACTER")) . Enum_Char
-       defaultReport = Calc_Value $ Value_Array $ map reportEnum "Assertion violation."
-       defaultSeverity = Calc_Value $ Value_Enum (NetlistName "STD" "STANDARD","ANON'SEVERITY_LEVEL") $ Enum_Identifier "ERROR"
+       defaultReport = Calc_Value (Value_Array $ map reportEnum "Assertion violation.") $ Type_Type (NetlistName "STD" "STANDARD","ANON'STRING") $ (packageTypes standardPackage) MapS.! "ANON'STRING"
+       defaultSeverity = Calc_Value (Value_Enum (NetlistName "STD" "STANDARD","ANON'SEVERITY_LEVEL") $ Enum_Identifier "ERROR") $ Type_Type (NetlistName "STD" "STANDARD","ANON'SEVERITY_LEVEL") $ (packageTypes standardPackage) MapS.! "ANON'SEVERITY_LEVEL"
    nextTok <- getToken
    case nextTok of
       token | isKeywordReport token -> throwError $ ConverterError_NotImplemented $ passPosition "String expressions" token

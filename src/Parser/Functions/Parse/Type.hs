@@ -174,7 +174,7 @@ parseRange scope unit unitName rangePos = do
        withinIntRange left right =
          let checkVal val = val <= toInteger (maxBound :: Int64) && val >= toInteger (minBound :: Int64)
          in checkVal left && checkVal right
-       convertEnumval (Calc_Value (Value_Enum _ enum),Type_Type typeName (EnumerationType enums)) enumData =
+       convertEnumval (Calc_Value (Value_Enum _ enum) _,Type_Type typeName (EnumerationType enums)) enumData =
          if MapS.member typeName enumData
             then MapS.adjust (\(typeEnums,selectedEnums) -> (typeEnums,nub $ enum:selectedEnums)) typeName enumData
             else MapS.insert typeName (enums,[enum]) enumData
@@ -201,23 +201,23 @@ parseRange scope unit unitName rangePos = do
       -- ?? Can first two errors occur
       ([],_) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_ExpectedIntOrFloatLeftBoundRange
       (_,[]) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_ExpectedIntOrFloatRightBoundRange
-      ([(Calc_Value (Value_Int left),_)],[(Calc_Value (Value_Int right),_)]) | withinIntRange left right ->
+      ([(Calc_Value (Value_Int left) _,_)],[(Calc_Value (Value_Int right) _,_)]) | withinIntRange left right ->
          if left `compareFunc` right
             then return $ IntegerConstraint $ IntegerRange (fromInteger left) (fromInteger right) direction
             else throwError $ ConverterError_NotImplemented $ PosnWrapper rangePos "Integer null range"
-      ([(Calc_Value (Value_Int left),_)],[(Calc_Value (Value_Int right),_)]) ->
+      ([(Calc_Value (Value_Int left) _,_)],[(Calc_Value (Value_Int right) _,_)]) ->
          throwError $ ConverterError_Netlist $ PosnWrapper rangePos $ NetlistError_IntegerTypeOutOfBounds left right
-      ([(Calc_Value (Value_Float left),_)],[(Calc_Value (Value_Float right),_)]) | isInfinite left || isInfinite right ->
+      ([(Calc_Value (Value_Float left) _,_)],[(Calc_Value (Value_Float right) _,_)]) | isInfinite left || isInfinite right ->
          throwError $ ConverterError_Netlist $ PosnWrapper rangePos $ NetlistError_FloatingTypeOutOfBounds left right
-      ([(Calc_Value (Value_Float left),_)],[(Calc_Value (Value_Float right),_)]) ->
+      ([(Calc_Value (Value_Float left) _,_)],[(Calc_Value (Value_Float right) _,_)]) ->
          if left `compareFunc` right
             then return $ FloatConstraint $ FloatRange left right direction
             else throwError $ ConverterError_NotImplemented $ PosnWrapper rangePos "Floating null range"
-      ([(Calc_Value (Value_Physical left),typeData1)],[(Calc_Value (Value_Physical right),typeData2)]) | withinIntRange left right && typeData1 == typeData2 ->
+      ([(Calc_Value (Value_Physical left) _,typeData1)],[(Calc_Value (Value_Physical right) _,typeData2)]) | withinIntRange left right && typeData1 == typeData2 ->
          if left `compareFunc` right
             then return $ PhysicalConstraint $ IntegerRange (fromInteger left) (fromInteger right) direction
             else throwError $ ConverterError_NotImplemented $ PosnWrapper rangePos "Physical null range"
-      ((Calc_Value (Value_Enum _ _),_):_,(Calc_Value (Value_Enum _ _),_):_) ->
+      ((Calc_Value (Value_Enum _ _) _,_):_,(Calc_Value (Value_Enum _ _) _,_):_) ->
          enumFilter leftBound rightBound
       ([_],[_]) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_RangeTypeNoMatch
       ([_],_) -> throwError $ ConverterError_Netlist $ PosnWrapper rangePos NetlistError_CannotInferValueFromContextInRangeTypeLeftBound

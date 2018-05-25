@@ -178,7 +178,7 @@ parseAndExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) =
                      _ -> False
                in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
        applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
-       applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+       applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
          let typeCheck = case (typeData1,typeData2) of
                            -- ?? Need checks for string and bitstring
                            _ | typeData1 == typeData2 -> Just typeData1
@@ -190,7 +190,7 @@ parseAndExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) =
              convertCalcs valFunc arith val1 val2 =
                case typeCheck of
                   Just typeData -> applyStaticAndNonStatic
-                                    (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                    (Calc_Value (valFunc $ val1 `arith` val2) typeData,typeData)
                                     (constFunctionFinder typeData1 typeData2)
                                     wrappedVal1
                                     wrappedVal2
@@ -209,7 +209,7 @@ parseAndExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) =
          let convertCalcs calcFunc typeData =
                applyNonStaticBuiltin
                   (constFunctionFinder typeData1 typeData2)
-                  (calcFunc calc1 calc2,typeData)
+                  (calcFunc calc1 calc2 typeData,typeData)
                   calc1
                   calc2
          in case (typeData1,typeData2) of
@@ -274,7 +274,7 @@ parseOrExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) = 
                      _ -> False
                in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
        applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
-       applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+       applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
          let typeCheck = case (typeData1,typeData2) of
                            -- ?? Need checks for string and bitstring
                            _ | typeData1 == typeData2 -> Just typeData1
@@ -286,7 +286,7 @@ parseOrExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) = 
              convertCalcs valFunc arith val1 val2 =
                case typeCheck of
                   Just typeData -> applyStaticAndNonStatic
-                                    (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                    (Calc_Value (valFunc $ val1 `arith` val2) typeData,typeData)
                                     (constFunctionFinder typeData1 typeData2)
                                     wrappedVal1
                                     wrappedVal2
@@ -305,7 +305,7 @@ parseOrExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) = 
          let convertCalcs calcFunc typeData =
                applyNonStaticBuiltin
                   (constFunctionFinder typeData1 typeData2)
-                  (calcFunc calc1 calc2,typeData)
+                  (calcFunc calc1 calc2 typeData,typeData)
                   calc1
                   calc2
          in case (typeData1,typeData2) of
@@ -370,7 +370,7 @@ parseXorExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) =
                      _ -> False
                in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
        applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
-       applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+       applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
          let typeCheck = case (typeData1,typeData2) of
                            -- ?? Need checks for string and bitstring
                            _ | typeData1 == typeData2 -> Just typeData1
@@ -382,7 +382,7 @@ parseXorExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) =
              convertCalcs valFunc arith val1 val2 =
                case typeCheck of
                   Just typeData -> applyStaticAndNonStatic
-                                    (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                    (Calc_Value (valFunc $ val1 `arith` val2) typeData,typeData)
                                     (constFunctionFinder typeData1 typeData2)
                                     wrappedVal1
                                     wrappedVal2
@@ -401,7 +401,7 @@ parseXorExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) =
          let convertCalcs calcFunc typeData =
                applyNonStaticBuiltin
                   (constFunctionFinder typeData1 typeData2)
-                  (calcFunc calc1 calc2,typeData)
+                  (calcFunc calc1 calc2 typeData,typeData)
                   calc1
                   calc2
          in case (typeData1,typeData2) of
@@ -466,7 +466,7 @@ parseNandExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) 
                      _ -> False
                in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
        applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
-       applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+       applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
          let typeCheck = case (typeData1,typeData2) of
                            -- ?? Need checks for string and bitstring
                            _ | typeData1 == typeData2 -> Just typeData1
@@ -478,7 +478,7 @@ parseNandExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) 
              convertCalcs valFunc arith val1 val2 =
                case typeCheck of
                   Just typeData -> applyStaticAndNonStatic
-                                    (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                    (Calc_Value (valFunc $ val1 `arith` val2) typeData,typeData)
                                     (constFunctionFinder typeData1 typeData2)
                                     wrappedVal1
                                     wrappedVal2
@@ -497,7 +497,7 @@ parseNandExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) 
          let convertCalcs calcFunc typeData =
                applyNonStaticBuiltin
                   (constFunctionFinder typeData1 typeData2)
-                  (calcFunc calc1 calc2,typeData)
+                  (calcFunc calc1 calc2 typeData,typeData)
                   calc1
                   calc2
          in case (typeData1,typeData2) of
@@ -556,7 +556,7 @@ parseNorExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) =
                      _ -> False
                in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
        applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
-       applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+       applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
          let typeCheck = case (typeData1,typeData2) of
                            -- ?? Need checks for string and bitstring
                            _ | typeData1 == typeData2 -> Just typeData1
@@ -568,7 +568,7 @@ parseNorExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) =
              convertCalcs valFunc arith val1 val2 =
                case typeCheck of
                   Just typeData -> applyStaticAndNonStatic
-                                    (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                    (Calc_Value (valFunc $ val1 `arith` val2) typeData,typeData)
                                     (constFunctionFinder typeData1 typeData2)
                                     wrappedVal1
                                     wrappedVal2
@@ -587,7 +587,7 @@ parseNorExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) =
          let convertCalcs calcFunc typeData =
                applyNonStaticBuiltin
                   (constFunctionFinder typeData1 typeData2)
-                  (calcFunc calc1 calc2,typeData)
+                  (calcFunc calc1 calc2 typeData,typeData)
                   calc1
                   calc2
          in case (typeData1,typeData2) of
@@ -669,7 +669,7 @@ parseRelation staticLevel scope unit unitName = do
                            _ -> False
                      in operatorCheck operator && inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
              applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
-             applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+             applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
                let typeCheck = case (typeData1,typeData2) of
                                  (Type_Type _ IntegerType,Type_UniversalInt) -> True
                                  (Type_Type _ FloatingType,Type_UniversalReal) -> True
@@ -682,21 +682,20 @@ parseRelation staticLevel scope unit unitName = do
                                     wrappedVal1
                                     wrappedVal2
                    convertCalcs valFunc arith val1 val2 =
-                     if typeCheck
-                        then applyStaticAndNonStatic
-                              ( Calc_Value $ valFunc $ val1 `arith` val2
-                              , Type_Type
-                                 (NetlistName "STD" "STANDARD","ANON'BOOLEAN")
-                                 (EnumerationType 
-                                    [ Enum_Identifier "FALSE"
-                                    , Enum_Identifier "TRUE"
-                                    ]
-                                 )
-                              )
-                              (constFunctionFinder typeData1 typeData2)
-                              wrappedVal1
-                              wrappedVal2
-                        else nomatchCalcs
+                     let outputType = Type_Type
+                                       (NetlistName "STD" "STANDARD","ANON'BOOLEAN")
+                                       (EnumerationType 
+                                          [ Enum_Identifier "FALSE"
+                                          , Enum_Identifier "TRUE"
+                                          ]
+                                       )
+                     in if typeCheck
+                           then applyStaticAndNonStatic
+                                 (Calc_Value (valFunc $ val1 `arith` val2) outputType,outputType)
+                                 (constFunctionFinder typeData1 typeData2)
+                                 wrappedVal1
+                                 wrappedVal2
+                           else nomatchCalcs
                    enumPos (Type_Type _ (EnumerationType enums)) enum = fromJust $ elemIndex enum enums
                in case (val1,val2,relation) of
                      (Value_Enum _ val1,Value_Enum _ val2,Equal) -> convertCalcs boolToBoolean (==) val1 val2
@@ -726,97 +725,105 @@ parseRelation staticLevel scope unit unitName = do
                      -- ?? Need checks for string and bitstring
                      _ -> nomatchCalcs
              applyArith (calc1,typeData1) (calc2,typeData2) =
-               let convertCalcs calcFunc typeData =
+               let convertCalcs calcFunc =
                      applyNonStaticBuiltin
                         (constFunctionFinder typeData1 typeData2)
-                        (calcFunc calc1 calc2,typeData)
+                        ( calcFunc (calc1,typeData1) (calc2,typeData2)
+                        , Type_Type
+                           (NetlistName "STD" "STANDARD","ANON'BOOLEAN")
+                           (EnumerationType 
+                              [ Enum_Identifier "FALSE"
+                              , Enum_Identifier "TRUE"
+                              ]
+                           )
+                        )
                         calc1
                         calc2
                in case (typeData1,typeData2,relation) of
                      (Type_Type typeName1 (EnumerationType _),Type_Type typeName2 (EnumerationType _),Equal) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinEqual typeData1
+                        convertCalcs Calc_BuiltinEqual
                      (Type_Type typeName1 (EnumerationType _),Type_Type typeName2 (EnumerationType _),NotEqual) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinNotEqual typeData1
+                        convertCalcs Calc_BuiltinNotEqual
                      (Type_Type typeName1 (EnumerationType _),Type_Type typeName2 (EnumerationType _),LessThan) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinLessThan typeData1
+                        convertCalcs Calc_BuiltinLessThan
                      (Type_Type typeName1 (EnumerationType _),Type_Type typeName2 (EnumerationType _),LessThanOrEqual) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinLessThanOrEqual typeData1
+                        convertCalcs Calc_BuiltinLessThanOrEqual
                      (Type_Type typeName1 (EnumerationType _),Type_Type typeName2 (EnumerationType _),GreaterThan) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinGreaterThan typeData1
+                        convertCalcs Calc_BuiltinGreaterThan
                      (Type_Type typeName1 (EnumerationType _),Type_Type typeName2 (EnumerationType _),GreaterThanOrEqual) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinGreaterThanOrEqual typeData1
-                     (Type_Type _ IntegerType,Type_UniversalInt,Equal) -> convertCalcs Calc_BuiltinEqual typeData1
-                     (Type_Type _ IntegerType,Type_UniversalInt,NotEqual) -> convertCalcs Calc_BuiltinNotEqual typeData1
-                     (Type_Type _ IntegerType,Type_UniversalInt,LessThan) -> convertCalcs Calc_BuiltinLessThan typeData1
-                     (Type_Type _ IntegerType,Type_UniversalInt,LessThanOrEqual) -> convertCalcs Calc_BuiltinLessThanOrEqual typeData1
-                     (Type_Type _ IntegerType,Type_UniversalInt,GreaterThan) -> convertCalcs Calc_BuiltinGreaterThan typeData1
-                     (Type_Type _ IntegerType,Type_UniversalInt,GreaterThanOrEqual) -> convertCalcs Calc_BuiltinGreaterThanOrEqual typeData1
-                     (Type_UniversalInt,Type_Type _ IntegerType,Equal) -> convertCalcs Calc_BuiltinEqual typeData2
-                     (Type_UniversalInt,Type_Type _ IntegerType,NotEqual) -> convertCalcs Calc_BuiltinNotEqual typeData2
-                     (Type_UniversalInt,Type_Type _ IntegerType,LessThan) -> convertCalcs Calc_BuiltinLessThan typeData2
-                     (Type_UniversalInt,Type_Type _ IntegerType,LessThanOrEqual) -> convertCalcs Calc_BuiltinLessThanOrEqual typeData2
-                     (Type_UniversalInt,Type_Type _ IntegerType,GreaterThan) -> convertCalcs Calc_BuiltinGreaterThan typeData2
-                     (Type_UniversalInt,Type_Type _ IntegerType,GreaterThanOrEqual) -> convertCalcs Calc_BuiltinGreaterThanOrEqual typeData2
+                        convertCalcs Calc_BuiltinGreaterThanOrEqual
+                     (Type_Type _ IntegerType,Type_UniversalInt,Equal) -> convertCalcs Calc_BuiltinEqual
+                     (Type_Type _ IntegerType,Type_UniversalInt,NotEqual) -> convertCalcs Calc_BuiltinNotEqual
+                     (Type_Type _ IntegerType,Type_UniversalInt,LessThan) -> convertCalcs Calc_BuiltinLessThan
+                     (Type_Type _ IntegerType,Type_UniversalInt,LessThanOrEqual) -> convertCalcs Calc_BuiltinLessThanOrEqual
+                     (Type_Type _ IntegerType,Type_UniversalInt,GreaterThan) -> convertCalcs Calc_BuiltinGreaterThan
+                     (Type_Type _ IntegerType,Type_UniversalInt,GreaterThanOrEqual) -> convertCalcs Calc_BuiltinGreaterThanOrEqual
+                     (Type_UniversalInt,Type_Type _ IntegerType,Equal) -> convertCalcs Calc_BuiltinEqual
+                     (Type_UniversalInt,Type_Type _ IntegerType,NotEqual) -> convertCalcs Calc_BuiltinNotEqual
+                     (Type_UniversalInt,Type_Type _ IntegerType,LessThan) -> convertCalcs Calc_BuiltinLessThan
+                     (Type_UniversalInt,Type_Type _ IntegerType,LessThanOrEqual) -> convertCalcs Calc_BuiltinLessThanOrEqual
+                     (Type_UniversalInt,Type_Type _ IntegerType,GreaterThan) -> convertCalcs Calc_BuiltinGreaterThan
+                     (Type_UniversalInt,Type_Type _ IntegerType,GreaterThanOrEqual) -> convertCalcs Calc_BuiltinGreaterThanOrEqual
                      (Type_Type typeName1 IntegerType,Type_Type typeName2 IntegerType,Equal) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinEqual typeData1
+                        convertCalcs Calc_BuiltinEqual
                      (Type_Type typeName1 IntegerType,Type_Type typeName2 IntegerType,NotEqual) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinNotEqual typeData1
+                        convertCalcs Calc_BuiltinNotEqual
                      (Type_Type typeName1 IntegerType,Type_Type typeName2 IntegerType,LessThan) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinLessThan typeData1
+                        convertCalcs Calc_BuiltinLessThan
                      (Type_Type typeName1 IntegerType,Type_Type typeName2 IntegerType,LessThanOrEqual) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinLessThanOrEqual typeData1
+                        convertCalcs Calc_BuiltinLessThanOrEqual
                      (Type_Type typeName1 IntegerType,Type_Type typeName2 IntegerType,GreaterThan) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinGreaterThan typeData1
+                        convertCalcs Calc_BuiltinGreaterThan
                      (Type_Type typeName1 IntegerType,Type_Type typeName2 IntegerType,GreaterThanOrEqual) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinGreaterThanOrEqual typeData1
-                     (Type_UniversalInt,Type_UniversalInt,Equal) -> convertCalcs Calc_BuiltinEqual Type_UniversalInt
-                     (Type_UniversalInt,Type_UniversalInt,NotEqual) -> convertCalcs Calc_BuiltinNotEqual Type_UniversalInt
-                     (Type_UniversalInt,Type_UniversalInt,LessThan) -> convertCalcs Calc_BuiltinLessThan Type_UniversalInt
-                     (Type_UniversalInt,Type_UniversalInt,LessThanOrEqual) -> convertCalcs Calc_BuiltinLessThanOrEqual Type_UniversalInt
-                     (Type_UniversalInt,Type_UniversalInt,GreaterThan) -> convertCalcs Calc_BuiltinGreaterThan Type_UniversalInt
-                     (Type_UniversalInt,Type_UniversalInt,GreaterThanOrEqual) -> convertCalcs Calc_BuiltinGreaterThanOrEqual Type_UniversalInt
-                     (Type_Type _ FloatingType,Type_UniversalReal,Equal) -> convertCalcs Calc_BuiltinEqual typeData1
-                     (Type_Type _ FloatingType,Type_UniversalReal,NotEqual) -> convertCalcs Calc_BuiltinNotEqual typeData1
-                     (Type_Type _ FloatingType,Type_UniversalReal,LessThan) -> convertCalcs Calc_BuiltinLessThan typeData1
-                     (Type_Type _ FloatingType,Type_UniversalReal,LessThanOrEqual) -> convertCalcs Calc_BuiltinLessThanOrEqual typeData1
-                     (Type_Type _ FloatingType,Type_UniversalReal,GreaterThan) -> convertCalcs Calc_BuiltinGreaterThan typeData1
-                     (Type_Type _ FloatingType,Type_UniversalReal,GreaterThanOrEqual) -> convertCalcs Calc_BuiltinGreaterThanOrEqual typeData1
-                     (Type_UniversalReal,Type_Type _ FloatingType,Equal) -> convertCalcs Calc_BuiltinEqual typeData2
-                     (Type_UniversalReal,Type_Type _ FloatingType,NotEqual) -> convertCalcs Calc_BuiltinNotEqual typeData2
-                     (Type_UniversalReal,Type_Type _ FloatingType,LessThan) -> convertCalcs Calc_BuiltinLessThan typeData2
-                     (Type_UniversalReal,Type_Type _ FloatingType,LessThanOrEqual) -> convertCalcs Calc_BuiltinLessThanOrEqual typeData2
-                     (Type_UniversalReal,Type_Type _ FloatingType,GreaterThan) -> convertCalcs Calc_BuiltinGreaterThan typeData2
-                     (Type_UniversalReal,Type_Type _ FloatingType,GreaterThanOrEqual) -> convertCalcs Calc_BuiltinGreaterThanOrEqual typeData2
+                        convertCalcs Calc_BuiltinGreaterThanOrEqual
+                     (Type_UniversalInt,Type_UniversalInt,Equal) -> convertCalcs Calc_BuiltinEqual
+                     (Type_UniversalInt,Type_UniversalInt,NotEqual) -> convertCalcs Calc_BuiltinNotEqual
+                     (Type_UniversalInt,Type_UniversalInt,LessThan) -> convertCalcs Calc_BuiltinLessThan
+                     (Type_UniversalInt,Type_UniversalInt,LessThanOrEqual) -> convertCalcs Calc_BuiltinLessThanOrEqual
+                     (Type_UniversalInt,Type_UniversalInt,GreaterThan) -> convertCalcs Calc_BuiltinGreaterThan
+                     (Type_UniversalInt,Type_UniversalInt,GreaterThanOrEqual) -> convertCalcs Calc_BuiltinGreaterThanOrEqual
+                     (Type_Type _ FloatingType,Type_UniversalReal,Equal) -> convertCalcs Calc_BuiltinEqual
+                     (Type_Type _ FloatingType,Type_UniversalReal,NotEqual) -> convertCalcs Calc_BuiltinNotEqual
+                     (Type_Type _ FloatingType,Type_UniversalReal,LessThan) -> convertCalcs Calc_BuiltinLessThan
+                     (Type_Type _ FloatingType,Type_UniversalReal,LessThanOrEqual) -> convertCalcs Calc_BuiltinLessThanOrEqual
+                     (Type_Type _ FloatingType,Type_UniversalReal,GreaterThan) -> convertCalcs Calc_BuiltinGreaterThan
+                     (Type_Type _ FloatingType,Type_UniversalReal,GreaterThanOrEqual) -> convertCalcs Calc_BuiltinGreaterThanOrEqual
+                     (Type_UniversalReal,Type_Type _ FloatingType,Equal) -> convertCalcs Calc_BuiltinEqual
+                     (Type_UniversalReal,Type_Type _ FloatingType,NotEqual) -> convertCalcs Calc_BuiltinNotEqual
+                     (Type_UniversalReal,Type_Type _ FloatingType,LessThan) -> convertCalcs Calc_BuiltinLessThan
+                     (Type_UniversalReal,Type_Type _ FloatingType,LessThanOrEqual) -> convertCalcs Calc_BuiltinLessThanOrEqual
+                     (Type_UniversalReal,Type_Type _ FloatingType,GreaterThan) -> convertCalcs Calc_BuiltinGreaterThan
+                     (Type_UniversalReal,Type_Type _ FloatingType,GreaterThanOrEqual) -> convertCalcs Calc_BuiltinGreaterThanOrEqual
                      (Type_Type typeName1 FloatingType,Type_Type typeName2 FloatingType,Equal) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinEqual typeData1
+                        convertCalcs Calc_BuiltinEqual
                      (Type_Type typeName1 FloatingType,Type_Type typeName2 FloatingType,NotEqual) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinNotEqual typeData1
+                        convertCalcs Calc_BuiltinNotEqual
                      (Type_Type typeName1 FloatingType,Type_Type typeName2 FloatingType,LessThan) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinLessThan typeData1
+                        convertCalcs Calc_BuiltinLessThan
                      (Type_Type typeName1 FloatingType,Type_Type typeName2 FloatingType,LessThanOrEqual) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinLessThanOrEqual typeData1
+                        convertCalcs Calc_BuiltinLessThanOrEqual
                      (Type_Type typeName1 FloatingType,Type_Type typeName2 FloatingType,GreaterThan) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinGreaterThan typeData1
+                        convertCalcs Calc_BuiltinGreaterThan
                      (Type_Type typeName1 FloatingType,Type_Type typeName2 FloatingType,GreaterThanOrEqual) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinGreaterThanOrEqual typeData1
-                     (Type_UniversalReal,Type_UniversalReal,Equal) -> convertCalcs Calc_BuiltinEqual Type_UniversalReal
-                     (Type_UniversalReal,Type_UniversalReal,NotEqual) -> convertCalcs Calc_BuiltinNotEqual Type_UniversalReal
-                     (Type_UniversalReal,Type_UniversalReal,LessThan) -> convertCalcs Calc_BuiltinLessThan Type_UniversalReal
-                     (Type_UniversalReal,Type_UniversalReal,LessThanOrEqual) -> convertCalcs Calc_BuiltinLessThanOrEqual Type_UniversalReal
-                     (Type_UniversalReal,Type_UniversalReal,GreaterThan) -> convertCalcs Calc_BuiltinGreaterThan Type_UniversalReal
-                     (Type_UniversalReal,Type_UniversalReal,GreaterThanOrEqual) -> convertCalcs Calc_BuiltinGreaterThanOrEqual Type_UniversalReal
+                        convertCalcs Calc_BuiltinGreaterThanOrEqual
+                     (Type_UniversalReal,Type_UniversalReal,Equal) -> convertCalcs Calc_BuiltinEqual
+                     (Type_UniversalReal,Type_UniversalReal,NotEqual) -> convertCalcs Calc_BuiltinNotEqual
+                     (Type_UniversalReal,Type_UniversalReal,LessThan) -> convertCalcs Calc_BuiltinLessThan
+                     (Type_UniversalReal,Type_UniversalReal,LessThanOrEqual) -> convertCalcs Calc_BuiltinLessThanOrEqual
+                     (Type_UniversalReal,Type_UniversalReal,GreaterThan) -> convertCalcs Calc_BuiltinGreaterThan
+                     (Type_UniversalReal,Type_UniversalReal,GreaterThanOrEqual) -> convertCalcs Calc_BuiltinGreaterThanOrEqual
                      (Type_Type typeName1 (PhysicalType _ _),Type_Type typeName2 (PhysicalType _ _),Equal) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinEqual typeData1
+                        convertCalcs Calc_BuiltinEqual
                      (Type_Type typeName1 (PhysicalType _ _),Type_Type typeName2 (PhysicalType _ _),NotEqual) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinNotEqual typeData1
+                        convertCalcs Calc_BuiltinNotEqual
                      (Type_Type typeName1 (PhysicalType _ _),Type_Type typeName2 (PhysicalType _ _),LessThan) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinLessThan typeData1
+                        convertCalcs Calc_BuiltinLessThan
                      (Type_Type typeName1 (PhysicalType _ _),Type_Type typeName2 (PhysicalType _ _),LessThanOrEqual) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinLessThanOrEqual typeData1
+                        convertCalcs Calc_BuiltinLessThanOrEqual
                      (Type_Type typeName1 (PhysicalType _ _),Type_Type typeName2 (PhysicalType _ _),GreaterThan) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinGreaterThan typeData1
+                        convertCalcs Calc_BuiltinGreaterThan
                      (Type_Type typeName1 (PhysicalType _ _),Type_Type typeName2 (PhysicalType _ _),GreaterThanOrEqual) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinGreaterThanOrEqual typeData1
+                        convertCalcs Calc_BuiltinGreaterThanOrEqual
                      -- ?? Need checks for string and bitstring
                      _ -> applyNonStatic
                            (constFunctionFinder typeData1 typeData2)
@@ -862,7 +869,7 @@ parseUnarySignExpression staticLevel scope unit unitName = do
        applyNonStaticBuiltin functionFinder (calc,typeData) =
          let fixedCalc = case fromJust sign of
                            Plus -> (calc,typeData)
-                           Minus -> (Calc_BuiltinNegate calc,typeData)
+                           Minus -> (Calc_BuiltinNegate calc typeData,typeData)
          in if notLocallyStatic staticLevel
                then return (fixedCalc:getNonStaticFuncs functionFinder calc)
                else return []
@@ -886,15 +893,15 @@ parseUnarySignExpression staticLevel scope unit unitName = do
          -- ?? Can you overload physical type units, if not then can instantly match literal types
        constPhysFunctionFinder _ _ = False
        applyArith :: (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
-       applyArith valComb@(Calc_Value (Value_Int val),typeData) =
-         let staticVal = applyStatic valComb (Calc_Value $ Value_Int $ -val,typeData)
-         in applyStaticAndNonStatic staticVal (constIntFunctionFinder typeData) (Calc_Value $ Value_Int val)
-       applyArith valComb@(Calc_Value (Value_Float val),typeData) =
-         let staticVal = applyStatic valComb (Calc_Value $ Value_Float $ - val,typeData)
-         in applyStaticAndNonStatic staticVal (constFloatFunctionFinder typeData) (Calc_Value $ Value_Float val)
-       applyArith valComb@(Calc_Value (Value_Physical val),typeData) =
-         let staticVal = applyStatic valComb (Calc_Value $ Value_Physical $ -val,typeData)
-         in applyStaticAndNonStatic staticVal (constPhysFunctionFinder typeData) (Calc_Value $ Value_Physical val)
+       applyArith valComb@(Calc_Value (Value_Int val) _,typeData) =
+         let staticVal = applyStatic valComb (Calc_Value (Value_Int $ -val) typeData,typeData)
+         in applyStaticAndNonStatic staticVal (constIntFunctionFinder typeData) (Calc_Value (Value_Int val) typeData)
+       applyArith valComb@(Calc_Value (Value_Float val) _,typeData) =
+         let staticVal = applyStatic valComb (Calc_Value (Value_Float $ - val) typeData,typeData)
+         in applyStaticAndNonStatic staticVal (constFloatFunctionFinder typeData) (Calc_Value (Value_Float val) typeData)
+       applyArith valComb@(Calc_Value (Value_Physical val) _,typeData) =
+         let staticVal = applyStatic valComb (Calc_Value (Value_Physical $ -val) typeData,typeData)
+         in applyStaticAndNonStatic staticVal (constPhysFunctionFinder typeData) (Calc_Value (Value_Physical val) typeData)
        applyArith valComb@(_,typeData@(Type_Type _ IntegerType))
          -- | isSignalCalc calc = applyNonStatic (sigIntFunctionFinder typeData) valComb
          | otherwise = applyNonStaticBuiltin (constIntFunctionFinder typeData) valComb
@@ -980,7 +987,7 @@ parseAdditionExpression staticLevel scope unit unitName prevCalcs = do
                            _ -> False
                      in operatorCheck operator && inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
              applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
-             applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+             applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
                let typeCheck = case (typeData1,typeData2) of
                                  (Type_Type _ IntegerType,Type_UniversalInt) -> Just typeData1
                                  (Type_Type _ FloatingType,Type_UniversalReal) -> Just typeData1
@@ -996,7 +1003,7 @@ parseAdditionExpression staticLevel scope unit unitName prevCalcs = do
                    convertCalcs valFunc arith val1 val2 =
                      case typeCheck of
                         Just typeData -> applyStaticAndNonStatic
-                                          (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                          (Calc_Value (valFunc $ val1 `arith` val2) typeData,typeData)
                                           (constFunctionFinder typeData1 typeData2)
                                           wrappedVal1
                                           wrappedVal2
@@ -1020,7 +1027,7 @@ parseAdditionExpression staticLevel scope unit unitName prevCalcs = do
                let convertCalcs calcFunc typeData =
                      applyNonStaticBuiltin
                         (constFunctionFinder typeData1 typeData2)
-                        (calcFunc calc1 calc2,typeData)
+                        (calcFunc (calc1,typeData1) (calc2,typeData2),typeData)
                         calc1
                         calc2
                in case (typeData1,typeData2,sign) of
@@ -1123,7 +1130,7 @@ parseMultiplicationExpression staticLevel scope unit unitName prevCalcs = do
                            _ -> False
                      in operatorCheck operator && inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
              applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
-             applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+             applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
                let typeCheck = case (typeData1,typeData2) of
                                  (Type_Type _ IntegerType,Type_UniversalInt) -> Just typeData1
                                  (Type_Type _ FloatingType,Type_UniversalReal) -> Just typeData1
@@ -1148,7 +1155,7 @@ parseMultiplicationExpression staticLevel scope unit unitName prevCalcs = do
                    convertCalcs valFunc arith val1 val2 =
                      case typeCheck of
                         Just typeData -> applyStaticAndNonStatic
-                                          (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                          (Calc_Value (valFunc $ val1 `arith` val2) typeData,typeData)
                                           (constFunctionFinder typeData1 typeData2)
                                           wrappedVal1
                                           wrappedVal2
@@ -1170,57 +1177,59 @@ parseMultiplicationExpression staticLevel scope unit unitName prevCalcs = do
                      -- ?? Need checks for string and bitstring
                      _ -> nomatchCalcs
              applyArith (calc1,typeData1) (calc2,typeData2) =
-               let convertCalcs calcFunc typeData =
+               let convertCalcs argsFunc calcFunc typeData =
                      applyNonStaticBuiltin
                         (constFunctionFinder typeData1 typeData2)
-                        (calcFunc calc1 calc2,typeData)
+                        (argsFunc calcFunc typeData,typeData)
                         calc1
                         calc2
+                   singleArgsFunc calcFunc typeData = calcFunc calc1 calc2 typeData
+                   dualArgsFunc calcFunc _ = calcFunc (calc1,typeData1) (calc1,typeData2)
                in case (typeData1,typeData2,mult) of
-                     (Type_Type _ IntegerType,Type_UniversalInt,Mult) -> convertCalcs Calc_BuiltinMult typeData1
-                     (Type_Type _ IntegerType,Type_UniversalInt,Div) -> convertCalcs Calc_BuiltinDiv typeData1
-                     (Type_Type _ IntegerType,Type_UniversalInt,Mod) -> convertCalcs Calc_BuiltinMod typeData1
-                     (Type_Type _ IntegerType,Type_UniversalInt,Rem) -> convertCalcs Calc_BuiltinRem typeData1
-                     (Type_UniversalInt,Type_Type _ IntegerType,Mult) -> convertCalcs Calc_BuiltinMult typeData2
-                     (Type_UniversalInt,Type_Type _ IntegerType,Div) -> convertCalcs Calc_BuiltinDiv typeData2
-                     (Type_UniversalInt,Type_Type _ IntegerType,Mod) -> convertCalcs Calc_BuiltinMod typeData2
-                     (Type_UniversalInt,Type_Type _ IntegerType,Rem) -> convertCalcs Calc_BuiltinRem typeData2
+                     (Type_Type _ IntegerType,Type_UniversalInt,Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult typeData1
+                     (Type_Type _ IntegerType,Type_UniversalInt,Div) -> convertCalcs dualArgsFunc Calc_BuiltinDiv typeData1
+                     (Type_Type _ IntegerType,Type_UniversalInt,Mod) -> convertCalcs singleArgsFunc Calc_BuiltinMod typeData1
+                     (Type_Type _ IntegerType,Type_UniversalInt,Rem) -> convertCalcs singleArgsFunc Calc_BuiltinRem typeData1
+                     (Type_UniversalInt,Type_Type _ IntegerType,Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult typeData2
+                     (Type_UniversalInt,Type_Type _ IntegerType,Div) -> convertCalcs dualArgsFunc Calc_BuiltinDiv typeData2
+                     (Type_UniversalInt,Type_Type _ IntegerType,Mod) -> convertCalcs singleArgsFunc Calc_BuiltinMod typeData2
+                     (Type_UniversalInt,Type_Type _ IntegerType,Rem) -> convertCalcs singleArgsFunc Calc_BuiltinRem typeData2
                      (Type_Type typeName1 IntegerType,Type_Type typeName2 IntegerType,Mult) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinMult typeData1
+                        convertCalcs dualArgsFunc Calc_BuiltinMult typeData1
                      (Type_Type typeName1 IntegerType,Type_Type typeName2 IntegerType,Div) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinDiv typeData1
+                        convertCalcs dualArgsFunc Calc_BuiltinDiv typeData1
                      (Type_Type typeName1 IntegerType,Type_Type typeName2 IntegerType,Mod) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinMod typeData1
+                        convertCalcs singleArgsFunc Calc_BuiltinMod typeData1
                      (Type_Type typeName1 IntegerType,Type_Type typeName2 IntegerType,Rem) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinRem typeData1
-                     (Type_UniversalInt,Type_UniversalInt,Mult) -> convertCalcs Calc_BuiltinMult Type_UniversalInt
-                     (Type_UniversalInt,Type_UniversalInt,Div) -> convertCalcs Calc_BuiltinDiv Type_UniversalInt
-                     (Type_UniversalInt,Type_UniversalInt,Mod) -> convertCalcs Calc_BuiltinMod Type_UniversalInt
-                     (Type_UniversalInt,Type_UniversalInt,Rem) -> convertCalcs Calc_BuiltinRem Type_UniversalInt
-                     (Type_Type _ FloatingType,Type_UniversalReal,Mult) -> convertCalcs Calc_BuiltinMult typeData1
-                     (Type_Type _ FloatingType,Type_UniversalReal,Div) -> convertCalcs Calc_BuiltinDiv typeData1
-                     (Type_UniversalReal,Type_Type _ FloatingType,Mult) -> convertCalcs Calc_BuiltinMult typeData2
-                     (Type_UniversalReal,Type_Type _ FloatingType,Div) -> convertCalcs Calc_BuiltinDiv typeData2
+                        convertCalcs singleArgsFunc Calc_BuiltinRem typeData1
+                     (Type_UniversalInt,Type_UniversalInt,Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult Type_UniversalInt
+                     (Type_UniversalInt,Type_UniversalInt,Div) -> convertCalcs dualArgsFunc Calc_BuiltinDiv Type_UniversalInt
+                     (Type_UniversalInt,Type_UniversalInt,Mod) -> convertCalcs singleArgsFunc Calc_BuiltinMod Type_UniversalInt
+                     (Type_UniversalInt,Type_UniversalInt,Rem) -> convertCalcs singleArgsFunc Calc_BuiltinRem Type_UniversalInt
+                     (Type_Type _ FloatingType,Type_UniversalReal,Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult typeData1
+                     (Type_Type _ FloatingType,Type_UniversalReal,Div) -> convertCalcs dualArgsFunc Calc_BuiltinDiv typeData1
+                     (Type_UniversalReal,Type_Type _ FloatingType,Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult typeData2
+                     (Type_UniversalReal,Type_Type _ FloatingType,Div) -> convertCalcs dualArgsFunc Calc_BuiltinDiv typeData2
                      (Type_Type typeName1 FloatingType,Type_Type typeName2 FloatingType,Mult) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinMult typeData1
+                        convertCalcs dualArgsFunc Calc_BuiltinMult typeData1
                      (Type_Type typeName1 FloatingType,Type_Type typeName2 FloatingType,Div) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinDiv typeData1
-                     (Type_UniversalReal,Type_UniversalReal,Mult) -> convertCalcs Calc_BuiltinMult Type_UniversalReal
-                     (Type_UniversalReal,Type_UniversalReal,Div) -> convertCalcs Calc_BuiltinDiv Type_UniversalReal
-                     (Type_Type _ (PhysicalType _ _),Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType,Mult) -> convertCalcs Calc_BuiltinMult typeData1
-                     (Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType,Type_Type _ (PhysicalType _ _),Mult) -> convertCalcs Calc_BuiltinMult typeData2
-                     (Type_Type _ (PhysicalType _ _),Type_UniversalInt,Mult) -> convertCalcs Calc_BuiltinMult typeData1
-                     (Type_UniversalInt,Type_Type _ (PhysicalType _ _),Mult) -> convertCalcs Calc_BuiltinMult typeData2
-                     (Type_Type _ (PhysicalType _ _),Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType,Div) -> convertCalcs Calc_BuiltinDiv typeData1
-                     (Type_Type _ (PhysicalType _ _),Type_UniversalInt,Div) -> convertCalcs Calc_BuiltinDiv typeData1
-                     (Type_Type _ (PhysicalType _ _),Type_Type (NetlistName "STD" "STANDARD","ANON'REAL") FloatingType,Mult) -> convertCalcs Calc_BuiltinMult typeData1
-                     (Type_Type (NetlistName "STD" "STANDARD","ANON'REAL") FloatingType,Type_Type _ (PhysicalType _ _),Mult) -> convertCalcs Calc_BuiltinMult typeData2
-                     (Type_Type _ (PhysicalType _ _),Type_UniversalReal,Mult) -> convertCalcs Calc_BuiltinMult typeData1
-                     (Type_UniversalReal,Type_Type _ (PhysicalType _ _),Mult) -> convertCalcs Calc_BuiltinMult typeData2
-                     (Type_Type _ (PhysicalType _ _),Type_Type (NetlistName "STD" "STANDARD","ANON'REAL") FloatingType,Div) -> convertCalcs Calc_BuiltinDiv typeData1
-                     (Type_Type _ (PhysicalType _ _),Type_UniversalReal,Div) -> convertCalcs Calc_BuiltinDiv typeData1
+                        convertCalcs dualArgsFunc Calc_BuiltinDiv typeData1
+                     (Type_UniversalReal,Type_UniversalReal,Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult Type_UniversalReal
+                     (Type_UniversalReal,Type_UniversalReal,Div) -> convertCalcs dualArgsFunc Calc_BuiltinDiv Type_UniversalReal
+                     (Type_Type _ (PhysicalType _ _),Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType,Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult typeData1
+                     (Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType,Type_Type _ (PhysicalType _ _),Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult typeData2
+                     (Type_Type _ (PhysicalType _ _),Type_UniversalInt,Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult typeData1
+                     (Type_UniversalInt,Type_Type _ (PhysicalType _ _),Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult typeData2
+                     (Type_Type _ (PhysicalType _ _),Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType,Div) -> convertCalcs dualArgsFunc Calc_BuiltinDiv typeData1
+                     (Type_Type _ (PhysicalType _ _),Type_UniversalInt,Div) -> convertCalcs dualArgsFunc Calc_BuiltinDiv typeData1
+                     (Type_Type _ (PhysicalType _ _),Type_Type (NetlistName "STD" "STANDARD","ANON'REAL") FloatingType,Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult typeData1
+                     (Type_Type (NetlistName "STD" "STANDARD","ANON'REAL") FloatingType,Type_Type _ (PhysicalType _ _),Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult typeData2
+                     (Type_Type _ (PhysicalType _ _),Type_UniversalReal,Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult typeData1
+                     (Type_UniversalReal,Type_Type _ (PhysicalType _ _),Mult) -> convertCalcs dualArgsFunc Calc_BuiltinMult typeData2
+                     (Type_Type _ (PhysicalType _ _),Type_Type (NetlistName "STD" "STANDARD","ANON'REAL") FloatingType,Div) -> convertCalcs dualArgsFunc Calc_BuiltinDiv typeData1
+                     (Type_Type _ (PhysicalType _ _),Type_UniversalReal,Div) -> convertCalcs dualArgsFunc Calc_BuiltinDiv typeData1
                      (Type_Type typeName1 (PhysicalType _ _),Type_Type typeName2 (PhysicalType _ _),Div) | typeName1 == typeName2 ->
-                        convertCalcs Calc_BuiltinDiv Type_UniversalInt
+                        convertCalcs dualArgsFunc Calc_BuiltinDiv Type_UniversalInt
                      -- ?? Need checks for string and bitstring
                      _ -> applyNonStatic
                            (constFunctionFinder typeData1 typeData2)
@@ -1250,7 +1259,7 @@ parseFactor staticLevel scope unit unitName = do
                            )
                      in map mapper $ MapS.toList functions
              applyNonStaticBuiltin functionFinder (calc,typeData) =
-               let fixedCalc = (Calc_BuiltinAbs calc,typeData)
+               let fixedCalc = (Calc_BuiltinAbs calc typeData,typeData)
                in if notLocallyStatic staticLevel
                      then return (fixedCalc:getNonStaticFuncs functionFinder calc)
                      else return []
@@ -1276,7 +1285,7 @@ parseFactor staticLevel scope unit unitName = do
                            _ -> False
                      in inputCheck inputType inputSubtype
              applyArith :: (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
-             applyArith (wrappedVal@(Calc_Value val),typeData) =
+             applyArith (wrappedVal@(Calc_Value val _),typeData) =
                let typeCheck = case typeData of
                                  Type_Type _ IntegerType -> True
                                  Type_Type _ FloatingType -> True
@@ -1295,9 +1304,9 @@ parseFactor staticLevel scope unit unitName = do
                               wrappedVal
                         else nomatchCalcs
                in case val of
-                     Value_Int val -> convertCalcs $ Calc_Value $ Value_Int $ abs val
-                     Value_Float val -> convertCalcs $ Calc_Value $ Value_Float $ abs val
-                     Value_Physical val -> convertCalcs $ Calc_Value $ Value_Physical $ abs val
+                     Value_Int val -> convertCalcs $ Calc_Value (Value_Int $ abs val) typeData
+                     Value_Float val -> convertCalcs $ Calc_Value (Value_Float $ abs val) typeData
+                     Value_Physical val -> convertCalcs $ Calc_Value (Value_Physical $ abs val) typeData
                      _ -> nomatchCalcs
              applyArith (calc,typeData) =
                let convertCalcs =
@@ -1331,7 +1340,7 @@ parseFactor staticLevel scope unit unitName = do
                            )
                      in map mapper $ MapS.toList functions
              applyNonStaticBuiltin functionFinder (calc,typeData) =
-               let fixedCalc = (Calc_BuiltinNot calc,typeData)
+               let fixedCalc = (Calc_BuiltinNot calc typeData,typeData)
                in if notLocallyStatic staticLevel
                      then return (fixedCalc:getNonStaticFuncs functionFinder calc)
                      else return []
@@ -1357,7 +1366,7 @@ parseFactor staticLevel scope unit unitName = do
                            _ -> False
                      in inputCheck inputType inputSubtype
              applyArith :: (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
-             applyArith (wrappedVal@(Calc_Value val),typeData) =
+             applyArith (wrappedVal@(Calc_Value val _),typeData) =
                let typeCheck = case typeData of
                                  Type_Type (NetlistName "STD" "STANDARD","ANON'BIT") (EnumerationType _) -> True
                                  Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (EnumerationType _) -> True
@@ -1374,10 +1383,10 @@ parseFactor staticLevel scope unit unitName = do
                               wrappedVal
                         else nomatchCalcs
                in case val of
-                     (Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") (Enum_Char '0')) -> convertCalcs $ Calc_Value $ Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") $ Enum_Char '1'
-                     (Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") (Enum_Char '1')) -> convertCalcs $ Calc_Value $ Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") $ Enum_Char '0'
-                     (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (Enum_Identifier "FALSE")) -> convertCalcs $ Calc_Value $ Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ Enum_Identifier "TRUE"
-                     (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (Enum_Identifier "TRUE")) -> convertCalcs $ Calc_Value $ Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ Enum_Identifier "FALSE"
+                     (Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") (Enum_Char '0')) -> convertCalcs $ Calc_Value (Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") $ Enum_Char '1') typeData
+                     (Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") (Enum_Char '1')) -> convertCalcs $ Calc_Value (Value_Enum (NetlistName "STD" "STANDARD","ANON'BIT") $ Enum_Char '0') typeData
+                     (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (Enum_Identifier "FALSE")) -> convertCalcs $ Calc_Value (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ Enum_Identifier "TRUE") typeData
+                     (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") (Enum_Identifier "TRUE")) -> convertCalcs $ Calc_Value (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ Enum_Identifier "FALSE") typeData
                      -- ?? Need checks for bit string, bit and boolean arrays
                      _ -> nomatchCalcs
              applyArith (calc,typeData) =
@@ -1442,7 +1451,7 @@ parseFactor staticLevel scope unit unitName = do
                                  _ -> False
                            in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
                    applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
-                   applyArith (wrappedVal1@(Calc_Value val1),typeData1) (wrappedVal2@(Calc_Value val2),typeData2) =
+                   applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
                      let typeCheck = case (typeData1,typeData2) of
                                        (Type_Type _ IntegerType,Type_UniversalInt) -> Just typeData1
                                        (Type_Type _ IntegerType,Type_Type (NetlistName "STD" "STANDARD","ANON'INTEGER") IntegerType) -> Just typeData1
@@ -1460,7 +1469,7 @@ parseFactor staticLevel scope unit unitName = do
                          convertCalcs valFunc arith val1 val2 =
                            case typeCheck of
                               Just typeData -> applyStaticAndNonStatic
-                                                (Calc_Value $ valFunc $ val1 `arith` val2,typeData)
+                                                (Calc_Value (valFunc $ val1 `arith` val2) typeData,typeData)
                                                 (constFunctionFinder typeData1 typeData2)
                                                 wrappedVal1
                                                 wrappedVal2
@@ -1474,7 +1483,7 @@ parseFactor staticLevel scope unit unitName = do
                      let convertCalcs calcFunc typeData =
                            applyNonStaticBuiltin
                               (constFunctionFinder typeData1 typeData2)
-                              (calcFunc calc1 calc2,typeData)
+                              (calcFunc (calc1,typeData1) (calc2,typeData2),typeData)
                               calc1
                               calc2
                      in case (typeData1,typeData2) of
@@ -1510,7 +1519,7 @@ parsePrimary staticLevel scope unit unitName = do
          case matchIdentifier potentialUnit of
             Nothing -> do
                saveToken potentialUnit
-               return [(Calc_Value $ Value_Int $ toInteger intVal,Type_UniversalInt)]
+               return [(Calc_Value (Value_Int $ toInteger intVal) Type_UniversalInt,Type_UniversalInt)]
             Just (PosnWrapper pos potUnitName) ->
                let upperPotUnitName = map toUpper potUnitName
                in case matchPhysicalUnitInScope scope unit unitName upperPotUnitName of
@@ -1519,14 +1528,15 @@ parsePrimary staticLevel scope unit unitName = do
                             value = if upperPotUnitName == baseUnit
                                        then integerVal
                                        else (toInteger $ otherUnits MapS.! upperPotUnitName) * integerVal
-                        in return [(Calc_Value $ Value_Physical value,Type_Type (packageName,typeName) typeData)]
+                            outputType = Type_Type (packageName,typeName) typeData
+                        in return [(Calc_Value (Value_Physical value) outputType,outputType)]
                      Nothing -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_PhysicalUnitNotFound potUnitName
       token@(PosnWrapper _ (Tokens.Literal (Tokens.Univ_Real realVal))) -> do
          potentialUnit <- getToken
          case matchIdentifier potentialUnit of
             Nothing -> do
                saveToken potentialUnit
-               return [(Calc_Value $ Value_Float realVal,Type_UniversalReal)]
+               return [(Calc_Value (Value_Float realVal) Type_UniversalReal,Type_UniversalReal)]
             Just (PosnWrapper pos potUnitName) ->
                let upperPotUnitName = map toUpper potUnitName
                in case matchPhysicalUnitInScope scope unit unitName upperPotUnitName of
@@ -1534,13 +1544,14 @@ parsePrimary staticLevel scope unit unitName = do
                         let value = if upperPotUnitName == baseUnit -- ?? round or error
                                        then round realVal
                                        else round $ (fromIntegral $ otherUnits MapS.! upperPotUnitName) * realVal
-                        in return [(Calc_Value $ Value_Physical $ value,Type_Type (packageName,typeName) typeData)]
+                            outputType = Type_Type (packageName,typeName) typeData
+                        in return [(Calc_Value (Value_Physical value) outputType,outputType)]
                      Nothing -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_PhysicalUnitNotFound potUnitName
       token@(PosnWrapper _ (Tokens.Literal (Tokens.Character char))) ->
          case matchEnumCharInScope char scope unit unitName of
             Just enumMap ->
                MapS.toList enumMap
-               & map (\(typeName,(typ,packageName)) -> (Calc_Value $ Value_Enum (packageName,typeName) $ Enum_Char char,Type_Type (packageName,typeName) typ))
+               & map (\(typeName,(typ,packageName)) -> (Calc_Value (Value_Enum (packageName,typeName) $ Enum_Char char) (Type_Type (packageName,typeName) typ),Type_Type (packageName,typeName) typ))
                & return
             Nothing -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_UnrecognisedEnumChar char) token
 --      _ | isStr -- function call or array
@@ -1589,14 +1600,14 @@ parsePrimaryIdentifier staticLevel scope unit unitName (PosnWrapper pos iden) =
          case matchEnumNameInScope upperIden scope unit unitName of
             Just enumMap ->
                MapS.toList enumMap
-               & map (\(typeName,(typ,packageName)) -> (Calc_Value $ Value_Enum (packageName,typeName) $ Enum_Identifier upperIden,Type_Type (packageName,typeName) typ))
+               & map (\(typeName,(typ,packageName)) -> (Calc_Value (Value_Enum (packageName,typeName) $ Enum_Identifier upperIden) (Type_Type (packageName,typeName) typ),Type_Type (packageName,typeName) typ))
                & return
             Nothing -> checkConstants
        checkConstants =
          case matchConstantNameInScope scope unit unitName upperIden of -- ?? need attributes, indexed
             Just (Constant _ subtype Nothing,constPackage) | notLocallyStatic staticLevel -> return $ [(Calc_Const (constPackage,upperIden),subtypeToType subtype)]
             Just (Constant _ _ Nothing,_) -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_DeferredConst upperIden
-            Just (Constant _ subtype (Just val),_) -> return [(Calc_Value val,subtypeToType subtype)]
+            Just (Constant _ subtype (Just val),_) -> return [(Calc_Value val $ subtypeToType subtype,subtypeToType subtype)]
             Nothing -> checkSignals
        checkSignals =
          case matchSignalNameInScope scope unit unitName upperIden of
@@ -1690,8 +1701,8 @@ staticTypeCompare subtypeData values pos =
              filterFunc _ = False
              value = filter filterFunc values
          in case value of
-               [(Calc_Value (Value_Enum _ enum),_)] | elem enum (right:(takeWhile (/= right) $ dropWhile (/= left) enums)) -> return $ Value_Enum baseTypeName enum
-               [(Calc_Value (Value_Enum _ enum),_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_EnumValueOutOfRange enum
+               [(Calc_Value (Value_Enum _ enum) _,_)] | elem enum (right:(takeWhile (/= right) $ dropWhile (/= left) enums)) -> return $ Value_Enum baseTypeName enum
+               [(Calc_Value (Value_Enum _ enum) _,_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_EnumValueOutOfRange enum
                _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_CannotFindValueWithContext
       IntegerSubtype _ baseTypeName range ->
          let filterFunc (_,Type_Type name _) = name == baseTypeName
@@ -1699,8 +1710,8 @@ staticTypeCompare subtypeData values pos =
              filterFunc _ = False
              value = filter filterFunc values
          in case value of
-               [(Calc_Value (Value_Int int),_)] | valueInIntRange int range -> return $ Value_Int int
-               [(Calc_Value (Value_Int int),_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_IntValueOutOfRange int
+               [(Calc_Value (Value_Int int) _,_)] | valueInIntRange int range -> return $ Value_Int int
+               [(Calc_Value (Value_Int int) _,_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_IntValueOutOfRange int
                _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_CannotFindValueWithContext
       FloatingSubtype _ baseTypeName range ->
          let filterFunc (_,Type_Type name _) = name == baseTypeName
@@ -1708,16 +1719,16 @@ staticTypeCompare subtypeData values pos =
              filterFunc _ = False
              value = filter filterFunc values
          in case value of
-               [(Calc_Value (Value_Float float),_)] | valueInFloatRange float range -> return $ Value_Float float
-               [(Calc_Value (Value_Float float),_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_FloatValueOutOfRange float
+               [(Calc_Value (Value_Float float) _,_)] | valueInFloatRange float range -> return $ Value_Float float
+               [(Calc_Value (Value_Float float) _,_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_FloatValueOutOfRange float
                _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_CannotFindValueWithContext
       PhysicalSubtype _ baseTypeName _ _ range ->
          let filterFunc (_,Type_Type name _) = name == baseTypeName
              filterFunc _ = False
              value = filter filterFunc values
          in case value of
-               [(Calc_Value (Value_Physical int),_)] | valueInIntRange int range -> return $ Value_Physical int
-               [(Calc_Value (Value_Physical int),_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_PhysValueOutOfRange int
+               [(Calc_Value (Value_Physical int) _,_)] | valueInIntRange int range -> return $ Value_Physical int
+               [(Calc_Value (Value_Physical int) _,_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_PhysValueOutOfRange int
                _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_CannotFindValueWithContext
       --ArraySubtype
    where valueInIntRange :: Integer -> IntegerRange -> Bool -- ?? Should this error be dealt with earlier

@@ -103,7 +103,7 @@ parseSignal scope unit unitName = do
       token -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSigValueOrEnd token
    let signal = Signal (subtypePackage,subtypeName) subtypeData value
    finalTok <- getToken
-   unless (isSemicolon finalTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSigEnd finalTok
+   unless (isSemicolon finalTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSigDeclEnd finalTok
    let newSigs = MapS.fromList $ zip idenList $ repeat signal
    return (newSigs,modSubtype)
 

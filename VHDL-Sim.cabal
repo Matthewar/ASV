@@ -63,6 +63,7 @@ library
                      , Sim.Output.Types
                      , Sim.Output.Subtypes
                      , Sim.Output.Constants
+                     , Sim.Output.Processes
                      , Sim.Types.Error
                      , Manager.NewDesignUnit
                      , Manager.Args

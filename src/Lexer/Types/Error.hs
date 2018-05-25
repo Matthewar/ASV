@@ -134,7 +134,7 @@ data ParserError
    -- |Expected colon in signal declaration to indicate start of subtype indication
    | ParseErr_ExpectedColonInSigDecl Token
    -- |Expected a semicolon to end a signal declaration
-   | ParseErr_ExpectedSigEnd Token
+   | ParseErr_ExpectedSigDeclEnd Token
    -- |Expected the indicator of the start of the signal value (:= operator) or end of declaration for default signal (semicolon operator)
    | ParseErr_ExpectedSigValueOrEnd Token
    -- |Expected entity name (identifier)
@@ -145,7 +145,7 @@ data ParserError
    | ParseErr_EntityNamesNoMatch (PosnWrapper String) (PosnWrapper String)
    -- |Expected semicolon to signify end of an entity
    | ParseErr_ExpectedSemicolonInEntity Token
-   -- |Expected semicolon to end entity declaration
+   -- |Expected semicolon or entity name at end of entity declaration
    | ParseErr_ExpectedEntityEndOfDec Token
    -- |Expected begin keyword to mark start of entity statements, or end keyword to mark end of entity inner region
    | ParseErr_ExpectedKeywordBeginOrEndInEntity Token
@@ -319,6 +319,110 @@ instance (Show ParserError) where
       ++ show token
    show (ParseErr_ExpectedSemicolonInSubtypeDecl token) =
       "Expected semicolon at the end of the subtype declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedColonInSigDecl token) =
+      "Expected a colon to mark the start of the subtype indication in a signal declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedSigDeclEnd token) =
+      "Expected a semicolon to end a signal declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedSigValueOrEnd token) =
+      "Expected a signal value (marked by variable assignment symbol) or end of signal declaration (marked by semicolon), but got "
+      ++ show token
+   show (ParseErr_ExpectedEntityName token) =
+      "Expected an entity name (identifier), but got "
+      ++ show token
+   show (ParseErr_ExpectedKeywordIsInEntity token) =
+      "Expected keyword is to mark the start of entity inner region, but got "
+      ++ show token
+   show (ParseErr_EntityNamesNoMatch (PosnWrapper pos1 name1) (PosnWrapper pos2 name2)) =
+      "Entity names (identifiers) must match when both are provided. First identifier "
+      ++ name1
+      ++ getLineAndColErrStr pos1
+      ++ "; second identifier "
+      ++ name2
+      ++ getLineAndColErrStr pos2
+      ++ ". In entity declaration"
+   -- |Expected semicolon to signify end of an entity
+   show (ParseErr_ExpectedSemicolonInEntity token) =
+      "Expected semicolon at the end of an entity declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedEntityEndOfDec token) =
+      "Expected semicolon or entity name after end keyword at end of entity declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedKeywordBeginOrEndInEntity token) =
+      "Expected either begin keyword to mark start of entity statement region, or end keyword to mark end of entity inner region, but got "
+      ++ show token
+   show (ParseErr_ExpectedLeftParenInEntityGenericHeader token) =
+      "Expected left parenthesis to mark the start of an entity generic clause, but got "
+      ++ show token
+   show (ParseErr_ExpectedSemicolonInEntityGenericHeaderEnd token) =
+      "Expected semicolon to end an entity generic clause, but got "
+      ++ show token
+   show (ParseErr_ExpectedColonInInterfaceDecl token) =
+      "Expected colon in interface declaration, to mark the start of the subtype indication, but got "
+      ++ show token
+   show (ParseErr_ExpectedInterfaceContOrEnd token) =
+      "Expected semicolon to indicate interface declarations continue, or right parenthesis to mark end of the interface declarations, but got "
+      ++ show token
+   show (ParseErr_ExpectedLeftParenInEntityPortHeader token) =
+      "Expected left parenthesis to mark the start of an entity port clause, but got "
+      ++ show token
+   show (ParseErr_ExpectedSemicolonInEntityPortHeaderEnd token) =
+      "Expected semicolon to end an entity port clause, but got "
+      ++ show token
+   show (ParseErr_ExpectedEntityDeclItemOrEnd token) =
+      "Expected entity declaration marker (certain keywords) or keywords begin or end to mark the end of the entity declarative region, but got "
+      ++ show token
+   show (ParseErr_ExpectedColonInEntityStatement token) =
+      "Expected colon after a label for an entity statement, but got "
+      ++ show token
+   show (ParseErr_ExpectedEntityStatementItem token) =
+      "Expected entity statement item (certain keywords) after a label, but got "
+      ++ show token
+   show (ParseErr_ExpectedEntityStatementItemOrEnd token) =
+      "Expected entity statement item (certain keywords), entity statement label (identifier), or end keyword to mark end of entity statement region, but got "
+      ++ show token
+   show (ParseErr_ExpectedSemicolonInContextStatement token) =
+      "Expected a semicolon to end a context statement (library or use clause), but got "
+      ++ show token
+   show (ParseErr_ExpectedSemicolonInWaitStatement token) =
+      "Expected a semicolon at the end of a wait statement, but got "
+      ++ show token
+   show (ParseErr_ExpectedSemicolonInAssert token) =
+      "Expected a semicolon at the end of an assertion statement, but got "
+      ++ show token
+   show (ParseErr_ExpectedReportOrSeverityOrEndInAssert token) =
+      "Expected report clause (report keyword), severity clause (severity keyword), or semicolon to end an assertion statement, but got "
+      ++ show token
+   show (ParseErr_ExpectedSignalNameInSensitivityList token) =
+      "Expected a signal name (identifier) in a sensitivity list, but got "
+      ++ show token
+   show (ParseErr_ExpectedRightParenToEndProcessSensitivityList token) =
+      "Expected right parenthesis to mark the end of a sensitivity list in a process, but got "
+      ++ show token
+   show (ParseErr_ExpectedKeywordProcessInEndProcess token) =
+      "Expected the keyword process at the end of a process statement, but got "
+      ++ show token
+   show (ParseErr_ExpectedSemicolonInEndProcess token) =
+      "Expected a semicolon at the end of a process statement, but got "
+      ++ show token
+   show (ParseErr_ExpectedNoLabelInEndProcess token) =
+      "Expected no label at the end of a process statement because there was no label at the start of the process, but got "
+      ++ show token
+   show (ParseErr_ProcessLabelsNoMatch (PosnWrapper pos1 label1) (PosnWrapper pos2 label2)) =
+      "Process labels (identifiers) must match when both are provided. First identifier "
+      ++ label1
+      ++ getLineAndColErrStr pos1
+      ++ "; second identifier "
+      ++ label2
+      ++ getLineAndColErrStr pos2
+      ++ ". In process declaration"
+   show (ParseErr_ExpectedProcessDeclItemOrEnd token) =
+      "Expected a process declaration item (certain keywords) or the begin keyword to mark the end of the declarative region, but got "
+      ++ show token
+   show (ParseErr_WaitSeqStatementNotAllowedWithSensitivityList token) =
+      "Wait sequential statement cannot occur with a sensitivity list, but got "
       ++ show token
 
 -- | Find largest (and by extension smallest) possible value of double

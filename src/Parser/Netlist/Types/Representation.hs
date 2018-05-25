@@ -23,6 +23,7 @@ module Parser.Netlist.Types.Representation
    , SignalType(..)
    , SequentialStatement(..)
    , Calculation(..)
+   , AllTypes(..)
    , Value(..)
    , Generic(..)
    , Port(..)
@@ -246,34 +247,34 @@ data SequentialStatement =
 
 data Calculation =
    -- |Any static value that can be calculated by netlister
-   Calc_Value Value
+   Calc_Value Value AllTypes
    -- |Function call
    | Calc_FunctionCall (NetlistName,Function) [Calculation]
    -- |Non-static (deferred) constant in expression
    | Calc_Const (NetlistName,String)
    -- |Builtin non-static negate call
-   | Calc_BuiltinNegate Calculation
-   | Calc_BuiltinSum Calculation Calculation
-   | Calc_BuiltinSubtract Calculation Calculation
-   | Calc_BuiltinConcat Calculation Calculation
-   | Calc_BuiltinMult Calculation Calculation
-   | Calc_BuiltinDiv Calculation Calculation
-   | Calc_BuiltinMod Calculation Calculation
-   | Calc_BuiltinRem Calculation Calculation
-   | Calc_BuiltinExp Calculation Calculation
-   | Calc_BuiltinAbs Calculation
-   | Calc_BuiltinNot Calculation
-   | Calc_BuiltinEqual Calculation Calculation
-   | Calc_BuiltinNotEqual Calculation Calculation
-   | Calc_BuiltinLessThan Calculation Calculation
-   | Calc_BuiltinLessThanOrEqual Calculation Calculation
-   | Calc_BuiltinGreaterThan Calculation Calculation
-   | Calc_BuiltinGreaterThanOrEqual Calculation Calculation
-   | Calc_BuiltinAnd Calculation Calculation
-   | Calc_BuiltinOr Calculation Calculation
-   | Calc_BuiltinXor Calculation Calculation
-   | Calc_BuiltinNand Calculation Calculation
-   | Calc_BuiltinNor Calculation Calculation
+   | Calc_BuiltinNegate Calculation AllTypes
+   | Calc_BuiltinSum (Calculation,AllTypes) (Calculation,AllTypes)
+   | Calc_BuiltinSubtract (Calculation,AllTypes) (Calculation,AllTypes)
+   -- | Calc_BuiltinConcat Calculation Calculation AllTypes
+   | Calc_BuiltinMult (Calculation,AllTypes) (Calculation,AllTypes)
+   | Calc_BuiltinDiv (Calculation,AllTypes) (Calculation,AllTypes)
+   | Calc_BuiltinMod Calculation Calculation AllTypes
+   | Calc_BuiltinRem Calculation Calculation AllTypes
+   | Calc_BuiltinExp (Calculation,AllTypes) (Calculation,AllTypes)
+   | Calc_BuiltinAbs Calculation AllTypes
+   | Calc_BuiltinNot Calculation AllTypes
+   | Calc_BuiltinEqual (Calculation,AllTypes) (Calculation,AllTypes)
+   | Calc_BuiltinNotEqual (Calculation,AllTypes) (Calculation,AllTypes)
+   | Calc_BuiltinLessThan (Calculation,AllTypes) (Calculation,AllTypes)
+   | Calc_BuiltinLessThanOrEqual (Calculation,AllTypes) (Calculation,AllTypes)
+   | Calc_BuiltinGreaterThan (Calculation,AllTypes) (Calculation,AllTypes)
+   | Calc_BuiltinGreaterThanOrEqual (Calculation,AllTypes) (Calculation,AllTypes)
+   | Calc_BuiltinAnd Calculation Calculation AllTypes
+   | Calc_BuiltinOr Calculation Calculation AllTypes
+   | Calc_BuiltinXor Calculation Calculation AllTypes
+   | Calc_BuiltinNand Calculation Calculation AllTypes
+   | Calc_BuiltinNor Calculation Calculation AllTypes
    --Calc_SignalDelayed (String,Signal) Int64 -- save and carry out after time
    -- | Calc_SignalStable (String,Signal) Int64 -- check changes over timeframe (need to record last time changed)
    -- | Calc_SignalQuiet (String,Signal) Int64
@@ -283,6 +284,16 @@ data Calculation =
    -- | Calc_SignalLastEvent (String,Signal)
    -- | Calc_SignalLastActive (String,Signal)
    -- | Calc_SignalLastValue (String,Signal) 
+   deriving (Eq,Show)
+
+data AllTypes =
+   Type_Type (NetlistName,String) Type
+   -- | Type_Subtype NetlistName Subtype
+   -- | Type_Range Type Direction
+   | Type_UniversalInt
+   | Type_UniversalReal
+   | Type_String String
+   | Type_BitString Int
    deriving (Eq,Show)
 
 data Value =

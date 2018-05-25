@@ -81,6 +81,7 @@ import Parser.Netlist.Types.Representation
          , Value(..)
          , Calculation(..)
          , Enumerate(..)
+         , AllTypes(..)
          )
 import Parser.Netlist.Types.Stores
          ( ScopeStore
@@ -89,11 +90,13 @@ import Parser.Netlist.Types.Stores
          , Process(..)
          , emptyProcess
          , ProcessStore
+         , Package(..)
          )
 import Parser.Netlist.Functions.Stores
          ( convertProcessToGenericUnit
          , mergeUnits
          )
+import Parser.Netlist.Builtin.Standard (standardPackage)
 import Manager.Types.Error (ConverterError(..))
 
 parseProcess :: ScopeStore -> UnitStore -> NetlistName -> Bool -> Maybe (PosnWrapper String) -> ParserStack (String,Process)
@@ -130,7 +133,7 @@ parseProcess scope unit unitName isPassive potentialLabel = do
       (_,Nothing,_) -> saveToken potEndTok
    let finalStatement = WaitStatement
                            sensitivityList
-                           (Calc_Value $ Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ Enum_Identifier "TRUE")
+                           (Calc_Value (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ Enum_Identifier "TRUE") $ Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ (packageTypes standardPackage) MapS.! "ANON'BOOLEAN")
                            Nothing
        allStatements = if isSensitive
                         then sequentialStatements ++ [finalStatement]
