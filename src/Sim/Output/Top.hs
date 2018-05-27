@@ -22,6 +22,7 @@ import Sim.Output.Control (outputControl)
 import Sim.Builtin.STD.STANDARD (standardPackage)
 import Sim.Builtin.ControlModule (controlModule)
 import Sim.Builtin.MainModule (mainModule)
+import Sim.Builtin.Stack (stackFile)
 
 outputTop :: FilePath -> NetlistStore -> NetlistName -> ExceptT ConverterError IO ()
 outputTop buildDir netlist topModule = do
@@ -58,3 +59,5 @@ outputBuiltins buildDir = do
    liftIO $ TextIO.writeFile controlFuncsFileName controlModule
    let executableFileName = buildDir </> "app/Main.hs"
    liftIO $ TextIO.writeFile executableFileName mainModule
+   let stackYamlFileName = buildDir </> "stack.yaml"
+   liftIO $ TextIO.writeFile stackYamlFileName stackFile

@@ -71,6 +71,7 @@ library
                      , Sim.Builtin.STD.STANDARD
                      , Sim.Builtin.ControlModule
                      , Sim.Builtin.MainModule
+                     , Sim.Builtin.Stack
                      , Manager.NewDesignUnit
                      , Manager.Args
                      , Manager.Filing
