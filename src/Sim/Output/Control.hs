@@ -65,9 +65,9 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
        stackTypeStr =
          "type TopStack a = Entity'Stack Components a"
        repeatFuncStr =
-         "topRepeat :: TopStack ()"
+         "topRepeat :: STD.STANDARD.Type'ANON'TIME -> TopStack ()"
          ++ newline
-         ++ "topRepeat = do"
+         ++ "topRepeat maxTime = do"
          ++ newline ++ tab
          ++ "components <- get"
          ++ newline ++ tab
@@ -94,7 +94,7 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          ++ newline ++ tab ++ tab ++ tab
          ++ "time <- lift $ gets (\\time -> time'Real time)"
          ++ newline ++ tab ++ tab ++ tab
-         ++ "when (time == (STD.STANDARD.mkType'ANON'TIME $ toInteger (maxBound :: Int64))) $ error \"Time limit reached\"" -- ?? Come up with better exit
+         ++ "when (time == maxTime) $ error \"Time limit reached\"" -- ?? Come up with better exit
          ++ newline ++ tab ++ tab ++ tab
          ++ "case minTime'" ++ topUnitLib ++ "'" ++ topUnitName ++ " of"
          ++ newline ++ tab ++ tab ++ tab ++ tab
@@ -102,31 +102,57 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          ++ newline ++ tab ++ tab ++ tab ++ tab
          ++ "Nothing -> error \"Nothing to do\""
          ++ newline ++ tab ++ tab ++ tab
-         ++ "topRepeat"
-       topFuncStr =
-         "top :: IO ()"
-         ++ newline
-         ++ "top = do"
-         ++ newline ++ tab
-         ++ "result <- runExceptT $"
-         ++ newline ++ tab ++ tab
-         ++ "execStateT"
-         ++ newline ++ tab ++ tab ++ tab
-         ++ "( evalStateT"
-         ++ newline ++ tab ++ tab ++ tab ++ tab
-         ++ "(evalStateT topRepeat initialStack)"
-         ++ newline ++ tab ++ tab ++ tab ++ tab
-         ++ "(Control'Time (STD.STANDARD.mkType'ANON'TIME 0) 0)"
-         ++ newline ++ tab ++ tab ++ tab
-         ++ ")"
-         ++ newline ++ tab ++ tab ++ tab
-         ++ "(Control'SEVERITY_TRACKER 0 0)"
-         ++ newline ++ tab
-         ++ "case result of"
-         ++ newline ++ tab ++ tab
-         ++ "Right res -> putStrLn $ show res"
-         ++ newline ++ tab ++ tab
-         ++ "Left (Control'SEVERITY_FAILURE str) -> putStrLn $ \"Severity Failure: \" ++ str"
+         ++ "topRepeat maxTime"
+       topFixedFuncsStr =
+         "top :: Options -> IO ()\n\
+         \top options = do\n\
+         \   let maxTime = extractMaxTime options\n\
+         \   result <- runExceptT $\n\
+         \      execStateT\n\
+         \         ( evalStateT\n\
+         \            (evalStateT (topRepeat maxTime) initialStack)\n\
+         \            (Control'Time (STD.STANDARD.mkType'ANON'TIME 0) 0)\n\
+         \         )\n\
+         \         (Control'SEVERITY_TRACKER 0 0)\n\
+         \   case result of\n\
+         \      Right res -> putStrLn $ show res\n\
+         \      Left (Control'SEVERITY_FAILURE str) -> putStrLn $ \"Severity Failure: \" ++ str\n\
+         \\n\
+         \data Options = Options\n\
+         \   { maxTime :: String\n\
+         \   }\n\
+         \\n\
+         \extractMaxTime :: Options -> STD.STANDARD.Type'ANON'TIME\n\
+         \extractMaxTime (Options timeStr) =\n\
+         \   let partitionTime :: String -> (String,String) -> (String,String)\n\
+         \       partitionTime (chr:others) ([],[])\n\
+         \         | isAlpha chr = error \"Invalid formatting of max-time argument: Must have a numerical component\"\n\
+         \       partitionTime (chr:others) (nums,[])\n\
+         \         | isDigit chr = partitionTime others (chr:nums,[])\n\
+         \         | isAlpha chr = partitionTime others (nums,[toUpper chr])\n\
+         \       partitionTime (chr:others) (nums,units)\n\
+         \         | isAlpha chr = partitionTime others (nums,(toUpper chr):units)\n\
+         \         | isDigit chr = error \"Invalid formatting of max-time argument: Invalid unit name formatting\"\n\
+         \       partitionTime [] ([],_) = error \"Invalid formatting of max-time argument: Empty argument\"\n\
+         \       partitionTime [] (_,[]) = error \"Invalid formatting of max-time argument: Missing unit\"\n\
+         \       partitionTime [] (nums,units) = (reverse nums,reverse units)\n\
+         \   in if all isAlphaNum timeStr\n\
+         \         then let (valueStr,unitStr) = partitionTime timeStr ([],[])\n\
+         \              in case Data.Map.Strict.lookup unitStr unitMap of\n\
+         \                  Just multiplier -> STD.STANDARD.mkType'ANON'TIME $ (read valueStr) * multiplier\n\
+         \                  Nothing -> error \"Invalid formatting of max-time argument: Invalid unit name\"\n\
+         \         else error \"Invalid formatting of max-time argument: Must be alphanumeric\"\n\
+         \   where unitMap :: Data.Map.Strict.Map String Integer\n\
+         \         unitMap = Data.Map.Strict.fromList $\n\
+         \            [ (\"FS\",1)\n\
+         \            , (\"PS\",1000)\n\
+         \            , (\"NS\",1000000)\n\
+         \            , (\"US\",1000000000)\n\
+         \            , (\"MS\",1000000000000)\n\
+         \            , (\"SEC\",1000000000000000)\n\
+         \            , (\"MIN\",60000000000000000)\n\
+         \            , (\"HR\",3600000000000000000)\n\
+         \            ]"
    liftIO $ appendFile controlModuleName $
          newline
          ++ "import qualified STD.STANDARD" -- ?? Better way of including this automatically
@@ -141,4 +167,4 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          ++ newline ++ newline
          ++ repeatFuncStr
          ++ newline ++ newline
-         ++ topFuncStr
+         ++ topFixedFuncsStr

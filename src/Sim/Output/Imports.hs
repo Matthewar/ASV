@@ -31,6 +31,12 @@ outputImports fileName scope =
          \   ( isJust\n\
          \   , fromJust\n\
          \   )\n\
+         \import Data.Char\n\
+         \   ( isAlpha\n\
+         \   , isDigit\n\
+         \   , toUpper\n\
+         \   , isAlphaNum\n\
+         \   )\n\
          \import Control.Monad.Trans.State\n\
          \   ( modify\n\
          \   , gets\n\

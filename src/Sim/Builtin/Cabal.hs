@@ -37,5 +37,5 @@ cabalSuffix = pack
    \  ghc-options:         -threaded -rtsopts -with-rtsopts=-N\n\
    \  build-depends:       base\n\
    \                     , VHDL-Sim\n\
-   \--                     , optparse-applicative\n\
+   \                     , optparse-applicative\n\
    \  default-language:    Haskell2010"

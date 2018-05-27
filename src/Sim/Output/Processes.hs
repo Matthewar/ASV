@@ -94,7 +94,7 @@ outputStatements fileName unitName@(NetlistName _ entityName) nestedNames proces
                            _ ->
                               "return ("
                               ++ (show $ val + 1)
-                              ++ ",("
+                              ++ ",STD.STANDARD.function'op'PLUS'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'TIME realTime ("
                               ++ (convertCalculation nestedNames processName $ fromJust $ timeouts !! (numStages - (val + 1)))
                               ++ "))"
                   ]
