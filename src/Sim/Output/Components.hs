@@ -18,6 +18,7 @@ import Parser.Netlist.Types.Representation
 import Parser.Netlist.Types.Stores (ScopeStore)
 import Sim.Output.Types (showEnum)
 import Sim.Output.Imports (outputImports)
+import Sim.Output.Cabal (outputCabalModule)
 import Manager.Types.Error (ConverterError)
 
 newline = "\n"
@@ -25,7 +26,9 @@ tab = "   "
 
 outputGenerics :: FilePath -> NetlistName -> String -> [Generic] -> ScopeStore -> ExceptT ConverterError IO ()
 outputGenerics buildDir netlistName@(NetlistName lib name) componentName generics scope = do
-   let genericFileName = buildDir </> lib </> name ++ "'COMPONENT'" ++ componentName ++ "'GENERICS.hs"
+   let srcDir = buildDir </> "src"
+       genericFileName = srcDir </> lib </> name ++ "'COMPONENT'" ++ componentName ++ "'GENERICS.hs"
+   outputCabalModule buildDir $ NetlistName lib $ name ++ "'COMPONENT'" ++ componentName ++ "'GENERICS"
    liftIO $ writeFile genericFileName $
       "module "
       ++ show netlistName ++ "'COMPONENT'" ++ componentName ++ "'GENERICS"

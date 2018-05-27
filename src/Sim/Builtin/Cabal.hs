@@ -24,7 +24,7 @@ cabalPrefix = pack
 
 cabalSuffix :: Text
 cabalSuffix = pack
-   "  build-depends:       base >= 4.7 && < 5\n\
+   "\n  build-depends:       base >= 4.7 && < 5\n\
    \                     , mtl\n\
    \                     , containers\n\
    \                     , transformers\n\

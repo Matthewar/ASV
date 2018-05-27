@@ -44,7 +44,8 @@ outputControl buildDir topUnitName@(NetlistName topLib topUnit) entities = do
 
 outputTopModule :: FilePath -> NetlistName -> ExceptT ConverterError IO ()
 outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = do
-   let controlModuleName = buildDir </> "Top.hs"
+   let srcDir = buildDir </> "src"
+       controlModuleName = srcDir </> "Top.hs"
    liftIO $ writeFile controlModuleName "module Top where"
    outputImports controlModuleName emptyScopeStore
    let componentTypeStr =

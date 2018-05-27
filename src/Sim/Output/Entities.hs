@@ -36,6 +36,7 @@ import Sim.Output.Types
 import Sim.Output.Subtypes (outputSubtypes)
 import Sim.Output.Constants (outputConstants)
 import Sim.Output.Processes (outputProcesses)
+import Sim.Output.Cabal (outputCabalModule)
 
 newline = "\n"
 tab = "   "
@@ -44,7 +45,9 @@ outputEntity :: FilePath -> Entity -> NetlistName -> String -> ExceptT Converter
 outputEntity buildDir baseEntity netlistName@(NetlistName lib entityName) componentName = do
    let newEntityName = entityName ++ "'COMPONENT'" ++ componentName
        newNetlistName = NetlistName lib newEntityName
-       entityFileName = buildDir </> lib </> newEntityName ++ ".hs"
+       srcDir = buildDir </> "src"
+       entityFileName = srcDir </> lib </> newEntityName ++ ".hs"
+   outputCabalModule buildDir newNetlistName
    liftIO $ writeFile entityFileName $
        "module "
        ++ show newNetlistName
@@ -67,7 +70,9 @@ outputEntities buildDir entities = outputEntities' buildDir $ MapS.toList entiti
 
 outputEntities' :: FilePath -> [(NetlistName,Entity)] -> ExceptT ConverterError IO ()
 outputEntities' buildDir ((netlistName@(NetlistName lib entityName),entity):others) = do
-   let entityFileName = buildDir </> lib </> entityName ++ ".hs"
+   let srcDir = buildDir </> "src"
+       entityFileName = srcDir </> lib </> entityName ++ ".hs"
+   outputCabalModule buildDir netlistName
    liftIO $ writeFile entityFileName newline
       -- "module "
       -- ++ show netlistName

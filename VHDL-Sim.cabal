@@ -68,11 +68,13 @@ library
                      , Sim.Output.Subtypes
                      , Sim.Output.Constants
                      , Sim.Output.Processes
+                     , Sim.Output.Cabal
                      , Sim.Types.Error
                      , Sim.Builtin.STD.STANDARD
                      , Sim.Builtin.ControlModule
                      , Sim.Builtin.MainModule
                      , Sim.Builtin.Stack
+                     , Sim.Builtin.Cabal
                      , Manager.NewDesignUnit
                      , Manager.Args
                      , Manager.Filing

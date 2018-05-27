@@ -19,6 +19,7 @@ import Parser.Netlist.Types.Representation
          ( Enumerate
          , IntegerRange
          , FloatRange
+         , NetlistName
          )
 
 -- |Wrapped netlist error
@@ -137,6 +138,8 @@ data NetlistError =
    | NetlistError_ExpectedSignalNameInSensitivityList String
    -- |Expected a readable signal in the sensitivity list
    | NetlistError_ExpectedReadableSignalInSensitivityList
+   -- |No entity found for an associated architecture body
+   | NetlistError_UnableToFindEntityForArch NetlistName
    deriving (Eq)
 
 instance (Show NetlistError) where

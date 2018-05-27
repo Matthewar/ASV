@@ -19,6 +19,10 @@ import Manager.Types.Error (ConverterError)
 import Sim.Output.Entities (outputEntities)
 import Sim.Output.Packages (outputPackages)
 import Sim.Output.Control (outputControl)
+import Sim.Output.Cabal
+         ( outputCabalPrefix
+         , outputCabalFinal
+         )
 import Sim.Builtin.STD.STANDARD (standardPackage)
 import Sim.Builtin.ControlModule (controlModule)
 import Sim.Builtin.MainModule (mainModule)
@@ -27,11 +31,12 @@ import Sim.Builtin.Stack (stackFile)
 outputTop :: FilePath -> NetlistStore -> NetlistName -> ExceptT ConverterError IO ()
 outputTop buildDir netlist topModule = do
    liftIO $ makeDirectories buildDir netlist
-   let srcDir = buildDir </> "src"
+   outputCabalPrefix buildDir
    --outputEntities buildDir $ entities netlist
-   outputPackages srcDir $ packages netlist
-   outputControl srcDir topModule $ entities netlist
+   outputPackages buildDir $ packages netlist
+   outputControl buildDir topModule $ entities netlist
    outputBuiltins buildDir
+   outputCabalFinal buildDir
 
 makeDirectories :: FilePath -> NetlistStore -> IO ()
 makeDirectories buildDir netlist = do

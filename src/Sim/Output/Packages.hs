@@ -19,6 +19,7 @@ import Sim.Output.Imports (outputImports)
 import Sim.Output.Types (outputTypes)
 import Sim.Output.Subtypes (outputSubtypes)
 import Sim.Output.Constants (outputConstants)
+import Sim.Output.Cabal (outputCabalModule)
 
 newline = "\n"
 
@@ -28,7 +29,9 @@ outputPackages buildDir packages = outputPackages' buildDir $ MapS.toList packag
 outputPackages' :: FilePath -> [(NetlistName,Package)] -> ExceptT ConverterError IO ()
 outputPackages' buildDir ((NetlistName "STD" "STANDARD",_):others) = outputPackages' buildDir others -- Don't process STD.STANDARD package
 outputPackages' buildDir ((netlistName@(NetlistName lib packageName),package):others) = do
-   let packageFileName = buildDir </> lib </> packageName ++ ".hs"
+   let srcDir = buildDir </> "src"
+       packageFileName = srcDir </> lib </> packageName ++ ".hs"
+   outputCabalModule buildDir netlistName
    liftIO $ writeFile packageFileName $
       "module "
       ++ show netlistName
