@@ -193,6 +193,28 @@ data ParserError
    | ParseErr_ExpectedProcessDeclItemOrEnd Token
    -- |The wait sequential statement can only occur in a sensitivity list under certain circumstances
    | ParseErr_WaitSeqStatementNotAllowedWithSensitivityList Token
+   -- |Expected architecture simple name (identifier) in architecture declaration
+   | ParseErr_ExpectedArchitectureSimpleName Token
+   -- |Expected of keyword in architecture declaration
+   | ParseErr_ExpectedKeywordOfInArch Token
+   -- |Expected enitty name (identifier) in architecture declaration
+   | ParseErr_ExpectedEntityNameInArch Token
+   -- |Expected is keyword in architecture declaration
+   | ParseErr_ExpectedKeywordIsInArch Token
+   -- |Architecture simple names (if both provided) must match
+   | ParseErr_ArchitectureNamesNoMatch (PosnWrapper String) (PosnWrapper String)
+   -- |Expected semicolon to mark the end of the architecture declaration
+   | ParseErr_ExpectedSemicolonInArchitecture Token
+   -- |Expected either architecture simple name (identifier) or semicolon to mark the end of the architecture declaration
+   | ParseErr_ExpectedArchitectureEndOfDec Token
+   -- |Expected architecture declarative item (certain keywords) or the begin keyword to mark the end of the declarative region
+   | ParseErr_ExpectedArchDeclItemOrEnd Token
+   -- |Expected architecture statement item (certain keywords) following a statement label
+   | ParseErr_ExpectedArchStatementItem Token
+   -- |Expected colon in architecture statement following label
+   | ParseErr_ExpectedColonInArchStatement Token
+   -- |Expected architecture statement item (certain keywords) or the end keyword to mark the end of the statement region
+   | ParseErr_ExpectedArchStatementItemOrEnd Token
    deriving (Eq)
 
 instance (Show ParserError) where
@@ -343,7 +365,6 @@ instance (Show ParserError) where
       ++ name2
       ++ getLineAndColErrStr pos2
       ++ ". In entity declaration"
-   -- |Expected semicolon to signify end of an entity
    show (ParseErr_ExpectedSemicolonInEntity token) =
       "Expected semicolon at the end of an entity declaration, but got "
       ++ show token
@@ -423,6 +444,44 @@ instance (Show ParserError) where
       ++ show token
    show (ParseErr_WaitSeqStatementNotAllowedWithSensitivityList token) =
       "Wait sequential statement cannot occur with a sensitivity list, but got "
+      ++ show token
+   show (ParseErr_ExpectedArchitectureSimpleName token) =
+      "Expected architecture simple name (identifier) in architecture declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedKeywordOfInArch token) =
+      "Expected keyword of after architecture simple name in an architecture declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedEntityNameInArch token) =
+      "Expected entity name (identifier) in architecture declaration after keyword of, but got "
+      ++ show token
+   show (ParseErr_ExpectedKeywordIsInArch token) =
+      "Expected keyword is after entity name in architecture declaration, but got "
+      ++ show token
+   show (ParseErr_ArchitectureNamesNoMatch (PosnWrapper pos1 name1) (PosnWrapper pos2 name2)) =
+      "Architecture names (identifiers) must match when both are provided. First identifier "
+      ++ name1
+      ++ getLineAndColErrStr pos1
+      ++ "; second identifier "
+      ++ name2
+      ++ getLineAndColErrStr pos2
+      ++ ". In entity declaration"
+   show (ParseErr_ExpectedSemicolonInArchitecture token) =
+      "Expected semicolon at the end of an architecture body declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedArchitectureEndOfDec token) =
+      "Expected a semicolon of the repeated architecture name (identifier) to mark the end of an architecture body declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedArchDeclItemOrEnd token) =
+      "Expected architecture declarative item, or the keyword begin to mark the end of the architecture declaration region, but got "
+      ++ show token
+   show (ParseErr_ExpectedArchStatementItem token) =
+      "Expected an architecture statement item after a label, but got "
+      ++ show token
+   show (ParseErr_ExpectedColonInArchStatement token) =
+      "Expected a colon after a label in an architecture statement, but got "
+      ++ show token
+   show (ParseErr_ExpectedArchStatementItemOrEnd token) =
+      "Expected architecture statement (certain keywords or identifier), or the keyword end to mark the end of the architecture statement region, but got "
       ++ show token
 
 -- | Find largest (and by extension smallest) possible value of double

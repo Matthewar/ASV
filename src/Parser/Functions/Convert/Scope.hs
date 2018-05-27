@@ -48,7 +48,10 @@ import Parser.Netlist.Types.Stores
          , ScopeStore(..)
          , emptyScopeStore
          )
-import Parser.Netlist.Functions.Stores (convertPackageToScope)
+import Parser.Netlist.Functions.Stores
+         ( convertPackageToScope
+         , mergeScopes
+         )
 import Parser.Netlist.Types.Representation
          ( Function(..)
          , FunctionBody
@@ -150,19 +153,7 @@ findPackageFunctionsByIdentifier expectedName =
 mergeScope :: WrappedNewScopeDeclares -> NetlistName -> BuildScopeStack
 mergeScope (PosnWrapper pos (NewScopeDeclare_Package newScope)) _ =
    -- ?? Should be checking for overlaps and warning
-   let modifyScope oldScope =
-         let unionStore unionFunc = MapS.union (unionFunc newScope) (unionFunc oldScope)
-         in ScopeStore
-               (unionStore scopeFunctions)
-               (unionStore scopeFunctionPackage)
-               (unionStore scopeTypes)
-               (unionStore scopeTypePackage)
-               (unionStore scopeSubtypes)
-               (unionStore scopeSubtypePackage)
-               (unionStore scopeConstants)
-               (unionStore scopeConstantPackage)
-               (unionStore scopeSignals)
-               (unionStore scopeSignalPackage)
+   let modifyScope oldScope = mergeScopes newScope oldScope
    in modify modifyScope
 mergeScope (PosnWrapper pos (NewScopeDeclare_Functions newFuncs)) netlistName = mergeScopeFuncs netlistName $ PosnWrapper pos newFuncs
 mergeScope (PosnWrapper pos (NewScopeDeclare_Type typeName typeDeclare)) netlistName = mergeScopeType netlistName $ PosnWrapper pos (typeName,typeDeclare)

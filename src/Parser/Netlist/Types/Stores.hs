@@ -20,6 +20,9 @@ module Parser.Netlist.Types.Stores
    , ProcessStore
    , Process(..)
    , emptyProcess
+   , ArchitectureStore
+   , Architecture(..)
+   , emptyArchitecture
    , ScopeStore(..)
    , emptyScopeStore
    , UnitStore(..)
@@ -48,7 +51,7 @@ data NetlistStore =
       { entities :: EntityStore
       --, configurations :: MapS.Map NetlistName Configuration
       , packages :: PackageStore
-      --, architectures :: MapS.Map NetlistName Architecture
+      , architectures :: ArchitectureStore
       }
    deriving (Show)
 
@@ -81,7 +84,7 @@ type PortStore = [Port]
 type EntityStore = MapS.Map NetlistName Entity
 
 -- |Entity data
--- All declares held in an entity along with its interface
+-- All declares and statements held in an entity along with its interface
 data Entity =
    Entity
       { entityScope :: ScopeStore -- ^ Used to link entity scope to architecture body
@@ -192,6 +195,52 @@ emptyProcess =
       MapS.empty
       MapS.empty
       []
+
+-- |Store of architecture data
+type ArchitectureStore = MapS.Map NetlistName Architecture
+
+-- |Architecture data
+-- All declares and statements held in an architecture along with its interface
+data Architecture =
+   Architecture
+      { archScope :: ScopeStore
+      , archEntity :: Entity -- ^ Used to link entity to architecture body
+      --ProcedureStore
+      , archFunctions :: FunctionStore
+      , archTypes :: TypeStore
+      , archSubtypes :: SubtypeStore
+      , archConstants :: ConstantStore
+      , archSignals :: SignalStore
+      --FileStore
+      --AliasStore
+      --ComponentStore
+      --AttributeStore
+      --ConfigurationStore
+      --DisconnectStore
+      --UseStore
+
+      --block statement
+      , archProcesses :: ProcessStore
+      --concurrent procedure call
+      --concurrent assertion statement
+      --concurrent signal assignment statement
+      --component instantiation statement
+      --generate statement
+      }
+   deriving (Show)
+
+-- |Empty package
+emptyArchitecture :: Architecture
+emptyArchitecture =
+   Architecture
+      emptyScopeStore
+      emptyEntity
+      MapS.empty
+      MapS.empty
+      MapS.empty
+      MapS.empty
+      MapS.empty
+      MapS.empty
 
 -- |Special stores for scoped declarations
 -- Scoped items need to associate their package entity

@@ -25,6 +25,7 @@ import Parser.Functions.IdentifyToken
          )
 import Parser.Functions.Parse.Package (parsePackage)
 import Parser.Functions.Parse.Entity (parseEntity)
+import Parser.Functions.Parse.Architecture (parseArchitecture)
 import Parser.Netlist.Types.Stores (ScopeStore)
 import Manager.Types.Error (ConverterError(..))
 
@@ -36,7 +37,7 @@ parseLibrary scope libraryName = do
       Primary_Entity -> parseEntity scope libraryName
       Primary_Configuration -> throwError $ ConverterError_NotImplemented $ passPosition "Configuration declaration" token
       Primary_Package -> parsePackage scope libraryName
-      Secondary_Architecture -> throwError $ ConverterError_NotImplemented $ passPosition "Architecture body" token
+      Secondary_Architecture -> parseArchitecture scope libraryName
       Secondary_PackageBody -> throwError $ ConverterError_NotImplemented $ passPosition "Package body" token
    -- For secondaries:
    -- Add scope from entity/architecture

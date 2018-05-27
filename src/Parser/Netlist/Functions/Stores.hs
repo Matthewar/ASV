@@ -5,8 +5,10 @@
 module Parser.Netlist.Functions.Stores
    ( newPackage
    , newEntity
+   , newArchitecture
    , convertPackageToGenericUnit
    , convertEntityToGenericUnit
+   , convertArchitectureToGenericUnit
    , convertProcessToGenericUnit
    , convertPackageToScope
    , isNameInUnit
@@ -22,6 +24,7 @@ module Parser.Netlist.Functions.Stores
    , matchConstantNameInScope
    , matchSignalNameInScope
    , mergeUnits
+   , mergeScopes
    ) where
 
 import qualified Data.Map.Strict as MapS
@@ -47,6 +50,8 @@ import Parser.Netlist.Types.Stores
          , emptyPackage
          , Entity(..)
          , emptyEntity
+         , Architecture(..)
+         , emptyArchitecture
          , Process(..)
          , ScopeStore(..)
          , UnitStore(..)
@@ -69,6 +74,10 @@ newPackage scope = emptyPackage { packageScope = scope }
 newEntity :: ScopeStore -> Entity
 newEntity scope = emptyEntity { entityScope = scope }
 
+-- |New architecture with with associated entity
+newArchitecture :: Entity -> Architecture
+newArchitecture entity = emptyArchitecture { archEntity = entity }
+
 -- |Convert package to generalised store for use in low level conversions
 convertPackageToGenericUnit :: Package -> (ScopeStore,UnitStore)
 convertPackageToGenericUnit (Package scope funcs types subtypes consts signals) =
@@ -86,6 +95,22 @@ convertEntityToGenericUnit :: Entity -> (ScopeStore,UnitStore)
 convertEntityToGenericUnit (Entity scope generics ports funcs types subtypes consts signals processes) =
    let unit = UnitStore generics ports funcs types subtypes consts signals processes
    in (scope,unit)
+
+-- |Convert architecture to generalised store for use in low level conversions
+convertArchitectureToGenericUnit :: Architecture -> (ScopeStore,UnitStore)
+convertArchitectureToGenericUnit (Architecture archScope entity funcs types subtypes consts signals processes) =
+      let archUnit = emptyUnitStore
+                        { unitFunctions = funcs
+                        , unitTypes = types
+                        , unitSubtypes = subtypes
+                        , unitConstants = consts
+                        , unitSignals = signals
+                        , unitProcesses = processes
+                        }
+          (entityScope,entityUnit) = convertEntityToGenericUnit entity
+          unit = mergeUnits archUnit entityUnit
+          scope = mergeScopes archScope entityScope
+      in (scope,unit)
 
 convertProcessToGenericUnit :: Process -> UnitStore
 convertProcessToGenericUnit (Process funcs types subtypes consts _) =
@@ -345,3 +370,19 @@ mergeUnits unit1 unit2 = -- No overlap checks required
          (unionStore unitConstants)
          (unionStore unitSignals)
          (unionStore unitProcesses)
+
+-- | Merge scope stores
+mergeScopes :: ScopeStore -> ScopeStore -> ScopeStore
+mergeScopes scope1 scope2 =
+   let unionStore unionFunc = MapS.union (unionFunc scope1) (unionFunc scope2)
+   in ScopeStore
+         (unionStore scopeFunctions)
+         (unionStore scopeFunctionPackage)
+         (unionStore scopeTypes)
+         (unionStore scopeTypePackage)
+         (unionStore scopeSubtypes)
+         (unionStore scopeSubtypePackage)
+         (unionStore scopeConstants)
+         (unionStore scopeConstantPackage)
+         (unionStore scopeSignals)
+         (unionStore scopeSignalPackage)
