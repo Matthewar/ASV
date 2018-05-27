@@ -146,6 +146,7 @@ types =
          , Enum_Char ']'
          , Enum_Char '^'
          , Enum_Char '_'
+         , Enum_Char '`'
          , Enum_Char 'a'
          , Enum_Char 'b'
          , Enum_Char 'c'

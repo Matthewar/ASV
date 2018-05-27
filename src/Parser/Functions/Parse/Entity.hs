@@ -167,6 +167,7 @@ parseGenericList entityName = do
    let insertEntityGenerics entity =
          entity
             { entityGenerics = generics
+            -- ?? Need entity generic subtypes for separation
             , entitySubtypes = modSubtypes $ entitySubtypes entity
             }
    modify insertEntityGenerics

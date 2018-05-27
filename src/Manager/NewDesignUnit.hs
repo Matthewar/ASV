@@ -38,7 +38,7 @@ createTop options = do
       let (Args.Options workDir ieeeDir buildDir topModule) = options
           createNetlistUnit = create workDir ieeeDir [] "WORK" $ map toUpper topModule
       finalNetlist <- execStateT createNetlistUnit InitialNetlist.netlist
-      outputTop buildDir finalNetlist
+      outputTop buildDir finalNetlist (NetlistName "WORK" $ map toUpper topModule)
 
       -- ?? Other steps
 

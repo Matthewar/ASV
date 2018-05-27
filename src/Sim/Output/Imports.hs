@@ -25,9 +25,23 @@ outputImports fileName scope =
        uniquePackageNames = map show $ nub packageNames
        importStr = concat $ map (\packageName -> "import qualified " ++ packageName ++ newline) uniquePackageNames
        baseImportsStr =
-         "import qualified Data.Map.Strict"
-         ++ newline
-         ++ "import Data.Int (Int64)"
-         ++ newline
-         ++ "import Control"
+         "import qualified Data.Map.Strict\n\
+         \import Data.Int (Int64)\n\
+         \import Data.Maybe\n\
+         \   ( isJust\n\
+         \   , fromJust\n\
+         \   )\n\
+         \import Control.Monad.Trans.State\n\
+         \   ( modify\n\
+         \   , gets\n\
+         \   , get\n\
+         \   , execStateT\n\
+         \   , evalStateT\n\
+         \   )\n\
+         \import Control.Monad.Except\n\
+         \   ( lift\n\
+         \   , when\n\
+         \   , runExceptT\n\
+         \   )\n\
+         \import Control"
    in liftIO $ appendFile fileName $ newline ++ baseImportsStr ++ newline ++ importStr

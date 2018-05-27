@@ -104,7 +104,7 @@ outputStatements fileName unitName@(NetlistName _ entityName) nestedNames proces
          concat $
          map (\s -> newline ++ tab ++ tab ++ s) $
          convertContents numStages processContents []
-       entityStackName = show unitName ++ ".Entity'" ++ entityName ++ "'Stack Int"
+       entityStackName = show unitName ++ ".Entity'" ++ entityName ++ "'Stack (Int,STD.STANDARD.Type'ANON'TIME)"
        processFuncStr =
          "process'" ++ processName ++ " :: (Int,STD.STANDARD.Type'ANON'TIME) -> " ++ entityStackName
          ++ newline
@@ -112,21 +112,21 @@ outputStatements fileName unitName@(NetlistName _ entityName) nestedNames proces
          ++ newline ++ tab
          ++ "(Control'Time realTime deltaTime) <- lift get"
          ++ newline ++ tab
-         ++ "(Entity'State portsIn state _) <- get"
+         ++ "(Entity'State portsIn state _ _) <- get"
          ++ newline ++ tab
          ++ "let"
          ++ processContentsStr
-         ++ newline ++ tab
-         ++ " stageList = ["
+         ++ newline ++ tab ++ tab
+         ++ "stageList = ["
          ++ ( concat
             $ intersperse ","
             $ map (\s -> "stage" ++ show s ++ "check") [0..numStages]
             )
          ++ "]"
+         ++ newline ++ tab ++ tab
+         ++ "stageRun = stageList !! stageNum"
          ++ newline ++ tab
-         ++ " stageRun = stageList !! stageNum"
-         ++ newline ++ tab
-         ++ "stageRun"
+         ++ "lift stageRun"
        processInitialStr =
          let constName = "process'initial'" ++ processName
          in constName ++ " :: (Int,STD.STANDARD.Type'ANON'TIME)"
@@ -161,14 +161,14 @@ convertStatement (WaitStatement sensitivity condition timeout) unitName nestedNa
 convertStatement (AssertStatement condition report severity) unitName nestedNames processName =
    let unitNameStr = show unitName
        conditionStr = convertCalculation nestedNames processName condition
-       messageStr = "[]" -- ?? Temp until arrays parsed
+       messageStr = "$ STD.STANDARD.mkType'ANON'STRING []" -- ?? Temp until arrays parsed
        severityStr = convertCalculation nestedNames processName severity
-   in [ "when (" ++ conditionStr ++ ") $"
+   in [ "when ((" ++ conditionStr ++ ") == STD.STANDARD.Type'ANON'BOOLEAN'Iden'TRUE) $"
       , tab ++ "case " ++ severityStr ++ " of"
-      , tab ++ tab ++ "Type'ANON'BOOLEAN'Iden'NOTE -> control'assertNote " ++ unitNameStr ++ " " ++ messageStr
-      , tab ++ tab ++ "Type'ANON'BOOLEAN'Iden'WARNING -> control'assertWarning " ++ unitNameStr ++ " " ++ messageStr
-      , tab ++ tab ++ "Type'ANON'BOOLEAN'Iden'ERROR -> control'assertError " ++ unitNameStr ++ " " ++ messageStr
-      , tab ++ tab ++ "Type'ANON'BOOLEAN'Iden'FAILURE -> control'assertFailure " ++ unitNameStr ++ " " ++ messageStr
+      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'NOTE -> control'assertNote \"" ++ unitNameStr ++ "\" " ++ messageStr
+      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'WARNING -> control'assertWarning \"" ++ unitNameStr ++ "\" " ++ messageStr
+      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'ERROR -> control'assertError \"" ++ unitNameStr ++ "\" " ++ messageStr
+      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'FAILURE -> control'assertFailure \"" ++ unitNameStr ++ "\" " ++ messageStr
       ]
 convertStatement NullStatement _ _ _ = ["return ()"]
 
@@ -178,7 +178,7 @@ convertCalculation nestedNames processName (Calc_Value value typeData) =
       (Value_Enum _ enum,Type_Type (enumPackage,enumName) _) | elem (enumPackage,enumName) nestedNames ->
          showEnum (show enumPackage ++ ".Type'" ++ processName ++ "'" ++ enumName) enum
       (Value_Enum _ enum,Type_Type (enumPackage,enumName) _) ->
-         showEnum (show enumPackage ++ "." ++ enumName) enum
+         showEnum (show enumPackage ++ ".Type'" ++ enumName) enum
       (Value_Int int,Type_UniversalInt) -> show int
       (Value_Int int,Type_Type (typePackage,typeName) _) ->
          show typePackage ++ ".mkType'" ++ typeName ++ " " ++ show int

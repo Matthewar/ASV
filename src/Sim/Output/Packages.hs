@@ -26,6 +26,7 @@ outputPackages :: FilePath -> PackageStore -> ExceptT ConverterError IO ()
 outputPackages buildDir packages = outputPackages' buildDir $ MapS.toList packages
 
 outputPackages' :: FilePath -> [(NetlistName,Package)] -> ExceptT ConverterError IO ()
+outputPackages' buildDir ((NetlistName "STD" "STANDARD",_):others) = outputPackages' buildDir others -- Don't process STD.STANDARD package
 outputPackages' buildDir ((netlistName@(NetlistName lib packageName),package):others) = do
    let packageFileName = buildDir </> lib </> packageName ++ ".hs"
    liftIO $ writeFile packageFileName $

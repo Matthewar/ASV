@@ -244,9 +244,9 @@ printIntType file unitName name =
             ++ newline ++ tab
             ++ "if value > " ++ highVal ++ " || value < " ++ lowVal
             ++ newline ++ tab ++ tab
-            ++ "then " ++ typeName ++ " $ fromInteger value"
+            ++ "then error $ \"" ++ typeName ++ " value \" ++ show value ++ \" is outside of range " ++ lowVal ++ " < value < " ++ highVal ++ "\""
             ++ newline ++ tab ++ tab
-            ++ "else error $ \"" ++ typeName ++ " value \" ++ show value ++ \" is outside of range " ++ lowVal ++ " < value < " ++ highVal ++ "\""
+            ++ "else " ++ typeName ++ " $ fromInteger value"
        extractStr =
          let funcName = "extract" ++ typeName
          in funcName ++ " :: " ++ typeName ++ " -> Integer"
@@ -453,9 +453,9 @@ printPhysicalType fileName unitName name =
             ++ newline ++ tab
             ++ "if value > " ++ highVal ++ " || value < " ++ lowVal
             ++ newline ++ tab ++ tab
-            ++ "then " ++ typeName ++ " $ fromInteger value"
+            ++ "then error $ \"" ++ typeName ++ " value \" ++ show value ++ \" is outside of range " ++ lowVal ++ " < value < " ++ highVal ++ "\""
             ++ newline ++ tab ++ tab
-            ++ "else error $ \"" ++ typeName ++ " value \" ++ show value ++ \" is outside of range " ++ lowVal ++ " < value < " ++ highVal ++ "\""
+            ++ "else " ++ typeName ++ " $ fromInteger value"
        extractStr =
          let funcName = "extract" ++ typeName
          in funcName ++ " :: " ++ typeName ++ " -> Integer"

@@ -310,7 +310,7 @@ data Generic =
       { generic_name :: String
       , generic_subtypeName :: (NetlistName,String)
       , generic_subtypeData :: Subtype
-      , generic_default :: Maybe Value
+      , generic_default :: Maybe Value -- ?? Should be globally static calculation
       }
    deriving (Show)
 
