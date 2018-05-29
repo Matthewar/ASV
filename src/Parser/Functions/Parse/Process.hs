@@ -74,6 +74,7 @@ import Parser.Functions.Parse.SequentialStatements
          ( parseWaitStatement
          , parseAssertionStatement
          , parseSensitivityList
+         , parseSignalAssignment
          )
 import Parser.Netlist.Types.Representation
          ( NetlistName(..)
@@ -95,7 +96,9 @@ import Parser.Netlist.Types.Stores
 import Parser.Netlist.Functions.Stores
          ( convertProcessToGenericUnit
          , mergeUnits
+         , matchSignalNameInScope
          )
+import Parser.Netlist.Types.Error (NetlistError(..))
 import Parser.Netlist.Builtin.Standard (standardPackage)
 import Manager.Types.Error (ConverterError(..))
 
@@ -191,7 +194,16 @@ parseSequentialStatements scope unit unitName isPassive waitAllowed seqStatement
       _ | isKeywordAssert token -> do
          (condition,report,severity) <- parseAssertionStatement scope unit unitName
          return $ Just $ AssertStatement condition report severity
-      _ | isIdentifier token -> throwError $ ConverterError_NotImplemented $ passPosition "procedure call or signal/variable assignment" token
+      _ | isIdentifier token ->
+         let name = map toUpper $ unPos $ fromJust $ matchIdentifier token
+             checkSignals = case matchSignalNameInScope scope unit unitName name of
+               Just _ | isPassive -> throwError $ ConverterError_Netlist $ passPosition NetlistError_SignalAssignmentInPassiveProcess token
+               Just (signal,signalPackage) -> do
+                  let signalName = (signalPackage,name)
+                  calc <- parseSignalAssignment scope unit unitName signal
+                  return $ Just $ SignalAssignStatement signalName calc
+               Nothing -> throwError $ ConverterError_NotImplemented $ passPosition "procedure call or variable assignment" token
+         in checkSignals
       _ | isLeftParen token -> throwError $ ConverterError_NotImplemented $ passPosition "Signal/variable assignment (aggregate)" token
       _ | isKeywordIf token -> throwError $ ConverterError_NotImplemented $ passPosition "If statement" token
       _ | isKeywordCase token -> throwError $ ConverterError_NotImplemented $ passPosition "Case statement" token

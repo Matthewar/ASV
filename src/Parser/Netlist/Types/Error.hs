@@ -140,6 +140,20 @@ data NetlistError =
    | NetlistError_ExpectedReadableSignalInSensitivityList
    -- |No entity found for an associated architecture body
    | NetlistError_UnableToFindEntityForArch NetlistName
+   -- |Cannot find an expression of the expected type
+   | NetlistError_CannotFindCalculationOfType (NetlistName,String)
+   -- |Cannot have a signal assignment in a passive process
+   | NetlistError_SignalAssignmentInPassiveProcess
+   -- |Could not find any type conversions that matched the type profile
+   | NetlistError_FailedTypeConversion -- ?? Add type data of potential inputs recognised
+   -- |Discrete subtype attribute applied to non-discrete subtype
+   | NetlistError_NonDiscreteTypeDiscreteAttr String
+   -- |Subtype attribute argument is out of range
+   | NetlistError_SubtypeAttributeArgOutOfRange -- ?? Branch this into different errors depending on attribute name (succ,pred,leftof,rightof)
+   -- |Signal name cannot occur in a static expression
+   | NetlistError_SignalNameInStaticExpression String
+   -- |Signal attribute function argument must be a positive time
+   | NetlistError_NegativeTimeInSignalAttribute
    deriving (Eq)
 
 instance (Show NetlistError) where

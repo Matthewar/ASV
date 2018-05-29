@@ -13,6 +13,10 @@ module Parser.Netlist.Functions.Representation
    , int_scalarRight
    , int_scalarHigh
    , int_scalarLow
+   , int_discreteSucc
+   , int_discretePred
+   , int_discreteLeftOf
+   , int_discreteRightOf
    , float_scalarLeft
    , float_scalarRight
    , float_scalarHigh
@@ -82,10 +86,17 @@ int_scalarLow (IntegerRange val _ To) = val
 
 --int_discretePos :: IntegerRange -> Int64 -> Int64
 --int_discreteVal :: IntegerRange -> Int64 -> Int64
---int_discreteSucc :: Int64 -> Int64
---int_discretePred :: Int64 -> Int64
---int_discreteLeftOf :: Int64 -> Int64
---int_discreteRightOf :: Int64 -> Int64
+
+int_discreteSucc :: IntegerRange -> Int64 -> Int64
+int_discreteSucc _ = (+) 1
+int_discretePred :: IntegerRange -> Int64 -> Int64
+int_discretePred _ i = i - 1
+int_discreteLeftOf :: IntegerRange -> Int64 -> Int64
+int_discreteLeftOf range@(IntegerRange _ _ Downto) = int_discreteSucc range
+int_discreteLeftOf range@(IntegerRange _ _ To) = int_discretePred range
+int_discreteRightOf :: IntegerRange -> Int64 -> Int64
+int_discreteRightOf range@(IntegerRange _ _ Downto) = int_discretePred range
+int_discreteRightOf range@(IntegerRange _ _ To) = int_discreteSucc range
 
 float_scalarLeft :: FloatRange -> Double
 float_scalarLeft (FloatRange val _ _) = val

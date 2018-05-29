@@ -215,6 +215,26 @@ data ParserError
    | ParseErr_ExpectedColonInArchStatement Token
    -- |Expected architecture statement item (certain keywords) or the end keyword to mark the end of the statement region
    | ParseErr_ExpectedArchStatementItemOrEnd Token
+   -- |Expected signal assignment symbol after signal name in signal assignment statement
+   | ParseErr_ExpectedSignalAssignInSignalAssignment Token
+   -- |Expected semicolon at the end of a signal assignment
+   | ParseErr_ExpectedSemicolonInSignalAssignment Token
+   -- |Expected null value or value expression in waveform element
+   | ParseErr_ExpectedNullOrValueExpressionInWaveform Token
+   -- |Expected qualified expression (apostrophe then left parenthesis) or type conversion (left parenthesis) or attribute (apostrophe) after subtype name
+   | ParseErr_ExpectedQualExpOrTypeConvOrAttrAfterTypeNamePrimary Token
+   -- |Expected right parenthesis in qualified expression
+   | ParseErr_ExpectedRightParenInQualifiedExpression Token
+   -- |Expected right parenthesis in type conversion
+   | ParseErr_ExpectedRightParenInTypeConversion Token
+   -- |Expected subtype attribute (identifier) in attribute name
+   | ParseErr_ExpectedSubtypeAttribute Token
+   -- |Expected left parenthesis in subtype attribute (function type)
+   | ParseErr_ExpectedLeftParenInSubtypeAttrFunc Token
+   -- |Expected right parenthesis in subtype attribute (function type)
+   | ParseErr_ExpectedRightParenInSubtypeAttrFunc Token
+   -- |Expected signal attribute (identifier) in attribute name
+   | ParseErr_ExpectedSignalAttribute Token
    deriving (Eq)
 
 instance (Show ParserError) where

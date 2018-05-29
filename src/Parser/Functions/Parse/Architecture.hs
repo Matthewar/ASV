@@ -184,7 +184,7 @@ parseArchitectureStatements archName = do
                case keywordTok of
                   token | isKeywordBlock token -> throwError $ ConverterError_NotImplemented $ passPosition "Block statement" token
                   token | isKeywordProcess token -> do
-                     (label,newProcess) <- lift $ parseProcess scopeStore unitStore archName True $ Just upperLabel
+                     (label,newProcess) <- lift $ parseProcess scopeStore unitStore archName False $ Just upperLabel
                      let insertProcess arch = arch { archProcesses = MapS.insert label newProcess $ archProcesses arch }
                      modify insertProcess
                   token | isIdentifier token -> throwError $ ConverterError_NotImplemented $ passPosition "Concurrent procedure call or concurrent signal assignment statement or component instantiation statement" token
@@ -199,7 +199,7 @@ parseArchitectureStatements archName = do
                throwError $ ConverterError_NotImplemented $ passPosition "Passive concurrent procedure call" token
             _ -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedColonInArchStatement nextTok -- ?? This error could also be malformed procedure call (etc.) with no label
       Nothing | isKeywordProcess token -> do
-         (autoLabel,newProcess) <- lift $ parseProcess scopeStore unitStore archName True Nothing
+         (autoLabel,newProcess) <- lift $ parseProcess scopeStore unitStore archName False Nothing
          let insertProcess arch = arch { archProcesses = MapS.insert autoLabel newProcess $ archProcesses arch }
          modify insertProcess
       Nothing | isKeywordAssert token -> throwError $ ConverterError_NotImplemented $ passPosition "Concurrent assertion statement" token

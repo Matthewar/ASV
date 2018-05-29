@@ -21,6 +21,7 @@ module Parser.Netlist.Types.Representation
    , FunctionInterface(..)
    , FunctionInterfaceType(..)
    , SignalType(..)
+   , Waveform(..)
    , SequentialStatement(..)
    , Calculation(..)
    , AllTypes(..)
@@ -230,10 +231,15 @@ data SignalType =
    | PortOut
    deriving (Eq,Show)
 
+data Waveform =
+   ValueWaveform Calculation Calculation
+   | NullWaveform Calculation
+   deriving (Eq,Show)
+
 data SequentialStatement =
    WaitStatement [(SignalType,String)] Calculation (Maybe Calculation)
    | AssertStatement Calculation Calculation Calculation
-   -- | SignalAssignStatement
+   | SignalAssignStatement (NetlistName,String) [Waveform]
    -- | VariableAssignStatement
    -- | ProcedureCallStatement
    -- | IfStatement
@@ -275,9 +281,17 @@ data Calculation =
    | Calc_BuiltinXor Calculation Calculation AllTypes
    | Calc_BuiltinNand Calculation Calculation AllTypes
    | Calc_BuiltinNor Calculation Calculation AllTypes
-   --Calc_SignalDelayed (String,Signal) Int64 -- save and carry out after time
-   -- | Calc_SignalStable (String,Signal) Int64 -- check changes over timeframe (need to record last time changed)
-   -- | Calc_SignalQuiet (String,Signal) Int64
+   | Calc_ImplicitTypeConversion (NetlistName,String) Calculation
+   | Calc_SubtypeResult (NetlistName,String) Calculation
+   | Calc_ExplicitTypeConversion (NetlistName,String) (Calculation,AllTypes)
+   -- |Use signal in calculation
+   -- Contains signal name
+   | Calc_Signal (NetlistName,String)
+   -- | Calc_SignalDelayed (NetlistName,String) Int64 -- save and carry out after time
+   -- | Calc_SignalStable (NetlistName,String) Int64 -- check changes over timeframe (need to record last time changed)
+   -- | Calc_SignalQuiet (NetlistName,String) Int64
+   --
+   | Calc_SignalEvent (NetlistName,String)
    -- -- ?? Signal transaction
    -- | Calc_SignalEvent (String,Signal)
    -- | Calc_SignalActive (String,Signal)

@@ -40,6 +40,7 @@ netlist =
    NetlistStore
       { entities = MapS.empty
       , packages = builtinPackages
+      , architectures = MapS.empty
       }
 
 scope :: Scope

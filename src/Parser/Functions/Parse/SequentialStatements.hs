@@ -2,13 +2,17 @@ module Parser.Functions.Parse.SequentialStatements
    ( parseWaitStatement
    , parseAssertionStatement
    , parseSensitivityList
+   , parseSignalAssignment
    ) where
 
 import qualified Data.Map.Strict as MapS
 import Data.Char (toUpper)
 import Data.List (find)
 import Control.Monad.Except (throwError)
-import Control.Monad (unless)
+import Control.Monad
+         ( unless
+         , replicateM
+         )
 
 import Lexer.Types.PositionWrapper
 import Lexer.Functions.PositionWrapper
@@ -28,14 +32,21 @@ import Parser.Types.Expressions
 import Parser.Functions.IdentifyToken
          ( matchIdentifier
          , isComma
+         , isKeywordAfter
          , isKeywordFor
+         , isKeywordNull
          , isKeywordOn
          , isKeywordReport
          , isKeywordSeverity
+         , isKeywordTransport
          , isKeywordUntil
          , isSemicolon
+         , isSignAssign
          )
-import Parser.Functions.Parse.Expression (parseExpression)
+import Parser.Functions.Parse.Expression
+         ( parseExpression
+         , parseWithExpectedType
+         )
 import Parser.Netlist.Types.Representation
          ( NetlistName(..)
          , SignalType(..)
@@ -44,6 +55,9 @@ import Parser.Netlist.Types.Representation
          , Value(..)
          , Calculation(..)
          , Enumerate(..)
+         , Signal(..)
+         , Waveform(..)
+         , Subtype
          )
 import Parser.Netlist.Types.Stores
          ( ScopeStore
@@ -125,6 +139,18 @@ parseAssertionStatement scope unit unitName = do
       token | isSemicolon token -> return (condition,defaultReport,defaultSeverity)
       token -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedReportOrSeverityOrEndInAssert token
 
+parseSignalAssignment :: ScopeStore -> UnitStore -> NetlistName -> Signal -> ParserStack [Waveform]
+parseSignalAssignment scope unit unitName signal = do
+   [assignTok,transportTok] <- replicateM 2 getToken
+   unless (isSignAssign assignTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSignalAssignInSignalAssignment assignTok
+   case transportTok of
+      token | isKeywordTransport token -> throwError $ ConverterError_NotImplemented $ passPosition "Transport signals" token
+      token -> saveToken token
+   waveforms <- parseWaveforms scope unit unitName (signal_typeName signal) $ signal_typeData signal
+   finalTok <- getToken
+   unless (isSemicolon finalTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSemicolonInSignalAssignment finalTok
+   return waveforms
+
 parseSensitivityList :: ScopeStore -> UnitStore -> NetlistName -> [(SignalType,String)] -> ParserStack [(SignalType,String)]
 parseSensitivityList scope unit unitName currentList = do
    signalTok <- getToken
@@ -148,3 +174,36 @@ parseSensitivityList scope unit unitName currentList = do
       token -> do
          saveToken token
          return newList
+
+parseWaveforms :: ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> ParserStack [Waveform]
+parseWaveforms scope unit unitName subtypeName subtype = do
+   waveforms <- parseWaveforms' scope unit unitName subtypeName subtype []
+   case waveforms of
+      [] -> do
+         fstTok <- getToken
+         throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedNullOrValueExpressionInWaveform fstTok -- ?? Does this occur
+      nonEmpty -> return nonEmpty
+
+parseWaveforms' :: ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> [Waveform] -> ParserStack [Waveform]
+parseWaveforms' scope unit unitName subtypeName subtype waveforms = do
+   fstTok <- getToken
+   newWaveform <- case fstTok of
+      token | isKeywordNull token -> throwError $ ConverterError_NotImplemented $ passPosition "Null waveform element" token
+      token -> do
+         saveToken token
+         value <- parseWithExpectedType NotStatic parseExpression scope unit unitName subtypeName subtype $ getPos token
+         return $ ValueWaveform value
+   nextTok <- getToken
+   time <- case nextTok of
+      token | isKeywordAfter token -> parseWithExpectedType NotStatic parseExpression scope unit unitName (NetlistName "STD" "STANDARD","TIME") ((packageSubtypes standardPackage) MapS.! "TIME") $ getPos token
+      token -> do
+         saveToken token
+         return $ Calc_Value (Value_Physical 0) $ Type_Type (NetlistName "STD" "STANDARD","ANON'TIME") $ (packageTypes standardPackage) MapS.! "ANON'TIME"
+   let waveform = newWaveform time
+   finalTok <- getToken
+   let newWaveforms = (waveform:waveforms)
+   case finalTok of
+      token | isComma token -> parseWaveforms' scope unit unitName subtypeName subtype newWaveforms
+      token -> do
+         saveToken token
+         return $ reverse newWaveforms

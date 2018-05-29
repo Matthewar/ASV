@@ -6,6 +6,7 @@ module Parser.Functions.Parse.Expression
    ( parseExpression
    , parseSimpleExpression
    , staticTypeCompare
+   , parseWithExpectedType
    , Staticity(..)
    ) where
 
@@ -14,6 +15,7 @@ import qualified Data.Map.Strict as MapS
 import Data.Char (toUpper)
 import Data.Maybe
          ( isNothing
+         , isJust
          , fromJust
          )
 import Data.List (elemIndex)
@@ -22,7 +24,9 @@ import Data.Bits
          , (.|.)
          , xor
          )
+import Data.Int (Int64)
 import Control.Monad.Except (throwError)
+import Control.Monad (unless)
 
 import Lexer.Types.PositionWrapper
 import Lexer.Functions.PositionWrapper
@@ -30,15 +34,20 @@ import Lexer.Functions.PositionWrapper
          , raisePosition
          )
 import qualified Lexer.Types.Token as Tokens
-import Lexer.Alex.Types (AlexPosn) 
+import Lexer.Alex.Types (AlexPosn)
 import Lexer.Types.Error (ParserError(..))
 import Parser.Types.Expressions
          ( Staticity(..)
          , AllTypes(..)
          )
-import Parser.Functions.Expressions (notLocallyStatic)
+import Parser.Functions.Expressions
+         ( isLocallyStatic
+         , notLocallyStatic
+         , isNotStatic
+         )
 import Parser.Functions.IdentifyToken
          ( isAmpersand
+         , isApostrophe
          , isDoubleStar
          , isEqual
          , isGreaterThan
@@ -82,13 +91,37 @@ import Parser.Netlist.Types.Representation
          , Calculation(..)
          , Constant(..)
          , Value(..)
+         , Signal(..)
+         )
+import Parser.Netlist.Functions.Representation
+         ( enum_discretePos
+         , enum_discreteVal
+         , enum_discreteSucc
+         , enum_discretePred
+         , enum_discreteLeftOf
+         , enum_discreteRightOf
+         , int_scalarLeft
+         , int_scalarRight
+         , int_scalarHigh
+         , int_scalarLow
+         , int_discreteSucc
+         , int_discretePred
+         , int_discreteLeftOf
+         , int_discreteRightOf
+         , float_scalarLeft
+         , float_scalarRight
+         , float_scalarHigh
+         , float_scalarLow
          )
 import Parser.Netlist.Types.Stores
          ( ScopeStore(..)
          , UnitStore(..)
+         , Package(..)
          )
 import Parser.Netlist.Functions.Stores
          ( matchFunctionInScope
+         , matchFunctionNameInScope
+         , matchSubtypeNameInScope
          , matchEnumNameInScope
          , matchEnumCharInScope
          , matchPhysicalUnitInScope
@@ -102,6 +135,7 @@ import Parser.Functions.Monad
          , saveToken
          )
 import Parser.Netlist.Types.Error (NetlistError(..))
+import Parser.Netlist.Builtin.Standard (standardPackage)
 import Manager.Types.Error (ConverterError(..))
 
 subtypeToType :: Subtype -> AllTypes
@@ -684,7 +718,7 @@ parseRelation staticLevel scope unit unitName = do
                    convertCalcs valFunc arith val1 val2 =
                      let outputType = Type_Type
                                        (NetlistName "STD" "STANDARD","ANON'BOOLEAN")
-                                       (EnumerationType 
+                                       (EnumerationType
                                           [ Enum_Identifier "FALSE"
                                           , Enum_Identifier "TRUE"
                                           ]
@@ -731,7 +765,7 @@ parseRelation staticLevel scope unit unitName = do
                         ( calcFunc (calc1,typeData1) (calc2,typeData2)
                         , Type_Type
                            (NetlistName "STD" "STANDARD","ANON'BOOLEAN")
-                           (EnumerationType 
+                           (EnumerationType
                               [ Enum_Identifier "FALSE"
                               , Enum_Identifier "TRUE"
                               ]
@@ -1013,13 +1047,13 @@ parseAdditionExpression staticLevel scope unit unitName prevCalcs = do
                         convertCalcs Value_Int (+) val1 val2
                      (Value_Int val1,Value_Int val2,Subtract) ->
                         convertCalcs Value_Int (-) val1 val2
-                     (Value_Float val1,Value_Float val2,Sum) -> 
+                     (Value_Float val1,Value_Float val2,Sum) ->
                         convertCalcs Value_Float (+) val1 val2
-                     (Value_Float val1,Value_Float val2,Subtract) -> 
+                     (Value_Float val1,Value_Float val2,Subtract) ->
                         convertCalcs Value_Float (-) val1 val2
-                     (Value_Physical val1,Value_Physical val2,Sum) -> 
+                     (Value_Physical val1,Value_Physical val2,Sum) ->
                         convertCalcs Value_Physical (+) val1 val2
-                     (Value_Physical val1,Value_Physical val2,Subtract) -> 
+                     (Value_Physical val1,Value_Physical val2,Subtract) ->
                         convertCalcs Value_Physical (-) val1 val2
                      -- ?? Need checks for string and bitstring
                      _ -> nomatchCalcs
@@ -1586,16 +1620,27 @@ parsePrimaryIdentifier staticLevel scope unit unitName (PosnWrapper pos iden) =
        --                 Nothing -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedAttrOrTypeConv reviewToken
        --           _ -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedTypeExpression nextToken
        --     Nothing -> checkSubtypes
-       --checkSubtypes =
-       --  case matchSubtypeNameInScope scope unit unitName upperIden of
-       --     Just (subtype,netlistName) -> --qualified expressions, attributes
-       --     Nothing -> checkFunctions
-       --checkFunctions =
-       --  case matchFunctionNameInScope scope unit unitName upperIden of
-       --     Just funcMap ->
-       --        throwError $ ConverterError_NotImplemented $ PosnWrapper pos "Function call in expression"
-       --        --readFuncCall scope unit funcMap (PosnWrapper pos upperIden)
-       --     Nothing -> checkEnums
+       checkSubtypes =
+         case matchSubtypeNameInScope scope unit unitName upperIden of
+            Just (subtype,netlistName) -> do
+               nextTok <- getToken
+               case nextTok of
+                  token | isApostrophe token -> do
+                     potentialLeftParenTok <- getToken
+                     case potentialLeftParenTok of
+                        token | isLeftParen token -> parseQualifiedExpression staticLevel scope unit unitName (netlistName,upperIden) subtype $ getPos token
+                        token -> do
+                           saveToken token
+                           parseSubtypeAttribute staticLevel scope unit unitName (netlistName,upperIden) subtype
+                  token | isLeftParen token -> parseTypeConversion staticLevel scope unit unitName (netlistName,upperIden) subtype $ getPos token
+                  token -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedQualExpOrTypeConvOrAttrAfterTypeNamePrimary token
+            Nothing -> checkFunctions
+       checkFunctions =
+         case matchFunctionNameInScope scope unit unitName upperIden of
+            Just funcMap ->
+               throwError $ ConverterError_NotImplemented $ PosnWrapper pos "Function call in expression"
+               --readFuncCall scope unit funcMap (PosnWrapper pos upperIden)
+            Nothing -> checkEnums
        checkEnums =
          case matchEnumNameInScope upperIden scope unit unitName of
             Just enumMap ->
@@ -1611,9 +1656,92 @@ parsePrimaryIdentifier staticLevel scope unit unitName (PosnWrapper pos iden) =
             Nothing -> checkSignals
        checkSignals =
          case matchSignalNameInScope scope unit unitName upperIden of
-            Just (sig,packageName) -> throwError $ ConverterError_NotImplemented $ PosnWrapper pos "Signal name in expression" -- attributes, return $ [(Calc_Signal upperIden,typ)]
+            Just (sig,packageName) | isNotStatic staticLevel -> parseSignalName scope unit unitName (packageName,upperIden) sig
+            Just _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_SignalNameInStaticExpression upperIden
             Nothing -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_UnrecognisedName upperIden
-   in checkEnums --checkTypes
+   in checkSubtypes
+
+-- ?? Note: Aggregates not yet parsed
+parseQualifiedExpression :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> AlexPosn -> ParserStack [(Calculation,AllTypes)]
+parseQualifiedExpression staticLevel scope unit unitName subtypeName subtypeData pos = do
+   calc <- parseWithExpectedType staticLevel parseExpression scope unit unitName subtypeName subtypeData pos
+   rightParenTok <- getToken
+   unless (isRightParen rightParenTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedRightParenInQualifiedExpression rightParenTok
+   let (typeName,typeData) = case subtypeData of
+         EnumerationSubtype _ typeName enums _ -> (typeName,EnumerationType enums)
+         IntegerSubtype _ typeName _ -> (typeName,IntegerType)
+         FloatingSubtype _ typeName _ -> (typeName,FloatingType)
+         PhysicalSubtype _ typeName baseUnit otherUnits _ -> (typeName,PhysicalType baseUnit otherUnits)
+   return [(calc,Type_Type typeName typeData)]
+
+parseTypeConversion :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> AlexPosn -> ParserStack [(Calculation,AllTypes)]
+parseTypeConversion staticLevel scope unit unitName subtypeName subtypeData pos = do
+   expressions <- parseExpression staticLevel scope unit unitName
+   rightParenTok <- getToken
+   unless (isRightParen rightParenTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedRightParenInTypeConversion rightParenTok
+   let convertType :: (Calculation,AllTypes) -> Maybe (Calculation,AllTypes)
+       convertType calcPair@(Calc_Value (Value_Enum typeName1 enum) _,_) =
+         case subtypeData of
+            EnumerationSubtype _ typeName2 enums range | typeName1 == typeName2 && valueInEnumRange enum enums range -> Just calcPair
+            _ -> Nothing
+       convertType (Calc_Value (Value_Int int) _,_) =
+         case subtypeData of
+            IntegerSubtype _ typeName constraint | valueInIntRange int constraint ->
+               let typeData = Type_Type typeName IntegerType
+               in Just (Calc_Value (Value_Int int) typeData,typeData)
+            --IntegerSubtype _ typeName constraint -> Nothing
+            FloatingSubtype _ typeName constraint | valueInFloatRange (fromInteger int) constraint ->
+               let typeData = Type_Type typeName FloatingType
+               in Just (Calc_Value (Value_Float $ fromInteger int) typeData,typeData)
+            --FloatingSubtype _ typeName constraint -> Nothing
+            _ -> Nothing
+       convertType (Calc_Value (Value_Float flt) _,_) =
+         case subtypeData of
+            FloatingSubtype _ typeName constraint | valueInFloatRange flt constraint ->
+               let typeData = Type_Type typeName FloatingType
+               in Just (Calc_Value (Value_Float flt) typeData,typeData)
+            --FloatingSubtype _ typeName constraint -> Nothing
+            IntegerSubtype _ typeName constraint | valueInIntRange (round flt) constraint ->
+               let typeData = Type_Type typeName IntegerType
+               in Just (Calc_Value (Value_Int $ round flt) typeData,typeData)
+            --IntegerSubtype _ typeName constraint -> Nothing
+            _ -> Nothing
+       convertType calcPair@(Calc_Value (Value_Physical int) _,Type_Type typeName1 _) =
+         case subtypeData of
+            PhysicalSubtype _ typeName2 _ _ constraint | typeName1 == typeName2 && valueInIntRange int constraint -> Just calcPair
+       --array
+       convertType _
+         | isLocallyStatic staticLevel = Nothing
+       convertType (calc,typeData@(Type_Type typeName1 (EnumerationType _))) =
+         case subtypeData of
+            EnumerationSubtype _ typeName2 _ _ | typeName1 == typeName2 -> Just (Calc_SubtypeResult subtypeName calc,typeData)
+            _ -> Nothing
+       convertType calcPair@(calc,Type_Type _ IntegerType) =
+         case subtypeData of
+            IntegerSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName IntegerType)
+            FloatingSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName FloatingType)
+            _ -> Nothing
+       convertType calcPair@(calc,Type_Type _ FloatingType) =
+         case subtypeData of
+            IntegerSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName IntegerType)
+            FloatingSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName FloatingType)
+            _ -> Nothing
+       convertType (calc,typeData@(Type_Type typeName1 (PhysicalType _ _))) =
+         case subtypeData of
+            PhysicalSubtype _ typeName2 _ _ _ -> Just (Calc_SubtypeResult subtypeName calc,typeData)
+       convertType calcPair@(calc,Type_UniversalInt) =
+         case subtypeData of
+            IntegerSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName IntegerType)
+            FloatingSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName FloatingType)
+            _ -> Nothing
+       convertType calcPair@(calc,Type_UniversalReal) =
+         case subtypeData of
+            IntegerSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName IntegerType)
+            FloatingSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName FloatingType)
+            _ -> Nothing
+   case map fromJust $ filter isJust $ map convertType expressions of
+      calcPair@[_] -> return calcPair
+      _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_FailedTypeConversion
 
 --readFuncCall :: Staticity -> ExpectedType -> ScopeStore -> UnitStore -> MapS.Map Function (Maybe FunctionBody,Maybe NetlistName) -> PosnWrapper String -> ParserStack [(Calculation,AllTypes)]
 --readFuncCall staticLevel scope unit namePos funcMap (PosnWrapper pos funcName) = do
@@ -1693,6 +1821,160 @@ data AssociationType =
 --parseTypeAttribute :: Staticity -> ScopeStore -> UnitStore -> Type -> NetlistName -> String -> PosnWrapper String -> ParserStack [(Calculation,AllTypes)]
 --parseTypeAttribute staticLevel scope unit typ packageName typeName (PosnWrapper pos attrName) = do
 
+data SubtypeAttributeDesignators =
+   BaseSubtypeAttribute
+   | LeftSubtypeAttribute
+   | RightSubtypeAttribute
+   | HighSubtypeAttribute
+   | LowSubtypeAttribute
+   | PosSubtypeAttribute
+   | ValSubtypeAttribute
+   | SuccSubtypeAttribute
+   | PredSubtypeAttribute
+   | LeftOfSubtypeAttribute
+   | RightOfSubtypeAttribute
+   -- | CustomSubtypeAttribute ?? Not implemented
+
+parseSubtypeAttribute :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> ParserStack [(Calculation,AllTypes)]
+parseSubtypeAttribute staticLevel scope unit unitName subtypeName subtypeData = do
+   attrTok <- getToken
+   attrDesignator <- case matchIdentifier attrTok of
+      Just (PosnWrapper pos name) ->
+         case MapS.lookup (map toUpper name) attrMap of
+            Just attr -> return attr
+            Nothing -> throwError $ ConverterError_NotImplemented $ PosnWrapper pos "Custom subtype attributes"
+      Nothing -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSubtypeAttribute attrTok
+   case attrDesignator of
+      BaseSubtypeAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Base attribute" attrTok
+      LeftSubtypeAttribute -> return $ subtypeAttributeLeft subtypeData
+      RightSubtypeAttribute -> return $ subtypeAttributeRight subtypeData
+      HighSubtypeAttribute -> return $ subtypeAttributeHigh subtypeData
+      LowSubtypeAttribute -> return $ subtypeAttributeLow subtypeData
+      -- ?? Do these change depending on subtype or is the result the same no matter the base type
+      PosSubtypeAttribute | discreteSubtype -> subtypeAttributePos scope unit unitName subtypeName subtypeData
+      PosSubtypeAttribute -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_NonDiscreteTypeDiscreteAttr "POS") attrTok
+      ValSubtypeAttribute | discreteSubtype -> subtypeAttributeVal scope unit unitName subtypeName subtypeData
+      ValSubtypeAttribute -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_NonDiscreteTypeDiscreteAttr "VAL") attrTok
+      SuccSubtypeAttribute | discreteSubtype -> subtypeAttributeSucc (getPos attrTok) scope unit unitName subtypeName subtypeData
+      SuccSubtypeAttribute -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_NonDiscreteTypeDiscreteAttr "SUCC") attrTok
+      PredSubtypeAttribute | discreteSubtype -> subtypeAttributePred (getPos attrTok) scope unit unitName subtypeName subtypeData
+      PredSubtypeAttribute -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_NonDiscreteTypeDiscreteAttr "PRED") attrTok
+      LeftOfSubtypeAttribute | discreteSubtype -> subtypeAttributeLeftOf (getPos attrTok) scope unit unitName subtypeName subtypeData
+      LeftOfSubtypeAttribute -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_NonDiscreteTypeDiscreteAttr "LEFTOF") attrTok
+      RightOfSubtypeAttribute | discreteSubtype -> subtypeAttributeRightOf (getPos attrTok) scope unit unitName subtypeName subtypeData
+      RightOfSubtypeAttribute -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_NonDiscreteTypeDiscreteAttr "RIGHTOF") attrTok
+   where attrMap :: MapS.Map String SubtypeAttributeDesignators
+         attrMap = MapS.fromList $
+            [ ("BASE",BaseSubtypeAttribute)
+            , ("LEFT",LeftSubtypeAttribute)
+            , ("RIGHT",RightSubtypeAttribute)
+            , ("HIGH",HighSubtypeAttribute)
+            , ("LOW",LowSubtypeAttribute)
+            , ("POS",PosSubtypeAttribute)
+            , ("VAL",ValSubtypeAttribute)
+            , ("SUCC",SuccSubtypeAttribute)
+            , ("PRED",PredSubtypeAttribute)
+            , ("LEFTOF",LeftOfSubtypeAttribute)
+            , ("RIGHTOF",RightOfSubtypeAttribute)
+            ]
+         discreteSubtype :: Bool
+         discreteSubtype = case subtypeData of
+                              FloatingSubtype _ _ _ -> False
+                              _ -> True
+
+subtypeAttributeValue :: ((Enumerate,Enumerate) -> Enumerate,IntegerRange -> Int64,FloatRange -> Double) -> Subtype -> [(Calculation,AllTypes)]
+subtypeAttributeValue (enumFunc,intFunc,fltFunc) subtype =
+   let typeData = subtypeToType subtype
+       value = case subtype of
+                  EnumerationSubtype _ typeName _ range -> Value_Enum typeName (enumFunc range)
+                  IntegerSubtype _ _ range -> Value_Int $ toInteger $ intFunc range
+                  FloatingSubtype _ _ range -> Value_Float $ fltFunc range
+                  PhysicalSubtype _ _ _ _ range -> Value_Physical $ toInteger $ intFunc range
+                  -- ??Array
+   in [(Calc_Value value typeData,typeData)]
+subtypeAttributeLeft :: Subtype -> [(Calculation,AllTypes)]
+subtypeAttributeLeft = subtypeAttributeValue (fst,int_scalarLeft,float_scalarLeft)
+subtypeAttributeRight :: Subtype -> [(Calculation,AllTypes)]
+subtypeAttributeRight = subtypeAttributeValue (snd,int_scalarRight,float_scalarRight)
+subtypeAttributeHigh :: Subtype -> [(Calculation,AllTypes)]
+subtypeAttributeHigh = subtypeAttributeValue (snd,int_scalarHigh,float_scalarHigh)
+subtypeAttributeLow :: Subtype -> [(Calculation,AllTypes)]
+subtypeAttributeLow = subtypeAttributeValue (fst,int_scalarLow,float_scalarLow)
+
+parseSubtypeAttributeFunc :: ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> ParserStack Value
+parseSubtypeAttributeFunc scope unit unitName subtypeName subtypeData = do
+   leftParenTok <- getToken
+   unless (isLeftParen leftParenTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedLeftParenInSubtypeAttrFunc leftParenTok
+   calc <- parseWithExpectedType LocallyStatic parseExpression scope unit unitName subtypeName subtypeData $ getPos leftParenTok
+   rightParenTok <- getToken
+   unless (isRightParen rightParenTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedRightParenInSubtypeAttrFunc rightParenTok
+   return $ case calc of Calc_Value value _ -> value
+
+subtypeAttributePos :: ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> ParserStack [(Calculation,AllTypes)]
+subtypeAttributePos scope unit unitName subtypeName subtypeData = do
+   value <- parseSubtypeAttributeFunc scope unit unitName subtypeName subtypeData
+   let int = case (value,subtypeData) of
+               (Value_Enum _ enum,EnumerationSubtype _ _ enums _) -> toInteger $ enum_discretePos enums enum
+               (Value_Int int,_) -> int
+               (Value_Physical int,_) -> int
+   return [(Calc_Value (Value_Int int) Type_UniversalInt,Type_UniversalInt)]
+
+subtypeAttributeVal :: ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> ParserStack [(Calculation,AllTypes)]
+subtypeAttributeVal scope unit unitName subtypeName subtypeData = do
+   leftParenTok <- getToken
+   unless (isLeftParen leftParenTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedLeftParenInSubtypeAttrFunc leftParenTok
+   calcs <- parseExpression LocallyStatic scope unit unitName
+   rightParenTok <- getToken
+   unless (isRightParen rightParenTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedRightParenInSubtypeAttrFunc rightParenTok
+   let filterTypes (calc,Type_Type _ IntegerType) = Just calc
+       filterTypes (calc,Type_UniversalInt) = Just calc
+       filterTypes _ = Nothing
+   int <- case map fromJust $ filter isJust $ map filterTypes calcs of
+      [Calc_Value (Value_Int int) _] -> return int
+      _ -> throwError $ ConverterError_Netlist $ passPosition NetlistError_CannotFindValueWithContext leftParenTok
+   let typeData = subtypeToType subtypeData
+   case subtypeData of
+      EnumerationSubtype _ typeName enums range ->
+         let enum = enum_discreteVal enums $ fromInteger int
+         in if valueInEnumRange enum enums range
+               then return [(Calc_Value (Value_Enum typeName enum) typeData,typeData)]
+               else throwError $ ConverterError_Netlist $ passPosition (NetlistError_EnumValueOutOfRange enum) leftParenTok
+      IntegerSubtype _ _ range | valueInIntRange int range -> return [(Calc_Value (Value_Int int) typeData,typeData)]
+      IntegerSubtype _ _ range -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_IntValueOutOfRange int) leftParenTok
+      PhysicalSubtype _ _ _ _ range | valueInIntRange int range -> return [(Calc_Value (Value_Physical int) typeData,typeData)]
+      PhysicalSubtype _ _ _ _ range -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_PhysValueOutOfRange int) leftParenTok
+
+subtypeAttributeFunc :: ([Enumerate] -> Enumerate -> Enumerate,IntegerRange -> Int64 -> Int64) -> AlexPosn -> ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> ParserStack [(Calculation,AllTypes)]
+subtypeAttributeFunc (enumFunc,intFunc) pos scope unit unitName subtypeName subtypeData = do
+   value <- parseSubtypeAttributeFunc scope unit unitName subtypeName subtypeData
+   let typeData = subtypeToType subtypeData
+   result <- case (value,subtypeData) of
+               (Value_Enum typeName enum,EnumerationSubtype _ _ enums constraint) ->
+                  let newEnum = enumFunc enums enum
+                  in if valueInEnumRange newEnum enums constraint
+                        then return $ Value_Enum typeName newEnum
+                        else throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_SubtypeAttributeArgOutOfRange
+               (Value_Int int,IntegerSubtype _ _ constraint) ->
+                  let newInt = toInteger $ intFunc constraint $ fromInteger int
+                  in if valueInIntRange newInt constraint
+                        then return $ Value_Int newInt
+                        else throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_SubtypeAttributeArgOutOfRange
+               (Value_Physical int,PhysicalSubtype _ _ _ _ constraint) -> 
+                  let newInt = toInteger $ intFunc constraint $ fromInteger int
+                  in if valueInIntRange newInt constraint
+                        then return $ Value_Physical newInt
+                        else throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_SubtypeAttributeArgOutOfRange
+   return [(Calc_Value result typeData,typeData)]
+
+subtypeAttributeSucc :: AlexPosn -> ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> ParserStack [(Calculation,AllTypes)]
+subtypeAttributeSucc = subtypeAttributeFunc (enum_discreteSucc,int_discreteSucc)
+subtypeAttributePred :: AlexPosn -> ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> ParserStack [(Calculation,AllTypes)]
+subtypeAttributePred = subtypeAttributeFunc (enum_discretePred,int_discretePred)
+subtypeAttributeLeftOf :: AlexPosn -> ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> ParserStack [(Calculation,AllTypes)]
+subtypeAttributeLeftOf = subtypeAttributeFunc (enum_discreteLeftOf,int_discreteLeftOf)
+subtypeAttributeRightOf :: AlexPosn -> ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> ParserStack [(Calculation,AllTypes)]
+subtypeAttributeRightOf = subtypeAttributeFunc (enum_discreteRightOf,int_discreteRightOf)
+
 staticTypeCompare :: Subtype -> [(Calculation,AllTypes)] -> AlexPosn -> ParserStack Value
 staticTypeCompare subtypeData values pos =
    case subtypeData of
@@ -1701,7 +1983,7 @@ staticTypeCompare subtypeData values pos =
              filterFunc _ = False
              value = filter filterFunc values
          in case value of
-               [(Calc_Value (Value_Enum _ enum) _,_)] | elem enum (right:(takeWhile (/= right) $ dropWhile (/= left) enums)) -> return $ Value_Enum baseTypeName enum
+               [(Calc_Value (Value_Enum _ enum) _,_)] | valueInEnumRange enum enums (left,right) -> return $ Value_Enum baseTypeName enum
                [(Calc_Value (Value_Enum _ enum) _,_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_EnumValueOutOfRange enum
                _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_CannotFindValueWithContext
       IntegerSubtype _ baseTypeName range ->
@@ -1731,9 +2013,124 @@ staticTypeCompare subtypeData values pos =
                [(Calc_Value (Value_Physical int) _,_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_PhysValueOutOfRange int
                _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_CannotFindValueWithContext
       --ArraySubtype
-   where valueInIntRange :: Integer -> IntegerRange -> Bool -- ?? Should this error be dealt with earlier
-         valueInIntRange int (IntegerRange left right To) = int >= (toInteger left) && int <= (toInteger right)
-         valueInIntRange int (IntegerRange left right Downto) = int <= (toInteger left) && int >= (toInteger right)
-         valueInFloatRange :: Double -> FloatRange -> Bool
-         valueInFloatRange float (FloatRange left right To) = (not $ isInfinite float) && float >= left && float <= right
-         valueInFloatRange float (FloatRange left right Downto) = (not $ isInfinite float) && float <= left && float >= right
+
+valueInIntRange :: Integer -> IntegerRange -> Bool -- ?? Should this error be dealt with earlier
+valueInIntRange int (IntegerRange left right To) = int >= (toInteger left) && int <= (toInteger right)
+valueInIntRange int (IntegerRange left right Downto) = int <= (toInteger left) && int >= (toInteger right)
+valueInFloatRange :: Double -> FloatRange -> Bool
+valueInFloatRange float (FloatRange left right To) = (not $ isInfinite float) && float >= left && float <= right
+valueInFloatRange float (FloatRange left right Downto) = (not $ isInfinite float) && float <= left && float >= right
+valueInEnumRange :: Enumerate -> [Enumerate] -> (Enumerate,Enumerate) -> Bool
+valueInEnumRange enum enums (left,right) = elem enum (right:(takeWhile (/= right) $ dropWhile (/= left) enums))
+
+parseWithExpectedType :: Staticity -> (Staticity -> ScopeStore -> UnitStore -> NetlistName -> ParserStack [(Calculation,AllTypes)]) -> ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> AlexPosn -> ParserStack Calculation
+parseWithExpectedType staticLevel parseFunction scope unit unitName expectedSubtypeName expectedSubtype pos = do
+   expressions <- parseFunction staticLevel scope unit unitName
+   let findType :: Subtype -> (Calculation,AllTypes) -> Maybe Calculation
+       findType (EnumerationSubtype _ typeName1 enums range) (calc@(Calc_Value (Value_Enum _ enum) _),Type_Type typeName2 _)
+         | typeName1 == typeName2 && valueInEnumRange enum enums range = Just calc
+         | otherwise = Nothing
+       findType (EnumerationSubtype _ typeName1 _ _) (calc,Type_Type typeName2 _)
+         | typeName1 == typeName2 && notLocallyStatic staticLevel = Just $ Calc_SubtypeResult expectedSubtypeName calc
+         | otherwise = Nothing --throwError $ ConverterError $ passPosition NetlistError_NonStaticInStaticExpression
+       findType (IntegerSubtype _ typeName1 constraint) (calc@(Calc_Value (Value_Int int) _),Type_Type typeName2 _)
+         | typeName1 == typeName2 && valueInIntRange int constraint = Just calc
+         | otherwise = Nothing
+       findType (IntegerSubtype _ _ constraint) (calc@(Calc_Value (Value_Int int) _),Type_UniversalInt)
+         | valueInIntRange int constraint = Just calc
+         | otherwise = Nothing
+       findType (IntegerSubtype _ typeName1 _) (calc,Type_Type typeName2 _)
+         | typeName1 == typeName2 && notLocallyStatic staticLevel = Just $ Calc_SubtypeResult expectedSubtypeName calc
+         | otherwise = Nothing
+       findType (IntegerSubtype _ _ _) (calc,Type_UniversalInt)
+         | notLocallyStatic staticLevel = Just $ Calc_ImplicitTypeConversion expectedSubtypeName calc
+         | otherwise = Nothing
+       findType (FloatingSubtype _ typeName1 constraint) (calc@(Calc_Value (Value_Float flt) _),Type_Type typeName2 _)
+         | typeName1 == typeName2 && valueInFloatRange flt constraint = Just calc
+         | otherwise = Nothing
+       findType (FloatingSubtype _ _ constraint) (calc@(Calc_Value (Value_Float flt) _),Type_UniversalReal)
+         | valueInFloatRange flt constraint = Just calc
+         | otherwise = Nothing
+       findType (FloatingSubtype _ typeName1 _) (calc,Type_Type typeName2 _)
+         | typeName1 == typeName2 && notLocallyStatic staticLevel = Just $ Calc_SubtypeResult expectedSubtypeName calc
+         | otherwise = Nothing
+       findType (FloatingSubtype _ _ _) (calc,Type_UniversalReal)
+         | notLocallyStatic staticLevel = Just $ Calc_ImplicitTypeConversion expectedSubtypeName calc
+         | otherwise = Nothing
+       findType (PhysicalSubtype _ typeName1 _ _ constraint) (calc@(Calc_Value (Value_Physical int) _),Type_Type typeName2 _)
+         | typeName1 == typeName2 && valueInIntRange int constraint = Just calc
+         | otherwise = Nothing
+       findType (PhysicalSubtype _ typeName1 _ _ _) (calc,Type_Type typeName2 _)
+         | typeName1 == typeName2 && notLocallyStatic staticLevel = Just $ Calc_SubtypeResult expectedSubtypeName calc
+         | otherwise = Nothing
+       exp = map fromJust $ filter isJust $ map (findType expectedSubtype) expressions
+   case exp of
+      [] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_CannotFindCalculationOfType expectedSubtypeName
+      [calc] -> return calc
+      _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_CannotFindValueWithContext
+
+parseSignalName :: ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Signal -> ParserStack [(Calculation,AllTypes)]
+parseSignalName scope unit unitName signalName signalData = do
+   nextTok <- getToken
+   case nextTok of
+      token | isLeftParen token -> throwError $ ConverterError_NotImplemented $ passPosition "Array type slice/indices" token
+      token | isApostrophe token -> parseSignalAttribute scope unit unitName signalName signalData
+      token -> do
+         saveToken token
+         return [(Calc_Signal signalName,subtypeToType $ signal_typeData signalData)]
+
+data SignalAttributeDesignators =
+   DelayedSignalAttribute
+   | StableSignalAttribute
+   | QuietSignalAttribute
+   | TransactionSignalAttribute
+   | EventSignalAttribute
+   | ActiveSignalAttribute
+   | LastEventSignalAttribute
+   | LastActiveSignalAttribute
+   | LastValueSignalAttribute
+
+parseSignalAttribute :: ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Signal -> ParserStack [(Calculation,AllTypes)]
+parseSignalAttribute scope unit unitName signalName signalData = do
+   attrTok <- getToken
+   attrDesignator <- case matchIdentifier attrTok of
+      Just (PosnWrapper pos name) ->
+         case MapS.lookup (map toUpper name) attrMap of
+            Just attr -> return attr
+            Nothing -> throwError $ ConverterError_NotImplemented $ PosnWrapper pos "Custom signal attributes"
+      Nothing -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSignalAttribute attrTok
+   case attrDesignator of
+      DelayedSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Delayed signal attribute" attrTok --optionalAttrFunc Calc_SignalDelayed $ subtypeToType $ signal_typeData signal
+      StableSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Stable signal attribute" attrTok --optionalAttrFunc Calc_SignalStable $ Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") ((packageTypes standardPackage) MapS.! "ANON'BOOLEAN")
+      QuietSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Quiet signal attribute" attrTok --optionalAttrFunc Calc_SignalQuiet
+      TransactionSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Transaction attribute" attrTok
+      EventSignalAttribute -> return [(Calc_SignalEvent signalName,Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ (packageTypes standardPackage) MapS.! "ANON'BOOLEAN")]
+      ActiveSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Active signal attribute" attrTok
+      LastEventSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Last event attribute" attrTok
+      LastActiveSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Last active attribute" attrTok
+      LastValueSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Last value attribute" attrTok
+   where attrMap :: MapS.Map String SignalAttributeDesignators
+         attrMap = MapS.fromList $
+            [ ("DELAYED",DelayedSignalAttribute)
+            , ("STABLE",StableSignalAttribute)
+            , ("QUIET",QuietSignalAttribute)
+            , ("TRANSACTION",TransactionSignalAttribute)
+            , ("EVENT",EventSignalAttribute)
+            , ("ACTIVE",ActiveSignalAttribute)
+            , ("LAST_EVENT",LastEventSignalAttribute)
+            , ("LAST_ACTIVE",LastActiveSignalAttribute)
+            , ("LAST_VALUE",LastValueSignalAttribute)
+            ]
+         optionalAttrFunc :: ((NetlistName,String) -> Int64 -> Calculation) -> AllTypes -> ParserStack [(Calculation,AllTypes)]
+         optionalAttrFunc newCalcWithName returnType = do
+            leftParenTok <- getToken
+            let newCalc = newCalcWithName signalName
+            case leftParenTok of
+               token | isLeftParen token -> do
+                  calc <- parseWithExpectedType LocallyStatic parseExpression scope unit unitName (NetlistName "STD" "STANDARD","TIME") ((packageSubtypes standardPackage) MapS.! "TIME") $ getPos token
+                  case calc of
+                     Calc_Value (Value_Physical int) _ | int >= 0 -> return [(newCalc $ fromInteger int,returnType)]
+                     Calc_Value (Value_Physical int) _ -> throwError $ ConverterError_Netlist $ passPosition NetlistError_NegativeTimeInSignalAttribute leftParenTok
+               token -> do
+                  saveToken token
+                  return [(newCalc 0,returnType)]

@@ -1,6 +1,7 @@
 module Parser.Functions.Expressions
    ( notLocallyStatic
    , isLocallyStatic
+   , isNotStatic
    ) where
 
 import Parser.Types.Expressions
@@ -12,6 +13,10 @@ notLocallyStatic _ = True
 isLocallyStatic :: Staticity -> Bool
 isLocallyStatic LocallyStatic = True
 isLocallyStatic _ = False
+
+isNotStatic :: Staticity -> Bool
+isNotStatic NotStatic = True
+isNotStatic _ = False
 
 --compareTypes :: AllTypes -> Type -> Bool
 --compareTypes (Type_Type type1) type2 = type1 == type2
