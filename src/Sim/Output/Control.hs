@@ -23,6 +23,7 @@ import Parser.Netlist.Types.Stores
 import Sim.Output.Entities (outputEntity)
 import Sim.Output.Components (outputGenerics)
 import Sim.Output.Imports (outputImports)
+import Sim.Output.Names (printComponentSafeName)
 import Manager.Types.Error (ConverterError)
 
 newline = "\n"
@@ -30,8 +31,8 @@ tab = "   "
 
 outputControl :: FilePath -> NetlistName -> EntityStore -> ExceptT ConverterError IO ()
 outputControl buildDir topUnitName@(NetlistName topLib topUnit) entities = do
-   let componentName = "TOP'MODULE"
-       topUnitFullName = NetlistName topLib $ topUnit ++ "'COMPONENT'" ++ componentName -- ?? Need to deal with separate entities and architectures
+   let componentName = ["TOP","MODULE"]
+       topUnitFullName = NetlistName topLib $ topUnit ++ "'COMPONENT'" ++ printComponentSafeName componentName -- ?? Need to deal with separate entities and architectures
    entity <- case MapS.lookup topUnitName entities of
       Just entity -> return entity
       Nothing -> error "No entity with top module name"
@@ -64,6 +65,16 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          ++ "TopModule.initialStack"
        stackTypeStr =
          "type TopStack a = Entity'Stack Components a"
+       initialFuncStr =
+         "topInitial :: STD.STANDARD.Type'ANON'TIME -> TopStack ()"
+         ++ newline
+         ++ "topInitial maxTime = do"
+         ++ newline ++ tab
+         ++ "componentState'" ++ topUnitLib ++ "'" ++ topUnitName ++ " <- gets component'" ++ topUnitLib ++ "'" ++ topUnitName
+         ++ newline ++ tab
+         ++ "lift $ evalStateT TopModule.initialUpdate componentState'" ++ topUnitLib ++ "'" ++ topUnitName
+         ++ newline ++ tab
+         ++ "topRepeat maxTime"
        repeatFuncStr =
          "topRepeat :: STD.STANDARD.Type'ANON'TIME -> TopStack ()"
          ++ newline
@@ -80,7 +91,9 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          ++ newline ++ tab
          ++ "minTime'" ++ topUnitLib ++ "'" ++ topUnitName ++ " <- lift $ evalStateT TopModule.allTimes componentState'" ++ topUnitLib ++ "'" ++ topUnitName
          ++ newline ++ tab
-         ++ "if False -- ?? If signals active, then increase one delta, else below. (Also need to check if delta has reached max)"
+         ++ "areAnyActive <- lift $ evalStateT TopModule.anyActive componentState'" ++ topUnitLib ++ "'" ++ topUnitName
+         ++ newline ++ tab
+         ++ "if areAnyActive"
          ++ newline ++ tab ++ tab
          ++ "then do"
          ++ newline ++ tab ++ tab ++ tab
@@ -101,7 +114,11 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          ++ "Just minTime -> lift $ modify (\\(Control'Time _ delta) -> Control'Time minTime delta)"
          ++ newline ++ tab ++ tab ++ tab ++ tab
          ++ "Nothing -> error \"Nothing to do\""
-         ++ newline ++ tab ++ tab ++ tab
+         ++ newline ++ tab
+         ++ "endTime <- lift get"
+         ++ newline ++ tab
+         ++ "lift $ evalStateT (TopModule.signalUpdate endTime) componentState'" ++ topUnitLib ++ "'" ++ topUnitName
+         ++ newline ++ tab
          ++ "topRepeat maxTime"
        topFixedFuncsStr =
          "top :: Options -> IO ()\n\
@@ -110,7 +127,7 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          \   result <- runExceptT $\n\
          \      execStateT\n\
          \         ( evalStateT\n\
-         \            (evalStateT (topRepeat maxTime) initialStack)\n\
+         \            (evalStateT (topInitial maxTime) initialStack)\n\
          \            (Control'Time (STD.STANDARD.mkType'ANON'TIME 0) 0)\n\
          \         )\n\
          \         (Control'SEVERITY_TRACKER 0 0)\n\
@@ -164,6 +181,8 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          ++ componentInitialStr
          ++ newline ++ newline
          ++ stackTypeStr
+         ++ newline ++ newline
+         ++ initialFuncStr
          ++ newline ++ newline
          ++ repeatFuncStr
          ++ newline ++ newline

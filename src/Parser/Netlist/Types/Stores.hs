@@ -197,7 +197,7 @@ emptyProcess =
       []
 
 -- |Store of architecture data
-type ArchitectureStore = MapS.Map NetlistName Architecture
+type ArchitectureStore = MapS.Map NetlistName Architecture -- ?? Need to have separate entity and architecture and library name in key
 
 -- |Architecture data
 -- All declares and statements held in an architecture along with its interface

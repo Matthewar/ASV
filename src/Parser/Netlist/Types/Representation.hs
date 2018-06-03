@@ -239,7 +239,7 @@ data Waveform =
 data SequentialStatement =
    WaitStatement [(SignalType,String)] Calculation (Maybe Calculation)
    | AssertStatement Calculation Calculation Calculation
-   | SignalAssignStatement (NetlistName,String) [Waveform]
+   | SignalAssignStatement String SignalType [Waveform]
    -- | VariableAssignStatement
    -- | ProcedureCallStatement
    -- | IfStatement
@@ -283,15 +283,15 @@ data Calculation =
    | Calc_BuiltinNor Calculation Calculation AllTypes
    | Calc_ImplicitTypeConversion (NetlistName,String) Calculation
    | Calc_SubtypeResult (NetlistName,String) Calculation
-   | Calc_ExplicitTypeConversion (NetlistName,String) (Calculation,AllTypes)
+   | Calc_ExplicitTypeConversion ((NetlistName,String),Type) (Calculation,AllTypes)
    -- |Use signal in calculation
    -- Contains signal name
-   | Calc_Signal (NetlistName,String)
+   | Calc_Signal (Maybe NetlistName,String) SignalType
    -- | Calc_SignalDelayed (NetlistName,String) Int64 -- save and carry out after time
    -- | Calc_SignalStable (NetlistName,String) Int64 -- check changes over timeframe (need to record last time changed)
    -- | Calc_SignalQuiet (NetlistName,String) Int64
    --
-   | Calc_SignalEvent (NetlistName,String)
+   | Calc_SignalEvent (Maybe NetlistName,String) SignalType
    -- -- ?? Signal transaction
    -- | Calc_SignalEvent (String,Signal)
    -- | Calc_SignalActive (String,Signal)

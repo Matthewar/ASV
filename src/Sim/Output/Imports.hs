@@ -41,6 +41,7 @@ outputImports fileName scope =
          \   ( modify\n\
          \   , gets\n\
          \   , get\n\
+         \   , put\n\
          \   , execStateT\n\
          \   , evalStateT\n\
          \   )\n\
@@ -49,5 +50,6 @@ outputImports fileName scope =
          \   , when\n\
          \   , runExceptT\n\
          \   )\n\
-         \import Control"
+         \import Control\n\
+         \import Numeric (showFloat)"
    in liftIO $ appendFile fileName $ newline ++ baseImportsStr ++ newline ++ importStr

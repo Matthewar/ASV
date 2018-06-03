@@ -69,6 +69,7 @@ library
                      , Sim.Output.Constants
                      , Sim.Output.Processes
                      , Sim.Output.Cabal
+                     , Sim.Output.Names
                      , Sim.Types.Error
                      , Sim.Builtin.STD.STANDARD
                      , Sim.Builtin.ControlModule

@@ -12,8 +12,13 @@ controlModule = pack
    \   , Entity'State(..)\n\
    \   , Entity'Stack\n\
    \   , Control'Signal(..)\n\
+   \   , control'printInitial\n\
+   \   , control'updateSignal\n\
+   \   , control'readSignal\n\
+   \   , control'updateSignal'inertial\n\
+   \   , control'delayCheck\n\
    \   , Control'Stack\n\
-   \   --, control'jumpTime\n\
+   \   , control'jumpTime\n\
    \   , Control'SEVERITY_TRACKER(..)\n\
    \   , Control'SEVERITY_FAILURE(..)\n\
    \   , control'incrementWarnings\n\
@@ -35,6 +40,10 @@ controlModule = pack
    \         , throwError\n\
    \         , lift\n\
    \         , liftIO\n\
+   \         )\n\
+   \import Data.List\n\
+   \         ( sortOn\n\
+   \         , nubBy\n\
    \         )\n\
    \import qualified Data.Map.Strict as MapS\n\
    \\n\
@@ -78,7 +87,57 @@ controlModule = pack
    \      --{ control'signal'current :: (Control'Time,a)\n\
    \      { control'signal'transactions :: [(Control'Time,a)]\n\
    \      , control'signal'active :: Bool\n\
+   \      , control'signal'event :: Bool\n\
    \      }\n\
+   \\n\
+   \control'printInitial :: STD.STANDARD.SignalOutput a => String -> Control'Signal a -> Control'Stack ()\n\
+   \control'printInitial signalName (Control'Signal [(_,val)] _ _) =\n\
+   \   liftIO $ putStrLn $ \"SignalUpdate: \" ++ signalName ++ \": \" ++ STD.STANDARD.sigOut val\n\
+   \\n\
+   \control'updateSignal :: (Eq a, STD.STANDARD.SignalOutput a) => String -> Control'Time -> Control'Signal a -> Control'Stack (Control'Signal a)\n\
+   \control'updateSignal signalName currentTime (Control'Signal originalTrans@((_,oldVal):(newTime,newVal):transactions) _ _)\n\
+   \   | currentTime == newTime = do\n\
+   \      liftIO $ putStrLn $ \"SignalUpdate: \" ++ signalName ++ \": \" ++ STD.STANDARD.sigOut newVal\n\
+   \      let event = oldVal /= newVal\n\
+   \      return (Control'Signal ((newTime,newVal):transactions) True event)\n\
+   \   | otherwise = return (Control'Signal originalTrans False False)\n\
+   \control'updateSignal _ _ (Control'Signal trans _ _) = return (Control'Signal trans False False)\n\
+   \\n\
+   \control'readSignal :: Control'Signal a -> a\n\
+   \control'readSignal = snd . head . control'signal'transactions\n\
+   \\n\
+   \control'updateSignal'inertial :: Eq a => Control'Time -> [(STD.STANDARD.Type'ANON'TIME,a)] -> Control'Signal a -> Control'Signal a\n\
+   \control'updateSignal'inertial currentTime waveforms signal =\n\
+   \   let ((firstTime,firstValue):oldWaveforms) = control'signal'transactions signal\n\
+   \       toAddWaveforms = map updateWaveformTimes $ sortOn fst waveforms\n\
+   \       mergedWaveforms = mergeWaveforms oldWaveforms toAddWaveforms [(firstTime,firstValue,True)]\n\
+   \       newWaveforms = filterWaveforms mergedWaveforms []\n\
+   \   in if length (nubBy (\\a b -> fst a == fst b) waveforms) == length waveforms\n\
+   \         then signal { control'signal'transactions = newWaveforms }\n\
+   \         else error \"Waveforms with duplicate times in signal assignment\"\n\
+   \   where updateWaveformTimes (time,val)\n\
+   \            | time < STD.STANDARD.mkType'ANON'TIME 0 = error \"Time delay in signal assignment must be greater than 0\"\n\
+   \            | time == STD.STANDARD.mkType'ANON'TIME 0 = (Control'Time time (1 + time'Delta currentTime),val)\n\
+   \            | otherwise = (Control'Time time 0,val)\n\
+   \         mergeWaveforms :: [(Control'Time,a)] -> [(Control'Time,a)] -> [(Control'Time,a,Bool)] -> [(Control'Time,a,Bool)]\n\
+   \         mergeWaveforms allOldWaves@((oldTime,oldVal):oldWaves) allAddWaves@((toAddTime,toAddVal):toAddWaves) newWaves\n\
+   \            | oldTime <= toAddTime = mergeWaveforms oldWaves allAddWaves ((oldTime,oldVal,False):newWaves)\n\
+   \            | otherwise = mergeWaveforms allOldWaves toAddWaves ((toAddTime,toAddVal,True):newWaves)\n\
+   \         mergeWaveforms [] ((toAddTime,toAddVal):toAddWaves) newWaves = mergeWaveforms [] toAddWaves ((toAddTime,toAddVal,True):newWaves)\n\
+   \         mergeWaveforms (_:_) [] newWaves = newWaves\n\
+   \         mergeWaveforms [] [] newWaves = newWaves\n\
+   \         filterWaveforms :: Eq a => [(Control'Time,a,Bool)] -> [(Control'Time,a)] -> [(Control'Time,a)]\n\
+   \         filterWaveforms ((time1,val1,True):(time2,val2,False):others) filteredWaves\n\
+   \            | val1 == val2 = filterWaveforms ((time2,val2,True):others) ((time1,val1):filteredWaves)\n\
+   \            | otherwise = filterWaveforms others ((time1,val1):filteredWaves)\n\
+   \         filterWaveforms ((time,val,True):others) filteredWaves = filterWaveforms others ((time,val):filteredWaves)\n\
+   \         filterWaveforms ((_,_,False):others) filteredWaves = filterWaveforms others filteredWaves\n\
+   \         filterWaveforms [] filteredWaves = filteredWaves\n\
+   \\n\
+   \control'delayCheck :: STD.STANDARD.Type'ANON'TIME -> STD.STANDARD.Type'ANON'TIME\n\
+   \control'delayCheck time\n\
+   \   | time >= STD.STANDARD.mkType'ANON'TIME 0 = time\n\
+   \   | otherwise = error \"Negative time in delay\"\n\
    \\n\
    \-- |Monad stack\n\
    \-- Access to IO for file access/stdin/stdout\n\

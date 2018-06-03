@@ -37,7 +37,7 @@ outputTypes' fileName unitName ((typeName,typeData):others) = do
       EnumerationType enums -> printEnumType fileName unitName typeName enums
       IntegerType -> printIntType fileName unitName typeName
       FloatingType -> printFloatType fileName unitName typeName
-      PhysicalType _ _ -> printPhysicalType fileName unitName typeName -- ?? Use base/secondary units for printing output data
+      PhysicalType baseUnit _ -> printPhysicalType fileName unitName typeName baseUnit -- ?? Use base/secondary units for printing output data
       ArrayType bounds subtypeName _ -> printArrayType fileName unitName typeName bounds subtypeName
    outputTypes' fileName unitName others
 outputTypes' _ _ [] = return ()
@@ -55,6 +55,16 @@ printEnumType file unitName name enums =
          ++ typeBaseFormatting
          ++ newline ++ tab
          ++ "deriving (Eq,Ord)"
+       outputStr =
+         let printEnum (Enum_Identifier iden) = "\"" ++ iden ++ "\""
+             printEnum (Enum_Char '"') = "\"'\\\"'\""
+             printEnum (Enum_Char '\\') = "\"'\\'\""
+             printEnum (Enum_Char chr) = "\"'" ++ [chr] ++ "'\""
+         in "instance STD.STANDARD.SignalOutput " ++ typeName ++ " where"
+            ++ ( concat
+               $ map (\enum -> newline ++ tab ++ "sigOut " ++ convertEnum enum ++ " = " ++ printEnum enum)
+               $ enums
+               )
        createComparisonFunc operatorName operatorStr =
          let funcName = "function'op'" ++ operatorName ++ "'in'" ++ fullTypeName ++ "'_'" ++ fullTypeName ++ "'out'STD'STANDARD'Type'ANON'BOOLEAN"
          in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ "STD.STANDARD.Type'ANON'BOOLEAN"
@@ -98,6 +108,7 @@ printEnumType file unitName name enums =
 --         ++ discreteRightOfStr
    in liftIO $ appendFile file $
          newline ++ typeBaseStr
+         ++ newline ++ outputStr
          ++ newline ++ equalStr
          ++ newline ++ nequalStr
          ++ newline ++ lessThanStr
@@ -252,6 +263,10 @@ printIntType file unitName name =
          in funcName ++ " :: " ++ typeName ++ " -> Integer"
             ++ newline
             ++ funcName ++ "(" ++ typeName ++ " value) = toInteger value"
+       outputStr =
+         "instance STD.STANDARD.SignalOutput " ++ typeName ++ " where"
+         ++ newline ++ tab
+         ++ "sigOut = show . extract" ++ typeName
        createComparisonFunc operatorName operatorStr =
          let funcName = "function'op'" ++ operatorName ++ "'in'" ++ fullTypeName ++ "'_'" ++ fullTypeName ++ "'out'STD'STANDARD'Type'ANON'BOOLEAN"
          in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ "STD.STANDARD.Type'ANON'BOOLEAN"
@@ -327,6 +342,7 @@ printIntType file unitName name =
          newline ++ typeBaseStr
          ++ newline ++ constructorStr
          ++ newline ++ extractStr
+         ++ newline ++ outputStr
          ++ newline ++ equalStr
          ++ newline ++ nequalStr
          ++ newline ++ lessThanStr
@@ -373,6 +389,10 @@ printFloatType file unitName name =
          in funcName ++ " :: " ++ typeName ++ " -> Double"
             ++ newline
             ++ funcName ++ "(" ++ typeName ++ " value) = value"
+       outputStr =
+         "instance STD.STANDARD.SignalOutput " ++ typeName ++ " where"
+         ++ newline ++ tab
+         ++ "sigOut flt = (showFloat $ extract" ++ typeName ++ " flt) \"\""
        createComparisonFunc operatorName operatorStr =
          let funcName = "function'op'" ++ operatorName ++ "'in'" ++ fullTypeName ++ "'_'" ++ fullTypeName ++ "'out'STD'STANDARD'Type'ANON'BOOLEAN"
          in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ "STD.STANDARD.Type'ANON'BOOLEAN"
@@ -416,6 +436,7 @@ printFloatType file unitName name =
          newline ++ typeBaseStr
          ++ newline ++ constructorStr
          ++ newline ++ extractStr
+         ++ newline ++ outputStr
          ++ newline ++ equalStr
          ++ newline ++ nequalStr
          ++ newline ++ lessThanStr
@@ -432,8 +453,8 @@ printFloatType file unitName name =
          ++ newline ++ expStr
          ++ newline
 
-printPhysicalType :: FilePath -> NetlistName -> String -> ExceptT ConverterError IO ()
-printPhysicalType fileName unitName name =
+printPhysicalType :: FilePath -> NetlistName -> String -> String -> ExceptT ConverterError IO ()
+printPhysicalType fileName unitName name baseUnit =
    let typeName = "Type'" ++ name
        mkFullTypeName (NetlistName lib unit) = lib ++ "'" ++ unit ++ "'" ++ typeName
        fullTypeName = mkFullTypeName unitName
@@ -461,6 +482,10 @@ printPhysicalType fileName unitName name =
          in funcName ++ " :: " ++ typeName ++ " -> Integer"
             ++ newline
             ++ funcName ++ "(" ++ typeName ++ " value) = toInteger value"
+       outputStr =
+         "instance STD.STANDARD.SignalOutput " ++ typeName ++ " where"
+         ++ newline ++ tab
+         ++ "sigOut phys = (show $ extract" ++ typeName ++ " phys) ++ \" " ++ baseUnit ++ "\""
        createComparisonFunc operatorName operatorStr =
          let funcName = "function'op'" ++ operatorName ++ "'in'" ++ fullTypeName ++ "'_'" ++ fullTypeName ++ "'out'STD'STANDARD'Type'ANON'BOOLEAN"
          in funcName ++ " :: " ++ typeName ++ " -> " ++ typeName ++ " -> " ++ "STD.STANDARD.Type'ANON'BOOLEAN"
@@ -537,6 +562,7 @@ printPhysicalType fileName unitName name =
          newline ++ typeBaseStr
          ++ newline ++ constructorStr
          ++ newline ++ extractStr
+         ++ newline ++ outputStr
          ++ newline ++ equalStr
          ++ newline ++ nequalStr
          ++ newline ++ lessThanStr

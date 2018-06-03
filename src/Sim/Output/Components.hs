@@ -19,33 +19,34 @@ import Parser.Netlist.Types.Stores (ScopeStore)
 import Sim.Output.Types (showEnum)
 import Sim.Output.Imports (outputImports)
 import Sim.Output.Cabal (outputCabalModule)
+import Sim.Output.Names (printComponentSafeName)
 import Manager.Types.Error (ConverterError)
 
 newline = "\n"
 tab = "   "
 
-outputGenerics :: FilePath -> NetlistName -> String -> [Generic] -> ScopeStore -> ExceptT ConverterError IO ()
+outputGenerics :: FilePath -> NetlistName -> [String] -> [Generic] -> ScopeStore -> ExceptT ConverterError IO ()
 outputGenerics buildDir netlistName@(NetlistName lib name) componentName generics scope = do
    let srcDir = buildDir </> "src"
-       genericFileName = srcDir </> lib </> name ++ "'COMPONENT'" ++ componentName ++ "'GENERICS.hs"
-   outputCabalModule buildDir $ NetlistName lib $ name ++ "'COMPONENT'" ++ componentName ++ "'GENERICS"
+       genericFileName = srcDir </> lib </> name ++ "'COMPONENT'" ++ printComponentSafeName componentName ++ "'GENERICS.hs"
+   outputCabalModule buildDir $ NetlistName lib $ name ++ "'COMPONENT'" ++ printComponentSafeName componentName ++ "'GENERICS"
    liftIO $ writeFile genericFileName $
       "module "
-      ++ show netlistName ++ "'COMPONENT'" ++ componentName ++ "'GENERICS"
+      ++ show netlistName ++ "'COMPONENT'" ++ printComponentSafeName componentName ++ "'GENERICS"
       ++ " where"
       ++ newline
    outputImports genericFileName scope
    outputGenerics' genericFileName netlistName componentName generics
 
-outputGenerics' :: FilePath -> NetlistName -> String -> [Generic] -> ExceptT ConverterError IO ()
+outputGenerics' :: FilePath -> NetlistName -> [String] -> [Generic] -> ExceptT ConverterError IO ()
 outputGenerics' fileName netlistName componentName (generic:generics) = do
    liftIO $ appendFile fileName $
       concat $ map (\s -> newline ++ s) $ printGeneric netlistName componentName generic
    outputGenerics' fileName netlistName componentName generics
-   where printGeneric :: NetlistName -> String -> Generic -> [String]
+   where printGeneric :: NetlistName -> [String] -> Generic -> [String]
          printGeneric unitName componentName (Generic name (subtypePackage,subtypeName) subtype (Just value)) =
             let package = if unitName == subtypePackage
-                           then show unitName ++ "'COMPONENT'" ++ componentName ++ "'GENERICS"
+                           then show unitName ++ "'COMPONENT'" ++ printComponentSafeName componentName ++ "'GENERICS"
                            else show subtypePackage
                 (baseTypePackage,baseTypeName) = case subtype of
                                                    EnumerationSubtype _ typeName _ _ -> typeName

@@ -92,6 +92,9 @@ import Parser.Netlist.Types.Representation
          , Constant(..)
          , Value(..)
          , Signal(..)
+         , SignalType(..)
+         , Port(..)
+         , Mode(..)
          )
 import Parser.Netlist.Functions.Representation
          ( enum_discretePos
@@ -127,6 +130,7 @@ import Parser.Netlist.Functions.Stores
          , matchPhysicalUnitInScope
          , matchConstantNameInScope
          , matchSignalNameInScope
+         , matchPortNameInScope
          )
 import qualified Parser.Netlist.Types.Operators as Operators
 import Parser.Types.Monad (ParserStack)
@@ -1446,7 +1450,6 @@ parseFactor staticLevel scope unit unitName = do
          if isDoubleStar middleToken
             then do
                primary2 <- parsePrimary staticLevel scope unit unitName
-               throwError $ ConverterError_NotImplemented $ passPosition "exponential processing in factor" middleToken
                let getNonStaticFuncs functionFinder origVal1 origVal2 =
                      case matchFunctionInScope functionFinder scope unit unitName of
                         Nothing -> []
@@ -1655,9 +1658,20 @@ parsePrimaryIdentifier staticLevel scope unit unitName (PosnWrapper pos iden) =
             Just (Constant _ subtype (Just val),_) -> return [(Calc_Value val $ subtypeToType subtype,subtypeToType subtype)]
             Nothing -> checkSignals
        checkSignals =
-         case matchSignalNameInScope scope unit unitName upperIden of
-            Just (sig,packageName) | isNotStatic staticLevel -> parseSignalName scope unit unitName (packageName,upperIden) sig
+         case matchSignalNameInScope scope unit upperIden of
+            Just (sig,packageName) | isNotStatic staticLevel -> parseSignalName scope unit unitName (packageName,upperIden) sig InternalSignal
             Just _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_SignalNameInStaticExpression upperIden
+            Nothing -> checkPorts
+       checkPorts =
+         case matchPortNameInScope unit upperIden of
+            Just port | isNotStatic staticLevel -> do
+               let portName = (Nothing,upperIden)
+               portType <- case port_mode port of
+                  Mode_Out -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_CannotReadOutputPort upperIden
+                  Mode_In -> return PortIn
+                  _ -> throwError $ ConverterError_NotImplemented $ PosnWrapper pos "Other port mode types in primary"
+               let portAsSignal = Signal (port_subtypeName port) (port_subtypeData port) (port_default port)
+               parseSignalName scope unit unitName portName portAsSignal portType
             Nothing -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_UnrecognisedName upperIden
    in checkSubtypes
 
@@ -1718,26 +1732,26 @@ parseTypeConversion staticLevel scope unit unitName subtypeName subtypeData pos 
             _ -> Nothing
        convertType calcPair@(calc,Type_Type _ IntegerType) =
          case subtypeData of
-            IntegerSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName IntegerType)
-            FloatingSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName FloatingType)
+            IntegerSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion (typeName,IntegerType) calcPair,Type_Type typeName IntegerType)
+            FloatingSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion (typeName,FloatingType) calcPair,Type_Type typeName FloatingType)
             _ -> Nothing
        convertType calcPair@(calc,Type_Type _ FloatingType) =
          case subtypeData of
-            IntegerSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName IntegerType)
-            FloatingSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName FloatingType)
+            IntegerSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion (typeName,IntegerType) calcPair,Type_Type typeName IntegerType)
+            FloatingSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion (typeName,FloatingType) calcPair,Type_Type typeName FloatingType)
             _ -> Nothing
        convertType (calc,typeData@(Type_Type typeName1 (PhysicalType _ _))) =
          case subtypeData of
             PhysicalSubtype _ typeName2 _ _ _ -> Just (Calc_SubtypeResult subtypeName calc,typeData)
        convertType calcPair@(calc,Type_UniversalInt) =
          case subtypeData of
-            IntegerSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName IntegerType)
-            FloatingSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName FloatingType)
+            IntegerSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ImplicitTypeConversion typeName calc,Type_Type typeName IntegerType)
+            FloatingSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion (typeName,FloatingType) calcPair,Type_Type typeName FloatingType)
             _ -> Nothing
        convertType calcPair@(calc,Type_UniversalReal) =
          case subtypeData of
-            IntegerSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName IntegerType)
-            FloatingSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion typeName calcPair,Type_Type typeName FloatingType)
+            IntegerSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion (typeName,IntegerType) calcPair,Type_Type typeName IntegerType)
+            FloatingSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ImplicitTypeConversion typeName calc,Type_Type typeName FloatingType)
             _ -> Nothing
    case map fromJust $ filter isJust $ map convertType expressions of
       calcPair@[_] -> return calcPair
@@ -2069,15 +2083,15 @@ parseWithExpectedType staticLevel parseFunction scope unit unitName expectedSubt
       [calc] -> return calc
       _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_CannotFindValueWithContext
 
-parseSignalName :: ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Signal -> ParserStack [(Calculation,AllTypes)]
-parseSignalName scope unit unitName signalName signalData = do
+parseSignalName :: ScopeStore -> UnitStore -> NetlistName -> (Maybe NetlistName,String) -> Signal -> SignalType -> ParserStack [(Calculation,AllTypes)]
+parseSignalName scope unit unitName signalName signalData signalType = do
    nextTok <- getToken
    case nextTok of
       token | isLeftParen token -> throwError $ ConverterError_NotImplemented $ passPosition "Array type slice/indices" token
-      token | isApostrophe token -> parseSignalAttribute scope unit unitName signalName signalData
+      token | isApostrophe token -> parseSignalAttribute scope unit unitName signalName signalData signalType
       token -> do
          saveToken token
-         return [(Calc_Signal signalName,subtypeToType $ signal_typeData signalData)]
+         return [(Calc_Signal signalName signalType,subtypeToType $ signal_typeData signalData)]
 
 data SignalAttributeDesignators =
    DelayedSignalAttribute
@@ -2090,8 +2104,8 @@ data SignalAttributeDesignators =
    | LastActiveSignalAttribute
    | LastValueSignalAttribute
 
-parseSignalAttribute :: ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Signal -> ParserStack [(Calculation,AllTypes)]
-parseSignalAttribute scope unit unitName signalName signalData = do
+parseSignalAttribute :: ScopeStore -> UnitStore -> NetlistName -> (Maybe NetlistName,String) -> Signal -> SignalType -> ParserStack [(Calculation,AllTypes)]
+parseSignalAttribute scope unit unitName signalName signalData signalType = do
    attrTok <- getToken
    attrDesignator <- case matchIdentifier attrTok of
       Just (PosnWrapper pos name) ->
@@ -2104,7 +2118,7 @@ parseSignalAttribute scope unit unitName signalName signalData = do
       StableSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Stable signal attribute" attrTok --optionalAttrFunc Calc_SignalStable $ Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") ((packageTypes standardPackage) MapS.! "ANON'BOOLEAN")
       QuietSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Quiet signal attribute" attrTok --optionalAttrFunc Calc_SignalQuiet
       TransactionSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Transaction attribute" attrTok
-      EventSignalAttribute -> return [(Calc_SignalEvent signalName,Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ (packageTypes standardPackage) MapS.! "ANON'BOOLEAN")]
+      EventSignalAttribute -> return [(Calc_SignalEvent signalName signalType,Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ (packageTypes standardPackage) MapS.! "ANON'BOOLEAN")]
       ActiveSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Active signal attribute" attrTok
       LastEventSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Last event attribute" attrTok
       LastActiveSignalAttribute -> throwError $ ConverterError_NotImplemented $ passPosition "Last active attribute" attrTok
@@ -2121,8 +2135,8 @@ parseSignalAttribute scope unit unitName signalName signalData = do
             , ("LAST_ACTIVE",LastActiveSignalAttribute)
             , ("LAST_VALUE",LastValueSignalAttribute)
             ]
-         optionalAttrFunc :: ((NetlistName,String) -> Int64 -> Calculation) -> AllTypes -> ParserStack [(Calculation,AllTypes)]
-         optionalAttrFunc newCalcWithName returnType = do
+         optionalAttrFunc :: ((Maybe NetlistName,String) -> Int64 -> Calculation) -> AllTypes -> ParserStack [(Calculation,AllTypes)]
+         optionalAttrFunc newCalcWithName returnType = do -- ?? Need signal type (internal, port, etc.)
             leftParenTok <- getToken
             let newCalc = newCalcWithName signalName
             case leftParenTok of

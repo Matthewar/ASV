@@ -7,6 +7,7 @@ import Data.Char (toUpper)
 import Data.Maybe
          ( fromJust
          , isNothing
+         , isJust
          )
 import Control.Monad.Trans.State
          ( StateT
@@ -22,6 +23,7 @@ import Control.Monad.Except
 import Control.Monad
          ( replicateM
          , unless
+         , when
          )
 
 import Lexer.Types.PositionWrapper
@@ -83,6 +85,10 @@ import Parser.Netlist.Types.Representation
          , Calculation(..)
          , Enumerate(..)
          , AllTypes(..)
+         , Signal(..)
+         , SignalType(..)
+         , Port(..)
+         , Mode(..)
          )
 import Parser.Netlist.Types.Stores
          ( ScopeStore
@@ -97,6 +103,7 @@ import Parser.Netlist.Functions.Stores
          ( convertProcessToGenericUnit
          , mergeUnits
          , matchSignalNameInScope
+         , matchPortNameInScope
          )
 import Parser.Netlist.Types.Error (NetlistError(..))
 import Parser.Netlist.Builtin.Standard (standardPackage)
@@ -196,12 +203,22 @@ parseSequentialStatements scope unit unitName isPassive waitAllowed seqStatement
          return $ Just $ AssertStatement condition report severity
       _ | isIdentifier token ->
          let name = map toUpper $ unPos $ fromJust $ matchIdentifier token
-             checkSignals = case matchSignalNameInScope scope unit unitName name of
+             checkSignals = case matchSignalNameInScope scope unit name of
                Just _ | isPassive -> throwError $ ConverterError_Netlist $ passPosition NetlistError_SignalAssignmentInPassiveProcess token
                Just (signal,signalPackage) -> do
-                  let signalName = (signalPackage,name)
+                  when (isJust signalPackage) $ throwError $ ConverterError_Netlist $ passPosition NetlistError_PackageSignalInSignalAssign token
                   calc <- parseSignalAssignment scope unit unitName signal
-                  return $ Just $ SignalAssignStatement signalName calc
+                  return $ Just $ SignalAssignStatement name InternalSignal calc
+               Nothing -> checkPorts
+             checkPorts = case matchPortNameInScope unit name of
+               Just port -> do
+                  portType <- case port_mode port of
+                     Mode_In -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_CannotAssignToInputPort name) token
+                     Mode_Out -> return PortOut
+                     _ -> throwError $ ConverterError_NotImplemented $ passPosition "Other port mode types in assign" token
+                  let portAsSignal = Signal (port_subtypeName port) (port_subtypeData port) (port_default port)
+                  calc <- parseSignalAssignment scope unit unitName portAsSignal
+                  return $ Just $ SignalAssignStatement name portType calc
                Nothing -> throwError $ ConverterError_NotImplemented $ passPosition "procedure call or variable assignment" token
          in checkSignals
       _ | isLeftParen token -> throwError $ ConverterError_NotImplemented $ passPosition "Signal/variable assignment (aggregate)" token

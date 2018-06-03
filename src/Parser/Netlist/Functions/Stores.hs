@@ -23,12 +23,16 @@ module Parser.Netlist.Functions.Stores
    , matchPhysicalUnitInScope
    , matchConstantNameInScope
    , matchSignalNameInScope
+   , matchPortNameInScope
    , mergeUnits
    , mergeScopes
    ) where
 
 import qualified Data.Map.Strict as MapS
-import Data.List (nub)
+import Data.List
+         ( nub
+         , find
+         )
 import Data.Maybe (isJust)
 
 import Parser.Netlist.Types.Operators (Operator)
@@ -220,8 +224,6 @@ getProcessNames = MapS.keys
 -- If it is, returns tuple of:
 -- - Type data
 -- - Package that the type exists in
---    - Nothing if directly visible
---    - package name/library if visible by selection
 matchTypeNameInScope :: ScopeStore -> UnitStore -> NetlistName -> String -> Maybe (Type,NetlistName)
 matchTypeNameInScope scope unit unitName name =
    case MapS.lookup name $ unitTypes unit of
@@ -236,8 +238,6 @@ matchTypeNameInScope scope unit unitName name =
 -- If it is, returns tuple of:
 -- - Subtype data
 -- - Package that the subtype exists in
---    - Nothing if directly visible
---    - package name/library if visible by selection
 matchSubtypeNameInScope :: ScopeStore -> UnitStore -> NetlistName -> String -> Maybe (Subtype,NetlistName)
 matchSubtypeNameInScope scope unit unitName name =
    case MapS.lookup name $ unitSubtypes unit of
@@ -254,8 +254,6 @@ matchSubtypeNameInScope scope unit unitName name =
 -- - Value is tuple of
 --    - Function body (normal function store value)
 --    - Package that the function exists in
---       - Nothing if directly visible
---       - package name/library if visible by selection
 -- Pass in search function to check 'Function' key.
 matchFunctionInScope :: (Function -> Bool) -> ScopeStore -> UnitStore -> NetlistName -> Maybe (MapS.Map Function (Maybe FunctionBody,NetlistName))
 matchFunctionInScope funcCheck scope unit unitName =
@@ -277,8 +275,6 @@ matchFunctionInScope funcCheck scope unit unitName =
 -- - Value is tuple of
 --    - Function body (normal function store value)
 --    - Package that the function exists in
---       - Nothing if directly visible
---       - package name/library if visible by selection
 matchFunctionNameInScope :: ScopeStore -> UnitStore -> NetlistName -> String -> Maybe (MapS.Map Function (Maybe FunctionBody,NetlistName))
 matchFunctionNameInScope scope unit unitName name =
    let functionFinder (Function (Designator_Identifier str) _ _ _) = name == str
@@ -292,8 +288,6 @@ matchFunctionNameInScope scope unit unitName name =
 -- - Value is tuple of
 --    - Type data (normal type store value)
 --    - Package that the enum type exists in
---       - Nothing if directly visible
---       - package name/library if visible by selection
 matchEnumValueInScope :: Enumerate -> ScopeStore -> UnitStore -> NetlistName -> Maybe (MapS.Map String (Type,NetlistName))
 matchEnumValueInScope enumValue scope unit unitName =
    let isEnumNameInType (EnumerationType enums) = elem enumValue enums
@@ -342,17 +336,25 @@ matchConstantNameInScope scope unit unitName name =
 -- If not, returns Nothing
 -- If it is, returns tuple of:
 -- - Signal data
--- - Package that the type exists in
+-- - Package that the signal exists in
 --    - Nothing if directly visible
 --    - package name/library if visible by selection
-matchSignalNameInScope :: ScopeStore -> UnitStore -> NetlistName -> String -> Maybe (Signal,NetlistName)
-matchSignalNameInScope scope unit unitName name =
+matchSignalNameInScope :: ScopeStore -> UnitStore -> String -> Maybe (Signal,Maybe NetlistName)
+matchSignalNameInScope scope unit name =
    case MapS.lookup name $ unitSignals unit of
-      Just sig -> Just (sig,unitName)
+      Just sig -> Just (sig,Nothing)
       Nothing ->
          case MapS.lookup name $ scopeSignals scope of
-            Just sig -> Just (sig,(scopeSignalPackage scope) MapS.! name)
+            Just sig -> Just (sig,Just $ (scopeSignalPackage scope) MapS.! name)
             Nothing -> Nothing
+
+-- |Check if port name is within scope
+-- If not, returns Nothing
+-- If it is, returns port data
+matchPortNameInScope :: UnitStore -> String -> Maybe Port
+matchPortNameInScope unit name = findPort $ unitPorts unit
+   where portCheck port = name == port_name port
+         findPort = find portCheck
 
 --matchVariableNameInScope :: ScopeStore -> UnitStore -> String -> Maybe (Type,VariableValue)
 

@@ -154,6 +154,12 @@ data NetlistError =
    | NetlistError_SignalNameInStaticExpression String
    -- |Signal attribute function argument must be a positive time
    | NetlistError_NegativeTimeInSignalAttribute
+   -- |Attempt to read an output port (not possible)
+   | NetlistError_CannotReadOutputPort String
+   -- |Attempt to write to an input port (not possible)
+   | NetlistError_CannotAssignToInputPort String
+   -- |Cannot assign to a signal in a package
+   | NetlistError_PackageSignalInSignalAssign
    deriving (Eq)
 
 instance (Show NetlistError) where

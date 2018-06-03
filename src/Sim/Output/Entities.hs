@@ -1,6 +1,6 @@
 module Sim.Output.Entities
-   ( outputEntities
-   , outputEntity
+--   ( outputEntities
+   ( outputEntity
    ) where
 
 import System.FilePath ((</>))
@@ -37,13 +37,17 @@ import Sim.Output.Subtypes (outputSubtypes)
 import Sim.Output.Constants (outputConstants)
 import Sim.Output.Processes (outputProcesses)
 import Sim.Output.Cabal (outputCabalModule)
+import Sim.Output.Names
+         ( printComponentActualName
+         , printComponentSafeName
+         )
 
 newline = "\n"
 tab = "   "
 
-outputEntity :: FilePath -> Entity -> NetlistName -> String -> ExceptT ConverterError IO ()
+outputEntity :: FilePath -> Entity -> NetlistName -> [String] -> ExceptT ConverterError IO ()
 outputEntity buildDir baseEntity netlistName@(NetlistName lib entityName) componentName = do
-   let newEntityName = entityName ++ "'COMPONENT'" ++ componentName
+   let newEntityName = entityName ++ "'COMPONENT'" ++ printComponentSafeName componentName
        newNetlistName = NetlistName lib newEntityName
        srcDir = buildDir </> "src"
        entityFileName = srcDir </> lib </> newEntityName ++ ".hs"
@@ -63,35 +67,35 @@ outputEntity buildDir baseEntity netlistName@(NetlistName lib entityName) compon
    outputConstants entityFileName $ entityConstants newEntity
    outputProcesses entityFileName newNetlistName $ entityProcesses newEntity
    -- ?? Etc.
-   outputEntityControl entityFileName newEntityName (entityGenerics newEntity) (entityPorts newEntity) (entitySignals newEntity) (MapS.keys $ entityProcesses newEntity)
+   outputEntityControl entityFileName newEntityName componentName (entityGenerics newEntity) (entityPorts newEntity) (entitySignals newEntity) (MapS.keys $ entityProcesses newEntity)
 
-outputEntities :: FilePath -> EntityStore -> ExceptT ConverterError IO ()
-outputEntities buildDir entities = outputEntities' buildDir $ MapS.toList entities
+--outputEntities :: FilePath -> EntityStore -> ExceptT ConverterError IO ()
+--outputEntities buildDir entities = outputEntities' buildDir $ MapS.toList entities
+--
+--outputEntities' :: FilePath -> [(NetlistName,Entity)] -> ExceptT ConverterError IO ()
+--outputEntities' buildDir ((netlistName@(NetlistName lib entityName),entity):others) = do
+--   let srcDir = buildDir </> "src"
+--       entityFileName = srcDir </> lib </> entityName ++ ".hs"
+--   outputCabalModule buildDir netlistName
+--   liftIO $ writeFile entityFileName newline
+--      -- "module "
+--      -- ++ show netlistName
+--      -- ++ " where"
+--      -- ++ newline
+--   -- ?? Entity control function generation
+--   outputImports entityFileName $ entityScope entity
+--   --outputFunctions entityFileName $ entityFunctions entity
+--   outputTypes entityFileName netlistName $ entityTypes entity
+--   outputSubtypes entityFileName $ entitySubtypes entity
+--   outputConstants entityFileName $ entityConstants entity
+--   outputProcesses entityFileName netlistName $ entityProcesses entity
+--   -- ?? Etc.
+--   outputEntityControl entityFileName entityName (entityGenerics entity) (entityPorts entity) (entitySignals entity) (MapS.keys $ entityProcesses entity)
+--   outputEntities' buildDir others
+--outputEntities' _ [] = return ()
 
-outputEntities' :: FilePath -> [(NetlistName,Entity)] -> ExceptT ConverterError IO ()
-outputEntities' buildDir ((netlistName@(NetlistName lib entityName),entity):others) = do
-   let srcDir = buildDir </> "src"
-       entityFileName = srcDir </> lib </> entityName ++ ".hs"
-   outputCabalModule buildDir netlistName
-   liftIO $ writeFile entityFileName newline
-      -- "module "
-      -- ++ show netlistName
-      -- ++ " where"
-      -- ++ newline
-   -- ?? Entity control function generation
-   outputImports entityFileName $ entityScope entity
-   --outputFunctions entityFileName $ entityFunctions entity
-   outputTypes entityFileName netlistName $ entityTypes entity
-   outputSubtypes entityFileName $ entitySubtypes entity
-   outputConstants entityFileName $ entityConstants entity
-   outputProcesses entityFileName netlistName $ entityProcesses entity
-   -- ?? Etc.
-   outputEntityControl entityFileName entityName (entityGenerics entity) (entityPorts entity) (entitySignals entity) (MapS.keys $ entityProcesses entity)
-   outputEntities' buildDir others
-outputEntities' _ [] = return ()
-
-outputEntityControl :: FilePath -> String -> [Generic] -> [Port] -> SignalStore -> [String] -> ExceptT ConverterError IO ()
-outputEntityControl fileName entityName generics ports signals processNames =
+outputEntityControl :: FilePath -> String -> [String] -> [Generic] -> [Port] -> SignalStore -> [String] -> ExceptT ConverterError IO ()
+outputEntityControl fileName entityName componentName generics ports signals processNames =
    let genericTypeStr =
          let printGeneric (Generic genericName (subtypePackage,subtypeName) _ _) =
                "--GENERICS.generic'" ++ genericName ++ " :: " ++ show subtypePackage ++ "." ++ subtypeName
@@ -123,7 +127,7 @@ outputEntityControl fileName entityName generics ports signals processNames =
                                  Value_Float flt -> typeBuild ++ " " ++ (showFFloat Nothing flt) ""
                                  Value_Physical phys -> typeBuild ++ " " ++ show phys
                                  --Value_Array
-               in "ports'in'" ++ portName ++ " = Control'Signal [(initialTime," ++ subtypeBuild ++ " $ " ++ valueStr ++ ")] False"
+               in "ports'in'" ++ portName ++ " = Control'Signal [(initialTime," ++ subtypeBuild ++ " $ " ++ valueStr ++ ")] False False"
          in "initial'PORTS'IN ="
             ++ newline ++ tab
             ++ "PORTS'IN"
@@ -158,7 +162,7 @@ outputEntityControl fileName entityName generics ports signals processNames =
                                  Value_Float flt -> typeBuild ++ " " ++ (showFFloat Nothing flt) ""
                                  Value_Physical phys -> typeBuild ++ " " ++ show phys
                                  --Value_Array
-               in "ports'out'" ++ portName ++ " = Control'Signal [(initialTime," ++ subtypeBuild ++ " $ " ++ valueStr ++ ")] False"
+               in "ports'out'" ++ portName ++ " = Control'Signal [(initialTime," ++ subtypeBuild ++ " $ " ++ valueStr ++ ")] False False"
          in "initial'PORTS'OUT ="
             ++ newline ++ tab
             ++ "PORTS'OUT"
@@ -232,7 +236,7 @@ outputEntityControl fileName entityName generics ports signals processNames =
          ++ "initial'PORTS'OUT"
          ++ newline ++ tab ++ tab
          ++ "initial'PROCESSES"
-       collectTimingStr = -- ?? Similar function to check active signals
+       collectTimingStr =
          "allTimes :: Entity'" ++ entityName ++ "'Stack (Maybe STD.STANDARD.Type'ANON'TIME)"
          ++ newline
          ++ "allTimes = do"
@@ -278,6 +282,125 @@ outputEntityControl fileName entityName generics ports signals processNames =
          ++ "[] -> return Nothing"
          ++ newline ++ tab ++ tab
          ++ "other -> return $ Just $ minimum other"
+       checkActiveStr =
+         "anyActive :: Entity'" ++ entityName ++ "'Stack Bool"
+         ++ newline
+         ++ "anyActive = do"
+         ++ newline ++ tab
+         ++ "signals <- gets entity'state"
+         ++ newline ++ tab
+         ++ "portsIn <- gets entity'portsIn"
+         ++ newline ++ tab
+         ++ "let signalFuncs ="
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "[ "
+         ++ ( concat
+            $ intersperse (newline ++ tab ++ tab ++ tab ++ ", ")
+            $ map (\signalName -> "signal'" ++ signalName)
+            $ MapS.keys signals
+            )
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "]"
+         ++ newline ++ tab ++ tab
+         ++ " portFuncs ="
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "[ "
+         ++ ( concat
+            $ intersperse (newline ++ tab ++ tab ++ tab ++ ", ")
+            $ map (\portName -> "ports'in'" ++ portName)
+            $ map port_name
+            $ filter (\port -> port_mode port == Mode_In)
+            $ ports
+            )
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "]"
+         ++ newline ++ tab ++ tab
+         ++ " signalVals = map (\\s -> control'signal'active $ s signals) signalFuncs ++ map (\\p -> control'signal'active $ p portsIn) portFuncs"
+         ++ newline ++ tab
+         ++ "return $ or signalVals"
+       initialUpdateStr =
+         "initialUpdate :: Entity'" ++ entityName ++ "'Stack ()"
+         ++ newline
+         ++ "initialUpdate = do"
+         ++ newline ++ tab
+         ++ "(Entity'State portsIn state portsOut _) <- get"
+         ++ ( concat
+            $ map (\signalName -> newline ++ tab ++ "lift $ control'printInitial \"" ++ printComponentActualName componentName ++ "." ++ signalName ++ "\" $ signal'" ++ signalName ++ " state")
+            $ MapS.keys signals
+            )
+         ++ ( concat
+            $ map (\portName -> newline ++ tab ++ "lift $ control'printInitial \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" $ ports'in'" ++ portName ++ " portsIn")
+            $ map port_name
+            $ filter (\port -> port_mode port == Mode_In)
+            $ ports
+            )
+         ++ ( concat
+            $ map (\portName -> newline ++ tab ++ "lift $ control'printInitial \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" $ ports'out'" ++ portName ++ " portsOut")
+            $ map port_name
+            $ filter (\port -> port_mode port == Mode_Out)
+            $ ports
+            )
+       normalUpdateStr =
+         "signalUpdate :: Control'Time -> Entity'" ++ entityName ++ "'Stack ()"
+         ++ newline
+         ++ "signalUpdate currentTime = do"
+         ++ newline ++ tab
+         ++ "(Entity'State portsIn state portsOut processes) <- get"
+         ++ ( concat
+            $ map ((++) (newline ++ tab))
+            $ map (\portName -> "new'ports'in'" ++ portName ++ " <- lift $ control'updateSignal \"" ++ portName ++ "\" currentTime $ ports'in'" ++ portName ++ " portsIn")
+            $ map port_name
+            $ filter (\port -> port_mode port == Mode_In)
+            $ ports
+            )
+         ++ ( concat
+            $ map ((++) (newline ++ tab))
+            $ map (\signalName -> "new'signal'" ++ signalName ++ " <- lift $ control'updateSignal \"" ++ signalName ++ "\" currentTime $ signal'" ++ signalName ++ " state")
+            $ MapS.keys signals
+            )
+         ++ ( concat
+            $ map ((++) (newline ++ tab))
+            $ map (\portName -> "new'ports'out'" ++ portName ++ " <- lift $ control'updateSignal \"" ++ portName ++ "\" currentTime $ ports'out'" ++ portName ++ " portsOut")
+            $ map port_name
+            $ filter (\port -> port_mode port == Mode_Out)
+            $ ports
+            )
+         ++ newline ++ tab
+         ++ "let newPortsIn ="
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "PORTS'IN"
+         ++ newline ++ tab ++ tab ++ tab ++ tab
+         ++ ( concat
+            $ intersperse (newline ++ tab ++ tab ++ tab ++ tab)
+            $ map (\portName -> "new'ports'in'" ++ portName)
+            $ map port_name
+            $ filter (\port -> port_mode port == Mode_In)
+            $ ports
+            )
+         ++ newline ++ tab ++ tab
+         ++ " newSignals ="
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "STATE"
+         ++ newline ++ tab ++ tab ++ tab ++ tab
+         ++ ( concat
+            $ intersperse (newline ++ tab ++ tab ++ tab ++ tab)
+            $ map (\signalName -> "new'signal'" ++ signalName)
+            $ MapS.keys signals
+            )
+         ++ newline ++ tab ++ tab
+         ++ " newPortsOut ="
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "PORTS'OUT"
+         ++ newline ++ tab ++ tab ++ tab ++ tab
+         ++ ( concat
+            $ intersperse (newline ++ tab ++ tab ++ tab ++ tab)
+            $ map (\portName -> "new'ports'out'" ++ portName)
+            $ map port_name
+            $ filter (\port -> port_mode port == Mode_Out)
+            $ ports
+            )
+         ++ newline ++ tab
+         ++ "put $ Entity'State newPortsIn newSignals newPortsOut processes"
        entityStateTypeStr = "type Entity'" ++ entityName ++ "'Stack a = Entity'Stack (Entity'State PORTS'IN STATE PORTS'OUT PROCESSES) a"
        entityControlStr =
          "entityControl :: Entity'" ++ entityName ++ "'Stack ()"
@@ -312,6 +435,12 @@ outputEntityControl fileName entityName generics ports signals processNames =
          ++ entityStateInitialStr ++ newline
          ++ newline
          ++ collectTimingStr ++ newline
+         ++ newline
+         ++ checkActiveStr ++ newline
+         ++ newline
+         ++ initialUpdateStr ++ newline
+         ++ newline
+         ++ normalUpdateStr ++ newline
          ++ newline
          ++ entityStateTypeStr ++ newline
          ++ newline

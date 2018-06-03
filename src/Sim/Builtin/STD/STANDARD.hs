@@ -119,6 +119,7 @@ standardPackage = pack
    \   , mkType'TIME\n\
    \   -- Non standard functions\n\
    \   , boolToBoolean\n\
+   \   , SignalOutput(..)\n\
    \   -- NOTE: now function is located in the Control module\n\
    \   ) where\n\
    \\n\
@@ -142,11 +143,15 @@ standardPackage = pack
    \\n\
    \import qualified Data.Map.Strict\n\
    \import Data.Int (Int64)\n\
+   \import Numeric (showFloat)\n\
    \\n\
    \data Type'ANON'BIT =\n\
    \   Type'ANON'BIT'Char'0\n\
    \   | Type'ANON'BIT'Char'1\n\
    \   deriving (Eq,Ord)\n\
+   \instance SignalOutput Type'ANON'BIT where\n\
+   \   sigOut Type'ANON'BIT'Char'0 = \"'0'\"\n\
+   \   sigOut Type'ANON'BIT'Char'1 = \"'1'\"\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'BIT'_'STD'STANDARD'Type'ANON'BIT'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'BIT -> Type'ANON'BIT -> STD.STANDARD.Type'ANON'BOOLEAN\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'BIT'_'STD'STANDARD'Type'ANON'BIT'out'STD'STANDARD'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2\n\
    \function'op'NEQUAL'in'STD'STANDARD'Type'ANON'BIT'_'STD'STANDARD'Type'ANON'BIT'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'BIT -> Type'ANON'BIT -> STD.STANDARD.Type'ANON'BOOLEAN\n\
@@ -260,6 +265,9 @@ standardPackage = pack
    \   Type'ANON'BOOLEAN'Iden'FALSE\n\
    \   | Type'ANON'BOOLEAN'Iden'TRUE\n\
    \   deriving (Eq,Ord)\n\
+   \instance SignalOutput Type'ANON'BOOLEAN where\n\
+   \   sigOut Type'ANON'BOOLEAN'Iden'FALSE = \"FALSE\"\n\
+   \   sigOut Type'ANON'BOOLEAN'Iden'TRUE = \"TRUE\"\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'BOOLEAN'_'STD'STANDARD'Type'ANON'BOOLEAN'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN -> STD.STANDARD.Type'ANON'BOOLEAN\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'BOOLEAN'_'STD'STANDARD'Type'ANON'BOOLEAN'out'STD'STANDARD'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2\n\
    \function'op'NEQUAL'in'STD'STANDARD'Type'ANON'BOOLEAN'_'STD'STANDARD'Type'ANON'BOOLEAN'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'BOOLEAN -> Type'ANON'BOOLEAN -> STD.STANDARD.Type'ANON'BOOLEAN\n\
@@ -451,6 +459,135 @@ standardPackage = pack
    \   | Type'ANON'CHARACTER'Char'TILDE\n\
    \   | Type'ANON'CHARACTER'Iden'DEL\n\
    \   deriving (Eq,Ord)\n\
+   \instance SignalOutput Type'ANON'CHARACTER where\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'NUL = \"NUL\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'SOH = \"SOH\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'STX = \"STX\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'ETX = \"ETX\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'EOT = \"EOT\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'ENQ = \"ENQ\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'ACK = \"ACK\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'BEL = \"BEL\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'BS = \"BS\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'HT = \"HT\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'LF = \"LF\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'VT = \"VT\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'FF = \"FF\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'CR = \"CR\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'SO = \"SO\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'SI = \"SI\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'DLE = \"DLE\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'DC1 = \"DC1\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'DC2 = \"DC2\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'DC3 = \"DC3\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'DC4 = \"DC4\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'NAK = \"NAK\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'SYN = \"SYN\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'ETB = \"ETB\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'CAN = \"CAN\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'EM = \"EM\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'SUB = \"SUB\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'ESC = \"ESC\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'FSP = \"FSP\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'GSP = \"GSP\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'RSP = \"RSP\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'USP = \"USP\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'SPACE = \"' '\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'EXCLAMATION = \"'!'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'QUOTE = \"'\\\"'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'HASH = \"'#'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'DOLLAR = \"'$'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'PERCENT = \"'%'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'AMPERSAND = \"'&'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'TICK = \"'''\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'LEFTPAREN = \"'('\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'RIGHTPAREN = \"')'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'STAR = \"'*'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'PLUS = \"'+'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'COMMA = \"','\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'HYPHEN = \"'-'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'PERIOD = \"'.'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'FORWARDSLASH = \"'/'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'0 = \"'0'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'1 = \"'1'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'2 = \"'2'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'3 = \"'3'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'4 = \"'4'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'5 = \"'5'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'6 = \"'6'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'7 = \"'7'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'8 = \"'8'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'9 = \"'9'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'COLON = \"':'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'SEMICOLON = \"';'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'LESSTHAN = \"'<'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'EQUAL = \"'='\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'GREATERTHAN = \"'>'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'QUESTION = \"'?'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'AT = \"'@'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'A = \"'A'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'B = \"'B'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'C = \"'C'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'D = \"'D'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'E = \"'E'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'F = \"'F'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'G = \"'G'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'H = \"'H'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'I = \"'I'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'J = \"'J'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'K = \"'K'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'L = \"'L'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'M = \"'M'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'N = \"'N'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'O = \"'O'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'P = \"'P'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'Q = \"'Q'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'R = \"'R'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'S = \"'S'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'T = \"'T'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'U = \"'U'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'V = \"'V'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'W = \"'W'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'X = \"'X'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'Y = \"'Y'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'Z = \"'Z'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'LEFTSQUAREBRACE = \"'['\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'BACKSLASH = \"'\\'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'RIGHTSQUAREBRACE = \"']'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'CAROT = \"'^'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'UNDERSCORE = \"'_'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'BACKTICK = \"'`'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'a = \"'a'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'b = \"'b'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'c = \"'c'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'd = \"'d'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'e = \"'e'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'f = \"'f'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'g = \"'g'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'h = \"'h'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'i = \"'i'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'j = \"'j'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'k = \"'k'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'l = \"'l'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'm = \"'m'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'n = \"'n'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'o = \"'o'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'p = \"'p'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'q = \"'q'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'r = \"'r'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char's = \"'s'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char't = \"'t'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'u = \"'u'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'v = \"'v'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'w = \"'w'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'x = \"'x'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'y = \"'y'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'z = \"'z'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'LEFTBRACE = \"'{'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'BAR = \"'|'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'RIGHTBRACE = \"'}'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Char'TILDE = \"'~'\"\n\
+   \   sigOut Type'ANON'CHARACTER'Iden'DEL = \"DEL\"\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'CHARACTER'_'STD'STANDARD'Type'ANON'CHARACTER'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'CHARACTER -> Type'ANON'CHARACTER -> STD.STANDARD.Type'ANON'BOOLEAN\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'CHARACTER'_'STD'STANDARD'Type'ANON'CHARACTER'out'STD'STANDARD'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2\n\
    \function'op'NEQUAL'in'STD'STANDARD'Type'ANON'CHARACTER'_'STD'STANDARD'Type'ANON'CHARACTER'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'CHARACTER -> Type'ANON'CHARACTER -> STD.STANDARD.Type'ANON'BOOLEAN\n\
@@ -880,6 +1017,8 @@ standardPackage = pack
    \      else Type'ANON'INTEGER $ fromInteger value\n\
    \extractType'ANON'INTEGER :: Type'ANON'INTEGER -> Integer\n\
    \extractType'ANON'INTEGER(Type'ANON'INTEGER value) = toInteger value\n\
+   \instance SignalOutput Type'ANON'INTEGER where\n\
+   \   sigOut = show . extractType'ANON'INTEGER\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'INTEGER'_'STD'STANDARD'Type'ANON'INTEGER'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'INTEGER -> Type'ANON'INTEGER -> STD.STANDARD.Type'ANON'BOOLEAN\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'INTEGER'_'STD'STANDARD'Type'ANON'INTEGER'out'STD'STANDARD'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2\n\
    \function'op'NEQUAL'in'STD'STANDARD'Type'ANON'INTEGER'_'STD'STANDARD'Type'ANON'INTEGER'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'INTEGER -> Type'ANON'INTEGER -> STD.STANDARD.Type'ANON'BOOLEAN\n\
@@ -972,6 +1111,8 @@ standardPackage = pack
    \      _ -> Type'ANON'REAL value\n\
    \extractType'ANON'REAL :: Type'ANON'REAL -> Double\n\
    \extractType'ANON'REAL(Type'ANON'REAL value) = value\n\
+   \instance SignalOutput Type'ANON'REAL where\n\
+   \   sigOut flt = (showFloat $ extractType'ANON'REAL flt) \"\"\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'REAL'_'STD'STANDARD'Type'ANON'REAL'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'REAL -> Type'ANON'REAL -> STD.STANDARD.Type'ANON'BOOLEAN\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'REAL'_'STD'STANDARD'Type'ANON'REAL'out'STD'STANDARD'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2\n\
    \function'op'NEQUAL'in'STD'STANDARD'Type'ANON'REAL'_'STD'STANDARD'Type'ANON'REAL'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'REAL -> Type'ANON'REAL -> STD.STANDARD.Type'ANON'BOOLEAN\n\
@@ -1038,6 +1179,11 @@ standardPackage = pack
    \   | Type'ANON'SEVERITY_LEVEL'Iden'ERROR\n\
    \   | Type'ANON'SEVERITY_LEVEL'Iden'FAILURE\n\
    \   deriving (Eq,Ord)\n\
+   \instance SignalOutput Type'ANON'SEVERITY_LEVEL where\n\
+   \   sigOut Type'ANON'SEVERITY_LEVEL'Iden'NOTE = \"NOTE\"\n\
+   \   sigOut Type'ANON'SEVERITY_LEVEL'Iden'WARNING = \"WARNING\"\n\
+   \   sigOut Type'ANON'SEVERITY_LEVEL'Iden'ERROR = \"ERROR\"\n\
+   \   sigOut Type'ANON'SEVERITY_LEVEL'Iden'FAILURE = \"FAILURE\"\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'SEVERITY_LEVEL'_'STD'STANDARD'Type'ANON'SEVERITY_LEVEL'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'SEVERITY_LEVEL -> Type'ANON'SEVERITY_LEVEL -> STD.STANDARD.Type'ANON'BOOLEAN\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'SEVERITY_LEVEL'_'STD'STANDARD'Type'ANON'SEVERITY_LEVEL'out'STD'STANDARD'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2\n\
    \function'op'NEQUAL'in'STD'STANDARD'Type'ANON'SEVERITY_LEVEL'_'STD'STANDARD'Type'ANON'SEVERITY_LEVEL'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'SEVERITY_LEVEL -> Type'ANON'SEVERITY_LEVEL -> STD.STANDARD.Type'ANON'BOOLEAN\n\
@@ -1140,6 +1286,8 @@ standardPackage = pack
    \      else Type'ANON'TIME $ fromInteger value\n\
    \extractType'ANON'TIME :: Type'ANON'TIME -> Integer\n\
    \extractType'ANON'TIME(Type'ANON'TIME value) = toInteger value\n\
+   \instance SignalOutput Type'ANON'TIME where\n\
+   \   sigOut phys = (show $ extractType'ANON'TIME phys) ++ \" FS\"\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'TIME -> Type'ANON'TIME -> STD.STANDARD.Type'ANON'BOOLEAN\n\
    \function'op'EQUAL'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'BOOLEAN value1 value2 = STD.STANDARD.boolToBoolean $ value1 == value2\n\
    \function'op'NEQUAL'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'BOOLEAN :: Type'ANON'TIME -> Type'ANON'TIME -> STD.STANDARD.Type'ANON'BOOLEAN\n\
@@ -1521,6 +1669,9 @@ standardPackage = pack
    \boolToBoolean :: Bool -> Type'ANON'BOOLEAN\n\
    \boolToBoolean True = Type'ANON'BOOLEAN'Iden'TRUE\n\
    \boolToBoolean False = Type'ANON'BOOLEAN'Iden'FALSE\n\
+   \\n\
+   \class SignalOutput a where\n\
+   \   sigOut :: a -> String\n\
    \\n\
    \----------------------------------------------------------------------------------------\n\
    \\n\

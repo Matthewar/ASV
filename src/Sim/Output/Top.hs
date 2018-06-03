@@ -16,7 +16,7 @@ import qualified Data.Text.IO as TextIO
 import Parser.Netlist.Types.Representation (NetlistName(..))
 import Parser.Netlist.Types.Stores (NetlistStore(..))
 import Manager.Types.Error (ConverterError)
-import Sim.Output.Entities (outputEntities)
+--import Sim.Output.Entities (outputEntities)
 import Sim.Output.Packages (outputPackages)
 import Sim.Output.Control (outputControl)
 import Sim.Output.Cabal

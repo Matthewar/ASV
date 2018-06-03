@@ -5,6 +5,7 @@ module Manager.Filing
    ) where
 
 import System.Directory (doesDirectoryExist,doesFileExist,findFile)
+import System.FilePath ((</>))
 import Control.Monad.Except (ExceptT,throwError)
 import Control.Monad.Trans (liftIO)
 import Data.List (intersperse)
@@ -67,7 +68,7 @@ findDesignUnit _ ieeeDir "IEEE" unitName = findDesignUnit' ieeeDir unitName
 -- ?? NOTE: Temporary hack is to force unit to be defined in unitName.vhd
 findDesignUnit' :: FilePath -> String -> ExceptT FilingError IO FilePath
 findDesignUnit' libDir unitName = do
-   let fileName = libDir ++ unitName ++ ".vhd"
+   let fileName = libDir </> unitName ++ ".vhd"
    checkFile <- liftIO $ doesFileExist fileName
    if checkFile then do
       liftIO $ putStrLn $ "Info: Found file " ++ fileName
