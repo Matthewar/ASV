@@ -17,7 +17,7 @@ import Parser.Netlist.Types.Representation
          )
 import Parser.Netlist.Types.Stores (ConstantStore)
 import Manager.Types.Error (ConverterError(..))
-import Sim.Output.Types (showEnum)
+import Sim.Output.Names (showEnum)
 import Sim.Types.Error (SimOutputError(..))
 
 newline = "\n"

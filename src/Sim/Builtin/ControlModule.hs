@@ -60,6 +60,8 @@ controlModule = pack
    \      | time'Real val1 < time'Real val2 = LT\n\
    \      | time'Real val1 > time'Real val2 = GT\n\
    \      | time'Real val1 == time'Real val2 = compare (time'Delta val1) (time'Delta val2)\n\
+   \instance STD.STANDARD.SignalOutput Control'Time where\n\
+   \   sigOut (Control'Time real _) = STD.STANDARD.sigOut real\n\
    \\n\
    \initialTime :: Control'Time\n\
    \initialTime = Control'Time (STD.STANDARD.mkType'ANON'TIME 0) 0\n\
@@ -97,7 +99,7 @@ controlModule = pack
    \control'updateSignal :: (Eq a, STD.STANDARD.SignalOutput a) => String -> Control'Time -> Control'Signal a -> Control'Stack (Control'Signal a)\n\
    \control'updateSignal signalName currentTime (Control'Signal originalTrans@((_,oldVal):(newTime,newVal):transactions) _ _)\n\
    \   | currentTime == newTime = do\n\
-   \      liftIO $ putStrLn $ \"SignalUpdate: \" ++ signalName ++ \": \" ++ STD.STANDARD.sigOut newVal\n\
+   \      liftIO $ putStrLn $ \"SignalUpdate: \" ++ STD.STANDARD.sigOut currentTime ++ \": \" ++ signalName ++ \": \" ++ STD.STANDARD.sigOut newVal\n\
    \      let event = oldVal /= newVal\n\
    \      return (Control'Signal ((newTime,newVal):transactions) True event)\n\
    \   | otherwise = return (Control'Signal originalTrans False False)\n\
@@ -117,8 +119,13 @@ controlModule = pack
    \         else error \"Waveforms with duplicate times in signal assignment\"\n\
    \   where updateWaveformTimes (time,val)\n\
    \            | time < STD.STANDARD.mkType'ANON'TIME 0 = error \"Time delay in signal assignment must be greater than 0\"\n\
-   \            | time == STD.STANDARD.mkType'ANON'TIME 0 = (Control'Time time (1 + time'Delta currentTime),val)\n\
-   \            | otherwise = (Control'Time time 0,val)\n\
+   \            | time == STD.STANDARD.mkType'ANON'TIME 0 = (Control'Time (time'Real currentTime) (1 + time'Delta currentTime),val)\n\
+   \            | otherwise =\n\
+   \               ( Control'Time\n\
+   \                  (STD.STANDARD.function'op'PLUS'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'TIME (time'Real currentTime) time)\n\
+   \                  0\n\
+   \               , val\n\
+   \               )\n\
    \         mergeWaveforms :: [(Control'Time,a)] -> [(Control'Time,a)] -> [(Control'Time,a,Bool)] -> [(Control'Time,a,Bool)]\n\
    \         mergeWaveforms allOldWaves@((oldTime,oldVal):oldWaves) allAddWaves@((toAddTime,toAddVal):toAddWaves) newWaves\n\
    \            | oldTime <= toAddTime = mergeWaveforms oldWaves allAddWaves ((oldTime,oldVal,False):newWaves)\n\

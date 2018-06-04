@@ -503,6 +503,36 @@ instance (Show ParserError) where
    show (ParseErr_ExpectedArchStatementItemOrEnd token) =
       "Expected architecture statement (certain keywords or identifier), or the keyword end to mark the end of the architecture statement region, but got "
       ++ show token
+   show (ParseErr_ExpectedSignalAssignInSignalAssignment token) =
+      "Expected a signal assignment symbol (<=) after signal name in signal assignment statement, but got "
+      ++ show token
+   show (ParseErr_ExpectedSemicolonInSignalAssignment token) =
+      "Expected a semicolon at the end of a signal assignment statement, but got "
+      ++ show token
+   show (ParseErr_ExpectedNullOrValueExpressionInWaveform token) =
+      "Expected null keyword or value expression in waveform element, but got "
+      ++ show token
+   show (ParseErr_ExpectedQualExpOrTypeConvOrAttrAfterTypeNamePrimary token) =
+      "Expected qualified expression (apostrophe followed by left parenthesis); type conversion (left parenthesis); or attribute (apostrophe) after subtype name, but got "
+      ++ show token
+   show (ParseErr_ExpectedRightParenInQualifiedExpression token) =
+      "Expected right parenthesis in qualified expression, but got "
+      ++ show token
+   show (ParseErr_ExpectedRightParenInTypeConversion token) =
+      "Expected right parenthesis in type conversion, but got "
+      ++ show token
+   show (ParseErr_ExpectedSubtypeAttribute token) =
+      "Expected subtype attribute (identifier) in subtype attribute name, but got "
+      ++ show token
+   show (ParseErr_ExpectedLeftParenInSubtypeAttrFunc token) =
+      "Expected left parenthesis in subtype (function type) attribute, but got "
+      ++ show token
+   show (ParseErr_ExpectedRightParenInSubtypeAttrFunc token) =
+      "Expected right parenthesis in subtype (function type) attribute, but got "
+      ++ show token
+   show (ParseErr_ExpectedSignalAttribute token) =
+      "Expected signal attribute (identifier) in signal attribute name, but got "
+      ++ show token
 
 -- | Find largest (and by extension smallest) possible value of double
 getFloatBound :: RealFloat a => a -> a

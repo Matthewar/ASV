@@ -197,14 +197,19 @@ emptyProcess =
       []
 
 -- |Store of architecture data
-type ArchitectureStore = MapS.Map NetlistName Architecture -- ?? Need to have separate entity and architecture and library name in key
+-- (String,String,String)
+-- - Library Name
+-- - Entity Name
+-- - Architecture Name
+type ArchitectureStore = MapS.Map (String,String,String) Architecture
 
 -- |Architecture data
 -- All declares and statements held in an architecture along with its interface
 data Architecture =
    Architecture
       { archScope :: ScopeStore
-      , archEntity :: Entity -- ^ Used to link entity to architecture body
+      , archGenerics :: GenericStore
+      , archPorts :: PortStore
       --ProcedureStore
       , archFunctions :: FunctionStore
       , archTypes :: TypeStore
@@ -234,7 +239,8 @@ emptyArchitecture :: Architecture
 emptyArchitecture =
    Architecture
       emptyScopeStore
-      emptyEntity
+      []
+      []
       MapS.empty
       MapS.empty
       MapS.empty

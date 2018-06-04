@@ -26,12 +26,10 @@ import Parser.Netlist.Types.Stores
          ( Process(..)
          , ProcessStore
          )
-import Sim.Output.Types
-         ( outputTypes
-         , showEnum
-         )
+import Sim.Output.Types (outputTypes)
 import Sim.Output.Subtypes (outputSubtypes)
 import Sim.Output.Constants (outputConstants)
+import Sim.Output.Names (showEnum)
 import Manager.Types.Error (ConverterError)
 
 newline = "\n"
@@ -90,7 +88,7 @@ outputStatements fileName unitName@(NetlistName _ entityName) nestedNames proces
                [valStr ++ " = do"]
                ++ (map (\s -> tab ++ s) $ concat $ reverse otherStrs)
                ++ [tab ++ case (last processContents,last timeouts) of
-                           ((Just _,_),Just timeExp) | numStages == val -> "return (0,control'delayCheck (" ++ convertCalculation nestedNames processName False timeExp ++ "))"
+                           ((Just _,_),Just timeExp) | numStages == val -> "return (0,STD.STANDARD.function'op'PLUS'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'TIME realTime (control'delayCheck (" ++ convertCalculation nestedNames processName False timeExp ++ ")))"
                            ((Just _,_),Nothing) | numStages == val -> "return (0,STD.STANDARD.mkType'ANON'TIME 0)"
                            ((Nothing,_),_) | numStages == val -> "stage0check"
                            _ ->
@@ -128,7 +126,7 @@ outputStatements fileName unitName@(NetlistName _ entityName) nestedNames proces
          ++ newline ++ tab ++ tab
          ++ "stageRun = stageList !! stageNum"
          ++ newline ++ tab
-         ++ "lift stageRun"
+         ++ "stageRun"
        processInitialStr =
          let constName = "process'initial'" ++ processName
          in constName ++ " :: (Int,STD.STANDARD.Type'ANON'TIME)"
@@ -167,10 +165,10 @@ convertStatement (AssertStatement condition report severity) unitName nestedName
        severityStr = convertCalculation nestedNames processName False severity
    in [ "when ((" ++ conditionStr ++ ") == STD.STANDARD.Type'ANON'BOOLEAN'Iden'TRUE) $"
       , tab ++ "case " ++ severityStr ++ " of"
-      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'NOTE -> control'assertNote \"" ++ unitNameStr ++ "\" " ++ messageStr
-      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'WARNING -> control'assertWarning \"" ++ unitNameStr ++ "\" " ++ messageStr
-      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'ERROR -> control'assertError \"" ++ unitNameStr ++ "\" " ++ messageStr
-      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'FAILURE -> control'assertFailure \"" ++ unitNameStr ++ "\" " ++ messageStr
+      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'NOTE -> lift $ control'assertNote \"" ++ unitNameStr ++ "\" " ++ messageStr
+      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'WARNING -> lift $ control'assertWarning \"" ++ unitNameStr ++ "\" " ++ messageStr
+      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'ERROR -> lift $ control'assertError \"" ++ unitNameStr ++ "\" " ++ messageStr
+      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'FAILURE -> lift $ control'assertFailure \"" ++ unitNameStr ++ "\" " ++ messageStr
       ]
 convertStatement (SignalAssignStatement signalName signalType waveforms) unitName nestedNames processName (Just uniqID) =
    let signalNameStr =
@@ -178,13 +176,6 @@ convertStatement (SignalAssignStatement signalName signalType waveforms) unitNam
             PortOut -> "ports'out'"
             InternalSignal -> "signal'"
          ++ signalName
-       writeSignalStr =
-         "entity'"
-         ++ case signalType of
-               PortOut -> "portsOut = portsOut { "
-               InternalSignal -> "state = signals { "
-         ++ signalNameStr
-         ++ " ="
        readSignalStr =
          signalNameStr
          ++ case signalType of
@@ -192,18 +183,24 @@ convertStatement (SignalAssignStatement signalName signalType waveforms) unitNam
                InternalSignal -> " state"
        modifyFuncStr =
          ["let modify'" ++ show uniqID ++ " entState@(Entity'State portsIn signals portsOut _) ="
-         , tab ++ "entState"
-         , tab ++ tab ++ "{" ++ writeSignalStr
-         , tab ++ tab ++ tab ++ "control'updateSignal'inertial"
-         , tab ++ tab ++ tab ++ tab ++ "curTime"
-         , tab ++ tab ++ tab ++ tab ++ "[ "
+         , tab ++ tab ++ "entState"
+         , tab ++ tab ++ tab ++ "{ entity'" ++ case signalType of
+                                                PortOut -> "portsOut = portsOut"
+                                                InternalSignal -> "state = signals"
+         , tab ++ tab ++ tab ++ tab ++ "{ " ++ signalNameStr ++ " ="
+         , tab ++ tab ++ tab ++ tab ++ tab ++ "control'updateSignal'inertial"
+         , tab ++ tab ++ tab ++ tab ++ tab ++ tab ++ "curTime"
+         , tab ++ tab ++ tab ++ tab ++ tab ++ tab ++ "[ " ++ (printWaveform $ head waveforms)
          ]
-         ++ ( map ((++) (newline ++ tab ++ tab ++ tab ++ tab ++ ", "))
+         ++ ( map ((++) (tab ++ tab ++ tab ++ tab ++ tab ++ tab ++ ", "))
             $ map printWaveform
+            $ tail
             $ waveforms
             )
-         ++ [ tab ++ tab ++ tab ++ tab ++ "]"
-            , tab ++ tab ++ tab ++ tab ++ "(" ++ readSignalStr ++ ")"
+         ++ [ tab ++ tab ++ tab ++ tab ++ tab ++ tab ++ "]"
+            , tab ++ tab ++ tab ++ tab ++ tab ++ tab ++ "(" ++ readSignalStr ++ ")"
+            , tab ++ tab ++ tab ++ tab ++ "}"
+            , tab ++ tab ++ tab ++ "}"
             ]
    in modifyFuncStr
       ++ ["modify modify'" ++ show uniqID]
@@ -237,118 +234,118 @@ convertCalculation a1 a2 a3 (Calc_BuiltinNegate calc (Type_Type typeName _)) =
    (printUnaryFunctionName a1 a2 "MINUS" typeName) ++ " (" ++ convertCalculation a1 a2 a3 calc ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinNegate calc Type_UniversalInt) = "negate (" ++ convertCalculation a1 a2 a3 calc ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinNegate calc Type_UniversalReal) = "negate (" ++ convertCalculation a1 a2 a3 calc ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinSum (calc1,Type_Type typeName1 _) (calc2,Type_Type _ _)) =
-   (printFunctionName a1 a2 "PLUS" typeName1 typeName1 typeName1)
+convertCalculation a1 a2 a3 (Calc_BuiltinSum (calc1,Type_Type typeName1@(funcPackage,_) _) (calc2,Type_Type _ _)) =
+   (printFunctionName a1 a2 "PLUS" funcPackage typeName1 typeName1 typeName1)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinSum (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") + (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinSum (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") + (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinSum (calc1,Type_Type typeFullName@(typePackage,typeName) _) (calc2,Type_UniversalInt)) =
-   (printFunctionName a1 a2 "PLUS" typeFullName typeFullName typeFullName)
+convertCalculation a1 a2 a3 (Calc_BuiltinSum (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
+   (printFunctionName a1 a2 "PLUS" funcPackage typeName typeName typeName)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
-   ++ ") (" ++ show typePackage ++ ".mk'Type'" ++ typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinSum (calc1,Type_Type typeFullName@(typePackage,typeName) _) (calc2,Type_UniversalReal)) =
-   (printFunctionName a1 a2 "PLUS" typeFullName typeFullName typeFullName)
+convertCalculation a1 a2 a3 (Calc_BuiltinSum (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
+   (printFunctionName a1 a2 "PLUS" funcPackage typeName typeName typeName)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
-   ++ ") (" ++ show typePackage ++ ".mk'Type'" ++ typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinSum (calc1,Type_UniversalInt) (calc2,Type_Type typeFullName@(typePackage,typeName) _)) =
-   (printFunctionName a1 a2 "PLUS" typeFullName typeFullName typeFullName)
-   ++ " (" ++ show typePackage ++ ".mk'Type'" ++ typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+convertCalculation a1 a2 a3 (Calc_BuiltinSum (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "PLUS" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinSum (calc1,Type_UniversalReal) (calc2,Type_Type typeFullName@(typePackage,typeName) _)) =
-   (printFunctionName a1 a2 "PLUS" typeFullName typeFullName typeFullName)
-   ++ " (" ++ show typePackage ++ ".mk'Type'" ++ typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+convertCalculation a1 a2 a3 (Calc_BuiltinSum (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "PLUS" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinSubtract (calc1,Type_Type typeName1 _) (calc2,Type_Type _ _)) =
-   (printFunctionName a1 a2 "MINUS" typeName1 typeName1 typeName1)
+convertCalculation a1 a2 a3 (Calc_BuiltinSubtract (calc1,Type_Type typeName1@(funcPackage,_) _) (calc2,Type_Type _ _)) =
+   (printFunctionName a1 a2 "MINUS" funcPackage typeName1 typeName1 typeName1)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinSubtract (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") - (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinSubtract (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") - (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinSubtract (calc1,Type_Type typeFullName@(typePackage,typeName) _) (calc2,Type_UniversalInt)) =
-   (printFunctionName a1 a2 "MINUS" typeFullName typeFullName typeFullName)
+convertCalculation a1 a2 a3 (Calc_BuiltinSubtract (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
+   (printFunctionName a1 a2 "MINUS" funcPackage typeName typeName typeName)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
-   ++ ") (" ++ show typePackage ++ ".mk'Type'" ++ typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinSubtract (calc1,Type_Type typeFullName@(typePackage,typeName) _) (calc2,Type_UniversalReal)) =
-   (printFunctionName a1 a2 "MINUS" typeFullName typeFullName typeFullName)
+convertCalculation a1 a2 a3 (Calc_BuiltinSubtract (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
+   (printFunctionName a1 a2 "MINUS" funcPackage typeName typeName typeName)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
-   ++ ") (" ++ show typePackage ++ ".mk'Type'" ++ typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinSubtract (calc1,Type_UniversalInt) (calc2,Type_Type typeFullName@(typePackage,typeName) _)) =
-   (printFunctionName a1 a2 "MINUS" typeFullName typeFullName typeFullName)
-   ++ " (" ++ show typePackage ++ ".mk'Type'" ++ typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+convertCalculation a1 a2 a3 (Calc_BuiltinSubtract (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "MINUS" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinSubtract (calc1,Type_UniversalReal) (calc2,Type_Type typeFullName@(typePackage,typeName) _)) =
-   (printFunctionName a1 a2 "MINUS" typeFullName typeFullName typeFullName)
-   ++ " (" ++ show typePackage ++ ".mk'Type'" ++ typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+convertCalculation a1 a2 a3 (Calc_BuiltinSubtract (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "MINUS" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 --convertCalculation a1 a2 a3 (Calc_BuiltinConcat
-convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_Type typeName1 _) (calc2,Type_Type typeName2 _))
-   | typeName1 == typeName2 = (printFunctionName a1 a2 "MULT" typeName1 typeName1 typeName1)
+convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_Type typeName1@(funcPackage,_) _) (calc2,Type_Type typeName2 _))
+   | typeName1 == typeName2 = (printFunctionName a1 a2 "MULT" funcPackage typeName1 typeName1 typeName1)
                               ++ " (" ++ convertCalculation a1 a2 a3 calc1
                               ++ ") (" ++ convertCalculation a1 a2 a3 calc2
                               ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") * (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") * (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_Type typeName1 (PhysicalType _ _)) (calc2,Type_Type typeName2 _)) =
-   (printFunctionName a1 a2 "MULT" typeName1 typeName2 typeName1)
+convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_Type typeName1@(funcPackage,_) (PhysicalType _ _)) (calc2,Type_Type typeName2 _)) =
+   (printFunctionName a1 a2 "MULT" funcPackage typeName1 typeName2 typeName1)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_Type typeName (PhysicalType _ _)) (calc2,Type_UniversalInt)) =
-   (printFunctionName a1 a2 "MULT" typeName (NetlistName "STD" "STANDARD","ANON'INTEGER") typeName)
+convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_Type typeName@(funcPackage,_) (PhysicalType _ _)) (calc2,Type_UniversalInt)) =
+   (printFunctionName a1 a2 "MULT" funcPackage typeName (NetlistName "STD" "STANDARD","ANON'INTEGER") typeName)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (STD.STANDARD.mk'Type'ANON'INTEGER $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_Type typeName (PhysicalType _ _)) (calc2,Type_UniversalReal)) =
-   (printFunctionName a1 a2 "MULT" typeName (NetlistName "STD" "STANDARD","ANON'REAL") typeName)
+convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_Type typeName@(funcPackage,_) (PhysicalType _ _)) (calc2,Type_UniversalReal)) =
+   (printFunctionName a1 a2 "MULT" funcPackage typeName (NetlistName "STD" "STANDARD","ANON'REAL") typeName)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (STD.STANDARD.mk'Type'ANON'REAL $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_Type typeName1 _) (calc2,Type_Type typeName2 (PhysicalType _ _))) =
-   (printFunctionName a1 a2 "MULT" typeName1 typeName2 typeName2)
+convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_Type typeName1 _) (calc2,Type_Type typeName2@(funcPackage,_) (PhysicalType _ _))) =
+   (printFunctionName a1 a2 "MULT" funcPackage typeName1 typeName2 typeName2)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_UniversalInt) (calc2,Type_Type typeName (PhysicalType _ _))) =
-   (printFunctionName a1 a2 "MULT" (NetlistName "STD" "STANDARD","ANON'INTEGER") typeName typeName)
+convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) (PhysicalType _ _))) =
+   (printFunctionName a1 a2 "MULT" funcPackage (NetlistName "STD" "STANDARD","ANON'INTEGER") typeName typeName)
    ++ " (STD.STANDARD.mk'Type'ANON'INTEGER $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_UniversalReal) (calc2,Type_Type typeName (PhysicalType _ _))) =
-   (printFunctionName a1 a2 "MULT" (NetlistName "STD" "STANDARD","ANON'REAL") typeName typeName)
+convertCalculation a1 a2 a3 (Calc_BuiltinMult (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) (PhysicalType _ _))) =
+   (printFunctionName a1 a2 "MULT" funcPackage (NetlistName "STD" "STANDARD","ANON'REAL") typeName typeName)
    ++ " (STD.STANDARD.mk'Type'ANON'REAL $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 -- ?? Bultin div
-convertCalculation a1 a2 a3 (Calc_BuiltinMod calc1 calc2 (Type_Type typeName _)) =
-   (printFunctionName a1 a2 "MOD" typeName typeName typeName)
+convertCalculation a1 a2 a3 (Calc_BuiltinMod calc1 calc2 (Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "MOD" funcPackage typeName typeName typeName)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinMod calc1 calc2 Type_UniversalInt) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") `mod` (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinRem calc1 calc2 (Type_Type typeName _)) =
-   (printFunctionName a1 a2 "REM" typeName typeName typeName)
+convertCalculation a1 a2 a3 (Calc_BuiltinRem calc1 calc2 (Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "REM" funcPackage typeName typeName typeName)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinRem calc1 calc2 Type_UniversalInt) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") `rem` (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinExp (calc1,Type_Type typeName _) (calc2,Type_Type _ _)) =
-   (printFunctionName a1 a2 "EXP" typeName (NetlistName "STD" "STANDARD","ANON'INTEGER") typeName)
+convertCalculation a1 a2 a3 (Calc_BuiltinExp (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_Type _ _)) =
+   (printFunctionName a1 a2 "EXP" funcPackage typeName (NetlistName "STD" "STANDARD","ANON'INTEGER") typeName)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
-convertCalculation a1 a2 a3 (Calc_BuiltinExp (calc1,Type_Type typeName _) (calc2,Type_UniversalInt)) =
-   (printFunctionName a1 a2 "EXP" typeName (NetlistName "STD" "STANDARD","ANON'INTEGER") typeName)
+convertCalculation a1 a2 a3 (Calc_BuiltinExp (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
+   (printFunctionName a1 a2 "EXP" funcPackage typeName (NetlistName "STD" "STANDARD","ANON'INTEGER") typeName)
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (STD.STANDARD.mkType'ANON'INTEGER $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
@@ -357,7 +354,196 @@ convertCalculation a1 a2 a3 (Calc_BuiltinAbs calc (Type_Type typeName _)) =
    (printUnaryFunctionName a1 a2 "ABS" typeName) ++ " (" ++ convertCalculation a1 a2 a3 calc ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinAbs calc Type_UniversalInt) = "abs (" ++ convertCalculation a1 a2 a3 calc ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinAbs calc Type_UniversalReal) = "abs (" ++ convertCalculation a1 a2 a3 calc ++ ")"
--- ?? Other expressions
+-- ?? Only has two enumerated types supported, change from Type_Type
+convertCalculation a1 a2 a3 (Calc_BuiltinNot calc (Type_Type typeName _)) =
+   (printUnaryFunctionName a1 a2 "NOT" typeName) ++ " (" ++ convertCalculation a1 a2 a3 calc ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_Type _ _)) =
+   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
+   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
+   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") == (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") == (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_Type _ _)) =
+   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
+   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
+   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") /= (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") /= (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_Type _ _)) =
+   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
+   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
+   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") < (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") < (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_Type _ _)) =
+   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
+   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
+   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") <= (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") <= (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_Type _ _)) =
+   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
+   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
+   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") > (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") > (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThanOrEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_Type _ _)) =
+   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThanOrEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
+   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThanOrEqual (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThanOrEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
+   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThanOrEqual (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName typeName)
+   ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThanOrEqual (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") >= (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThanOrEqual (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") >= (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinAnd calc1 calc2 (Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "AND" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinOr calc1 calc2 (Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "OR" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinXor calc1 calc2 (Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "XOR" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinNand calc1 calc2 (Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "NAND" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
+convertCalculation a1 a2 a3 (Calc_BuiltinNor calc1 calc2 (Type_Type typeName@(funcPackage,_) _)) =
+   (printFunctionName a1 a2 "NOR" funcPackage typeName typeName typeName)
+   ++ " (" ++ convertCalculation a1 a2 a3 calc1
+   ++ ") (" ++ convertCalculation a1 a2 a3 calc2
+   ++ ")"
 convertCalculation a1 a2 a3 (Calc_ImplicitTypeConversion typeName calc) = printTypeConstructor a1 a2 typeName ++ "(" ++ convertCalculation a1 a2 a3 calc ++ ")"
 convertCalculation a1 a2 a3 (Calc_SubtypeResult subtypeName calc) = printTypeConstructor a1 a2 subtypeName ++ "(" ++ convertCalculation a1 a2 a3 calc ++ ")"
 convertCalculation a1 a2 a3 (Calc_ExplicitTypeConversion (typeName1,IntegerType) (calc,Type_Type typeName2 IntegerType)) =
@@ -378,14 +564,14 @@ convertCalculation _ _ isInitial (Calc_SignalEvent signalName signalType)
    | otherwise = "control'signal'event (" ++ printSignalName signalName signalType False ++ ")"
 
 printUnaryFunctionName :: [(NetlistName,String)] -> String -> String -> (NetlistName,String) -> String
-printUnaryFunctionName nestedNames processName opName typeName =
+printUnaryFunctionName nestedNames processName opName typeName@(funcPackage,_) =
    let typeFullName = printFunctionType nestedNames processName typeName
-   in "function'op'" ++ opName ++ "'in'" ++ typeFullName ++ "'out'" ++ typeFullName
+   in show funcPackage ++ ".function'op'" ++ opName ++ "'in'" ++ typeFullName ++ "'out'" ++ typeFullName
 
-printFunctionName :: [(NetlistName,String)] -> String -> String -> (NetlistName,String) -> (NetlistName,String) -> (NetlistName,String) -> String
-printFunctionName nestedNames processName opName typeName1 typeName2 typeName3 =
+printFunctionName :: [(NetlistName,String)] -> String -> String -> NetlistName -> (NetlistName,String) -> (NetlistName,String) -> (NetlistName,String) -> String
+printFunctionName nestedNames processName opName funcPackage typeName1 typeName2 typeName3 =
    let printFuncSeg = printFunctionType nestedNames processName
-   in "function'op'" ++ opName
+   in show funcPackage ++ ".function'op'" ++ opName
       ++ "'in'" ++ printFuncSeg typeName1
       ++ "'_'" ++ printFuncSeg typeName2
       ++ "'out'" ++ printFuncSeg typeName3
@@ -393,7 +579,7 @@ printFunctionName nestedNames processName opName typeName1 typeName2 typeName3 =
 printFunctionType :: [(NetlistName,String)] -> String -> (NetlistName,String) -> String
 printFunctionType nestedNames processName name@(NetlistName typePackage typeUnit,typeName)
    | elem name nestedNames = typePackage ++ "'" ++ typeUnit ++ "'Type'" ++ processName ++ "'" ++ typeName
-   | otherwise = typePackage ++ "'" ++ typeUnit ++ "'Type" ++ typeName
+   | otherwise = typePackage ++ "'" ++ typeUnit ++ "'Type'" ++ typeName
 
 printTypeName :: [(NetlistName,String)] -> String -> (NetlistName,String) -> String
 printTypeName nestedNames processName name@(NetlistName typePackage typeUnit,typeName)

@@ -462,3 +462,7 @@ matchChar token =
    case unPos token of
       Tokens.Literal (Tokens.Character chr) -> Just $ PosnWrapper (getPos token) chr
       _ -> Nothing
+
+isEOF :: Tokens.WrappedToken -> Bool
+isEOF (PosnWrapper _ Tokens.EOF) = True
+isEOF _ = False

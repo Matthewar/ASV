@@ -12,6 +12,7 @@ module Parser.Netlist.Types.Error
 import Data.Char (toUpper)
 import Data.List (intersperse)
 import Data.Int (Int64)
+import Numeric (showFFloat)
 
 import Lexer.Types.PositionWrapper (PosnWrapper(..))
 import Lexer.Types.Error (getLineAndColErrStr)
@@ -21,6 +22,7 @@ import Parser.Netlist.Types.Representation
          , FloatRange
          , NetlistName
          )
+import Sim.Output.Names (showEnum)
 
 -- |Wrapped netlist error
 -- ?? Want to have file name along with position for better error messages
@@ -102,8 +104,8 @@ data NetlistError =
    | NetlistError_ResFuncNotAllowedInSubtypeIndic
    -- |Type mark in constant declaration is unrecognised
    | NetlistError_UnrecognisedNameInSubtypeIndic
-   -- |Enum value is not within the type range ?? Add type name, other useful details
-   | NetlistError_EnumValueOutOfRange Enumerate
+   -- |Enum value is not within the type range
+   | NetlistError_EnumValueOutOfRange (NetlistName,String) Enumerate -- ?? Add type name, other useful details to all out of range ones
    -- |Integer value in not within the type range
    | NetlistError_IntValueOutOfRange Integer
    -- |Real value is not within the type range
@@ -139,7 +141,7 @@ data NetlistError =
    -- |Expected a readable signal in the sensitivity list
    | NetlistError_ExpectedReadableSignalInSensitivityList
    -- |No entity found for an associated architecture body
-   | NetlistError_UnableToFindEntityForArch NetlistName
+   | NetlistError_UnableToFindEntityForArch NetlistName String
    -- |Cannot find an expression of the expected type
    | NetlistError_CannotFindCalculationOfType (NetlistName,String)
    -- |Cannot have a signal assignment in a passive process
@@ -282,6 +284,142 @@ instance (Show NetlistError) where
       "physical ranges cannot occur in a type definition"
    show NetlistError_DownToInEnumRange =
       "downto range cannot occur in an enumerated range"
+   show NetlistError_ResFuncNotAllowedInSubtypeIndic =
+      "resolution functions cannot occur in the subtype indication of a constant declaration"
+   show NetlistError_UnrecognisedNameInSubtypeIndic =
+      "unrecognised type mark in constant delcaration"
+   show (NetlistError_EnumValueOutOfRange (typePackage,typeName) enum) =
+      "enum value ("
+      ++ show typePackage ++ "." ++ showEnum typeName enum
+      ++ ") is not within the type range"
+   show (NetlistError_IntValueOutOfRange int) =
+      "integer value ("
+      ++ show int
+      ++ ") is not within the type range"
+   -- |Real value is not within the type range
+   show (NetlistError_FloatValueOutOfRange flt) =
+      "real value ("
+      ++ (showFFloat Nothing flt) ""
+      ++ ") is not within the type range"
+   show (NetlistError_PhysValueOutOfRange int) =
+      "physical value ("
+      ++ show int
+      ++ " <BASE UNIT HERE>) is not within the type range"
+   show NetlistError_CannotFindValueWithContext =
+      "multiple possible values of expected type found for expression"
+   show (NetlistError_ConstNameAlreadyDefined str) =
+      "constant name ("
+      ++ str
+      ++ ") is already defined in the unit"
+   show (NetlistError_DuplicateConstName str) =
+      "duplicate constant name ("
+      ++ str
+      ++ ") in the identifier list"
+   show (NetlistError_InvalidSubtypeIntConstraint (IntegerRange oldLeft oldRight direction) (IntegerRange newLeft newRight _)) =
+      let checkVal val = case direction of
+                           To -> val >= oldLeft && val <= oldRight
+                           Downto -> val <= oldLeft && val >= oldRight
+      "New constraint in integer subtype is out of range ("
+      ++ concat
+         $ intersperse ", "
+         $ map fromJust
+         $ filter isJust
+         [ if checkVal newLeft
+            then Just $ "left bound " ++ show newLeft
+            else Nothing
+         , if checkVal newRight
+            then Just $ "right bound " ++ show newRight
+            else Nothing
+         ]
+      ++ ")"
+   show (NetlistError_InvalidSubtypeFloatConstraint (FloatRange oldLeft oldRight direction) (FloatRange newLeft newRight _)) =
+      let checkVal val = case direction of
+                           To -> val >= oldLeft && val <= oldRight
+                           Downto -> val <= oldLeft && val >= oldRight
+      "New constraint in floating subtype is out of range ("
+      ++ concat
+         $ intersperse ", "
+         $ map fromJust
+         $ filter isJust
+         [ if checkVal newLeft
+            then Just $ "left bound " ++ (showFFloat Nothing newLeft) ""
+            else Nothing
+         , if checkVal newRight
+            then Just $ "right bound " ++ (showFFloat Nothing newRight) ""
+            else Nothing
+         ]
+      ++ ")"
+   show (NetlistError_InvalidSubtypePhysConstraint (IntegerRange oldLeft oldRight direction) (IntegerRange newLeft newRight _)) = -- ?? Need base unit
+      let checkVal val = case direction of
+                           To -> val >= oldLeft && val <= oldRight
+                           Downto -> val <= oldLeft && val >= oldRight
+      "New constraint in physical subtype is out of range ("
+      ++ concat
+         $ intersperse ", "
+         $ map fromJust
+         $ filter isJust
+         [ if checkVal newLeft
+            then Just $ "left bound " ++ show newLeft
+            else Nothing
+         , if checkVal newRight
+            then Just $ "right bound " ++ show newRight
+            else Nothing
+         ]
+      ++ ")"
+   ---- |No valid enumerate ranges found from constraint for specified subtype
+   --show NetlistError_NoValidEnumRangeFound = -- ?? Need more data here
+   show (NetlistError_SubtypeNameAlreadyDefined name) =
+      "The subtype name "
+      ++ name
+      ++ " has already been defined in the unit"
+   show NetlistError_ExpectedTypeMarkButGotFunctionName =
+      "Expected a type mark in the subtype indication, but found a function name"
+   show NetlistError_NoConditionFound =
+      "No expression found with a boolean result"
+   show NetlistError_NoTimeResultExpressionFound =
+      "No expression found with a time (STD.STANDARD.TIME) result"
+   show NetlistError_NoSeverityResultExpressionFound =
+      "No expression found with a severity level (STD.STANDARD.SEVERITY_LEVEL) result"
+   show (NetlistError_ExpectedSignalNameInSensitivityList name) =
+      "Expected a signal name in the sensitivity list, but got name \""
+      ++ name
+      ++ "\""
+   show NetlistError_ExpectedReadableSignalInSensitivityList =
+      "Expected a readable signal in the sensitivty list"
+   show (NetlistError_UnableToFindEntityForArch entityName archName) =
+      "unable to find entity "
+      ++ show entityName
+      ++ " for architecture "
+      ++ archName
+   show (NetlistError_CannotFindCalculationOfType (typePackage,typeName)) =
+      "Cannot find an expression of the type "
+      ++ show typePackage ++ "." ++ typeName
+   show NetlistError_SignalAssignmentInPassiveProcess =
+      "Cannot have a signal assignment within a passive process"
+   show NetlistError_FailedTypeConversion = -- ?? Add type data of potential inputs recognised
+      "Could not find any types with valid conversions to target type in type conversion"
+   show (NetlistError_NonDiscreteTypeDiscreteAttr attr) =
+      "The discrete subtype attribute "
+      ++ attr
+      ++ " cannot be applied to a non-discrete subtype"
+   ---- |Subtype attribute argument is out of range
+   --show NetlistError_SubtypeAttributeArgOutOfRange = -- ?? Branch this into different errors depending on attribute name (succ,pred,leftof,rightof)
+   show (NetlistError_SignalNameInStaticExpression name) =
+      "Signal name "
+      ++ name
+      ++ " is not allowed in a static expression"
+   show NetlistError_NegativeTimeInSignalAttribute =
+      "Negative time in signal (function type) attribute argument"
+   show (NetlistError_CannotReadOutputPort name) =
+      "Attempt to read output port "
+      ++ name
+      ++ " is not allowed"
+   show (NetlistError_CannotAssignToInputPort name) =
+      "Attempt to assign to input port "
+      ++ name
+      ++ " is not allowed"
+   show NetlistError_PackageSignalInSignalAssign =
+      "Cannot assign to a signal within a package"
 
 ---- |Print list of wrapped names
 --printNames :: [WrappedSimpleName] -> String

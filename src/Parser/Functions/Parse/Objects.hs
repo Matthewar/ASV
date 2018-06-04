@@ -92,7 +92,8 @@ parseSignal scope unit unitName = do
       token | isVarAssign token -> do
          values <- parseExpression LocallyStatic scope unit unitName
          staticTypeCompare subtypeData values $ getPos token
-      token | isSemicolon token ->
+      token | isSemicolon token -> do
+         saveToken token
          case subtypeData of
             EnumerationSubtype _ baseTypeName _ (left,_) -> return $ Value_Enum baseTypeName left
             IntegerSubtype _ _ (IntegerRange left _ _) -> return $ Value_Int $ toInteger left

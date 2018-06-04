@@ -16,7 +16,6 @@ import qualified Data.Text.IO as TextIO
 import Parser.Netlist.Types.Representation (NetlistName(..))
 import Parser.Netlist.Types.Stores (NetlistStore(..))
 import Manager.Types.Error (ConverterError)
---import Sim.Output.Entities (outputEntities)
 import Sim.Output.Packages (outputPackages)
 import Sim.Output.Control (outputControl)
 import Sim.Output.Cabal
@@ -32,9 +31,8 @@ outputTop :: FilePath -> NetlistStore -> NetlistName -> ExceptT ConverterError I
 outputTop buildDir netlist topModule = do
    liftIO $ makeDirectories buildDir netlist
    outputCabalPrefix buildDir
-   --outputEntities buildDir $ entities netlist
    outputPackages buildDir $ packages netlist
-   outputControl buildDir topModule $ entities netlist
+   outputControl buildDir topModule (architectures netlist) (entities netlist)
    outputBuiltins buildDir
    outputCabalFinal buildDir
 

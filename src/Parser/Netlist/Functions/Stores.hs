@@ -80,7 +80,18 @@ newEntity scope = emptyEntity { entityScope = scope }
 
 -- |New architecture with with associated entity
 newArchitecture :: Entity -> Architecture
-newArchitecture entity = emptyArchitecture { archEntity = entity }
+newArchitecture (Entity scope generics ports funcs types subtypes consts signals processes) =
+   emptyArchitecture
+      { archScope = scope
+      , archGenerics = generics
+      , archPorts = ports
+      , archFunctions = funcs
+      , archTypes = types
+      , archSubtypes = subtypes
+      , archConstants = consts
+      , archSignals = signals
+      , archProcesses = processes
+      }
 
 -- |Convert package to generalised store for use in low level conversions
 convertPackageToGenericUnit :: Package -> (ScopeStore,UnitStore)
@@ -102,19 +113,9 @@ convertEntityToGenericUnit (Entity scope generics ports funcs types subtypes con
 
 -- |Convert architecture to generalised store for use in low level conversions
 convertArchitectureToGenericUnit :: Architecture -> (ScopeStore,UnitStore)
-convertArchitectureToGenericUnit (Architecture archScope entity funcs types subtypes consts signals processes) =
-      let archUnit = emptyUnitStore
-                        { unitFunctions = funcs
-                        , unitTypes = types
-                        , unitSubtypes = subtypes
-                        , unitConstants = consts
-                        , unitSignals = signals
-                        , unitProcesses = processes
-                        }
-          (entityScope,entityUnit) = convertEntityToGenericUnit entity
-          unit = mergeUnits archUnit entityUnit
-          scope = mergeScopes archScope entityScope
-      in (scope,unit)
+convertArchitectureToGenericUnit (Architecture scope generics ports funcs types subtypes consts signals processes) =
+   let unit = UnitStore generics ports funcs types subtypes consts signals processes
+   in (scope,unit)
 
 convertProcessToGenericUnit :: Process -> UnitStore
 convertProcessToGenericUnit (Process funcs types subtypes consts _) =

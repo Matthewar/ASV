@@ -215,6 +215,7 @@ parseAndExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) =
                      -- ?? need other checks
                      _ -> False
                in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+       constFunctionFinder _ _ _ = False
        applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
        applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
          let typeCheck = case (typeData1,typeData2) of
@@ -311,6 +312,7 @@ parseOrExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) = 
                      -- ?? need other checks
                      _ -> False
                in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+       constFunctionFinder _ _ _ = False
        applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
        applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
          let typeCheck = case (typeData1,typeData2) of
@@ -407,6 +409,7 @@ parseXorExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) =
                      -- ?? need other checks
                      _ -> False
                in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+       constFunctionFinder _ _ _ = False
        applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
        applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
          let typeCheck = case (typeData1,typeData2) of
@@ -503,6 +506,7 @@ parseNandExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) 
                      -- ?? need other checks
                      _ -> False
                in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+       constFunctionFinder _ _ _ = False
        applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
        applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
          let typeCheck = case (typeData1,typeData2) of
@@ -593,6 +597,7 @@ parseNorExpression staticLevel scope unit unitName (PosnWrapper pos prevCalcs) =
                      -- ?? need other checks
                      _ -> False
                in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+       constFunctionFinder _ _ _ = False
        applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
        applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
          let typeCheck = case (typeData1,typeData2) of
@@ -706,6 +711,7 @@ parseRelation staticLevel scope unit unitName = do
                            -- ?? need other checks
                            _ -> False
                      in operatorCheck operator && inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+             constFunctionFinder _ _ _ = False
              applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
              applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
                let typeCheck = case (typeData1,typeData2) of
@@ -1024,6 +1030,7 @@ parseAdditionExpression staticLevel scope unit unitName prevCalcs = do
                            -- ?? need other checks
                            _ -> False
                      in operatorCheck operator && inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+             constFunctionFinder _ _ _ = False
              applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
              applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
                let typeCheck = case (typeData1,typeData2) of
@@ -1167,6 +1174,7 @@ parseMultiplicationExpression staticLevel scope unit unitName prevCalcs = do
                            -- ?? need other checks
                            _ -> False
                      in operatorCheck operator && inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+             constFunctionFinder _ _ _ = False
              applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
              applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
                let typeCheck = case (typeData1,typeData2) of
@@ -1322,6 +1330,7 @@ parseFactor staticLevel scope unit unitName = do
                            -- ?? need other checks
                            _ -> False
                      in inputCheck inputType inputSubtype
+             constFunctionFinder _ _ = False
              applyArith :: (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
              applyArith (wrappedVal@(Calc_Value val _),typeData) =
                let typeCheck = case typeData of
@@ -1403,6 +1412,7 @@ parseFactor staticLevel scope unit unitName = do
                            -- ?? need other checks
                            _ -> False
                      in inputCheck inputType inputSubtype
+             constFunctionFinder _ _ = False
              applyArith :: (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
              applyArith (wrappedVal@(Calc_Value val _),typeData) =
                let typeCheck = case typeData of
@@ -1487,6 +1497,7 @@ parseFactor staticLevel scope unit unitName = do
                                  -- ?? need other checks
                                  _ -> False
                            in inputCheck leftIn leftSubtype && inputCheck rightIn rightSubtype
+                   constFunctionFinder _ _ _ = False
                    applyArith :: (Calculation,AllTypes) -> (Calculation,AllTypes) -> ParserStack [(Calculation,AllTypes)]
                    applyArith (wrappedVal1@(Calc_Value val1 _),typeData1) (wrappedVal2@(Calc_Value val2 _),typeData2) =
                      let typeCheck = case (typeData1,typeData2) of
@@ -1952,7 +1963,7 @@ subtypeAttributeVal scope unit unitName subtypeName subtypeData = do
          let enum = enum_discreteVal enums $ fromInteger int
          in if valueInEnumRange enum enums range
                then return [(Calc_Value (Value_Enum typeName enum) typeData,typeData)]
-               else throwError $ ConverterError_Netlist $ passPosition (NetlistError_EnumValueOutOfRange enum) leftParenTok
+               else throwError $ ConverterError_Netlist $ passPosition (NetlistError_EnumValueOutOfRange typeName enum) leftParenTok
       IntegerSubtype _ _ range | valueInIntRange int range -> return [(Calc_Value (Value_Int int) typeData,typeData)]
       IntegerSubtype _ _ range -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_IntValueOutOfRange int) leftParenTok
       PhysicalSubtype _ _ _ _ range | valueInIntRange int range -> return [(Calc_Value (Value_Physical int) typeData,typeData)]
@@ -1998,7 +2009,7 @@ staticTypeCompare subtypeData values pos =
              value = filter filterFunc values
          in case value of
                [(Calc_Value (Value_Enum _ enum) _,_)] | valueInEnumRange enum enums (left,right) -> return $ Value_Enum baseTypeName enum
-               [(Calc_Value (Value_Enum _ enum) _,_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_EnumValueOutOfRange enum
+               [(Calc_Value (Value_Enum _ enum) _,_)] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_EnumValueOutOfRange baseTypeName enum
                _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_CannotFindValueWithContext
       IntegerSubtype _ baseTypeName range ->
          let filterFunc (_,Type_Type name _) = name == baseTypeName

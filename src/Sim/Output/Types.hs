@@ -1,6 +1,5 @@
 module Sim.Output.Types
    ( outputTypes
-   , showEnum
    ) where
 
 -- ?? Probably add instances for conversions
@@ -23,6 +22,7 @@ import Parser.Netlist.Types.Representation
          , Subtype(..)
          )
 import Parser.Netlist.Types.Stores (TypeStore)
+import Sim.Output.Names (showEnum)
 import Manager.Types.Error (ConverterError)
 
 newline = "\n"
@@ -131,109 +131,6 @@ printEnumType file unitName name enums =
 --            in makeDiscreteLeftRight enums (left:leftStr) (right:rightStr)
 --         makeDiscreteLeftRight _ leftStr rightStr = (leftStr,rightStr)
 
-showEnum :: String -> Enumerate -> String
-showEnum typeName (Enum_Identifier str) = typeName ++ "'Iden'" ++ str
-showEnum typeName (Enum_Char chr) = typeName ++ "'Char'" ++ (characterMap MapS.! chr)
-   where characterMap :: MapS.Map Char String
-         characterMap =
-            [ (' ',"SPACE")
-            , ('!',"EXCLAMATION")
-            , ('"',"QUOTE")
-            , ('#',"HASH")
-            , ('$',"DOLLAR")
-            , ('%',"PERCENT")
-            , ('&',"AMPERSAND")
-            , ('\'',"TICK")
-            , ('(',"LEFTPAREN")
-            , (')',"RIGHTPAREN")
-            , ('*',"STAR")
-            , ('+',"PLUS")
-            , (',',"COMMA")
-            , ('-',"HYPHEN")
-            , ('.',"PERIOD")
-            , ('/',"FORWARDSLASH")
-            , ('0',"0")
-            , ('1',"1")
-            , ('2',"2")
-            , ('3',"3")
-            , ('4',"4")
-            , ('5',"5")
-            , ('6',"6")
-            , ('7',"7")
-            , ('8',"8")
-            , ('9',"9")
-            , (':',"COLON")
-            , (';',"SEMICOLON")
-            , ('<',"LESSTHAN")
-            , ('=',"EQUAL")
-            , ('>',"GREATERTHAN")
-            , ('?',"QUESTION")
-            , ('@',"AT")
-            , ('A',"A")
-            , ('B',"B")
-            , ('C',"C")
-            , ('D',"D")
-            , ('E',"E")
-            , ('F',"F")
-            , ('G',"G")
-            , ('H',"H")
-            , ('I',"I")
-            , ('J',"J")
-            , ('K',"K")
-            , ('L',"L")
-            , ('M',"M")
-            , ('N',"N")
-            , ('O',"O")
-            , ('P',"P")
-            , ('Q',"Q")
-            , ('R',"R")
-            , ('S',"S")
-            , ('T',"T")
-            , ('U',"U")
-            , ('V',"V")
-            , ('W',"W")
-            , ('X',"X")
-            , ('Y',"Y")
-            , ('Z',"Z")
-            , ('[',"LEFTSQUAREBRACE")
-            , ('\\',"BACKSLASH")
-            , (']',"RIGHTSQUAREBRACE")
-            , ('^',"CAROT")
-            , ('_',"UNDERSCORE")
-            , ('`',"BACKTICK")
-            , ('a',"a")
-            , ('b',"b")
-            , ('c',"c")
-            , ('d',"d")
-            , ('e',"e")
-            , ('f',"f")
-            , ('g',"g")
-            , ('h',"h")
-            , ('i',"i")
-            , ('j',"j")
-            , ('k',"k")
-            , ('l',"l")
-            , ('m',"m")
-            , ('n',"n")
-            , ('o',"o")
-            , ('p',"p")
-            , ('q',"q")
-            , ('r',"r")
-            , ('s',"s")
-            , ('t',"t")
-            , ('u',"u")
-            , ('v',"v")
-            , ('w',"w")
-            , ('x',"x")
-            , ('y',"y")
-            , ('z',"z")
-            , ('{',"LEFTBRACE")
-            , ('|',"BAR")
-            , ('}',"RIGHTBRACE")
-            , ('~',"TILDE")
-            ]
-            & MapS.fromList
-
 printIntType :: FilePath -> NetlistName -> String -> ExceptT ConverterError IO ()
 printIntType file unitName name =
    let typeName = "Type'" ++ name
@@ -262,7 +159,7 @@ printIntType file unitName name =
          let funcName = "extract" ++ typeName
          in funcName ++ " :: " ++ typeName ++ " -> Integer"
             ++ newline
-            ++ funcName ++ "(" ++ typeName ++ " value) = toInteger value"
+            ++ funcName ++ " (" ++ typeName ++ " value) = toInteger value"
        outputStr =
          "instance STD.STANDARD.SignalOutput " ++ typeName ++ " where"
          ++ newline ++ tab
@@ -388,7 +285,7 @@ printFloatType file unitName name =
          let funcName = "extract" ++ typeName
          in funcName ++ " :: " ++ typeName ++ " -> Double"
             ++ newline
-            ++ funcName ++ "(" ++ typeName ++ " value) = value"
+            ++ funcName ++ " (" ++ typeName ++ " value) = value"
        outputStr =
          "instance STD.STANDARD.SignalOutput " ++ typeName ++ " where"
          ++ newline ++ tab
@@ -481,7 +378,7 @@ printPhysicalType fileName unitName name baseUnit =
          let funcName = "extract" ++ typeName
          in funcName ++ " :: " ++ typeName ++ " -> Integer"
             ++ newline
-            ++ funcName ++ "(" ++ typeName ++ " value) = toInteger value"
+            ++ funcName ++ " (" ++ typeName ++ " value) = toInteger value"
        outputStr =
          "instance STD.STANDARD.SignalOutput " ++ typeName ++ " where"
          ++ newline ++ tab

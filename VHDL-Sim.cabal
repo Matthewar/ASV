@@ -62,6 +62,7 @@ library
                      , Sim.Output.Control
                      , Sim.Output.Components
                      , Sim.Output.Entities
+                     , Sim.Output.Architectures
                      , Sim.Output.Packages
                      , Sim.Output.Imports
                      , Sim.Output.Types

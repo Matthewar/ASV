@@ -2,6 +2,7 @@ module Parser.Functions.Parse.DesignFile
    ( parseDesignFile
    ) where
 
+import Control.Monad (unless)
 import Control.Monad.Trans.State
          ( execStateT
          , evalStateT
@@ -9,7 +10,12 @@ import Control.Monad.Trans.State
 
 import Lexer.Types.Monad (Alex)
 import Parser.Types.Monad (ParserStack)
+import Parser.Functions.Monad
+         ( getToken
+         , saveToken
+         )
 import Parser.Functions.Monad (accessNetlist)
+import Parser.Functions.IdentifyToken (isEOF)
 import Parser.Functions.Parse.Context (parseContext)
 import Parser.Functions.Parse.Library (parseLibrary)
 import Parser.Functions.Convert.Scope (evalScope)
@@ -26,4 +32,7 @@ parseDesignUnit create libraryName dependencies = do
    scope <- execStateT parseContext InitialNetlist.scope
    realScope <- accessNetlist $ evalScope create scope dependencies
    parseLibrary realScope libraryName
-   return ()
+   endToken <- getToken
+   unless (isEOF endToken) $ do
+      saveToken endToken
+      parseDesignUnit create libraryName dependencies

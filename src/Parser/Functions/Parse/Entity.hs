@@ -127,9 +127,9 @@ parseEntity scope libraryName = do
          unless (name1 == name2) $ throwError $ ConverterError_Parse $ PosnWrapper (getPos name2Info) $ ParseErr_EntityNamesNoMatch name1Info name2Info
          semiColonToken <- getToken
          unless (isSemicolon semiColonToken) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSemicolonInEntity semiColonToken
-         let addEntity scope = scope { entities = MapS.insert unitName entity $ entities scope }
-         modifyNetlist addEntity
       Nothing -> unless (isSemicolon possibleNameToken) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedEntityEndOfDec possibleNameToken
+   let addEntity scope = scope { entities = MapS.insert unitName entity $ entities scope }
+   modifyNetlist addEntity
 
 -- |Monad stack for entity building
 type EntityBuildStack = StateT Entity (StateT ParserState (StateT AlexState (StateT NetlistStore (ExceptT ConverterError IO)))) ()

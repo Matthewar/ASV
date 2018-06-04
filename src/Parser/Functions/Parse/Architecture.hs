@@ -98,18 +98,18 @@ parseArchitecture scope libraryName = do
       Just name -> return name
       Nothing -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedEntityNameInArch nameToken2
    unless (isKeywordIs isTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedKeywordIsInArch isTok
-   let entityName = NetlistName libraryName $ unPos entityNameInfo
+   let entityUnitName = map toUpper $ unPos entityNameInfo
+       entityName = NetlistName libraryName entityUnitName
        findEntity netlist = MapS.lookup entityName $ entities netlist
    wrappedEntity <- accessNetlist $ gets findEntity
-   entity <- case wrappedEntity of
-      Just entityData -> return entityData
-      Nothing -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_UnableToFindEntityForArch entityName) entityNameInfo
    let getName = (map toUpper) . unPos
        name1 = getName name1Info
-       netlistName = NetlistName libraryName name1
-       baseArchitecture = newArchitecture entity
-   initialArch <- execStateT (parseArchitectureDeclares netlistName) baseArchitecture
-   architecture <- execStateT (parseArchitectureStatements netlistName) initialArch
+   entity <- case wrappedEntity of
+      Just entityData -> return entityData
+      Nothing -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_UnableToFindEntityForArch entityName name1) entityNameInfo
+   let baseArchitecture = newArchitecture entity
+   initialArch <- execStateT (parseArchitectureDeclares entityName) baseArchitecture
+   architecture <- execStateT (parseArchitectureStatements entityName) initialArch
    possibleNameToken <- getToken
    case matchIdentifier possibleNameToken of
       Just name2Info -> do
@@ -117,22 +117,22 @@ parseArchitecture scope libraryName = do
          unless (name1 == name2) $ throwError $ ConverterError_Parse $ passPosition (ParseErr_ArchitectureNamesNoMatch name1Info name2Info) name2Info
          semiColonToken <- getToken
          unless (isSemicolon semiColonToken) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSemicolonInArchitecture semiColonToken
-         let addArchitecture scope = scope { architectures = MapS.insert netlistName architecture $ architectures scope }
-         modifyNetlist addArchitecture
       Nothing -> unless (isSemicolon possibleNameToken) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedArchitectureEndOfDec possibleNameToken
+   let addArchitecture scope = scope { architectures = MapS.insert (libraryName,entityUnitName,name1) architecture $ architectures scope }
+   modifyNetlist addArchitecture
 
 -- |Monad stack for entity building
 type ArchBuildStack = StateT Architecture (StateT ParserState (StateT AlexState (StateT NetlistStore (ExceptT ConverterError IO)))) ()
 
 parseArchitectureDeclares :: NetlistName -> ArchBuildStack
-parseArchitectureDeclares architectureName = do
+parseArchitectureDeclares entityName = do
    (scopeStore,unitStore) <- gets convertArchitectureToGenericUnit
    token <- lift getToken
    case token of
       _ | isKeywordProcedure token -> throwError $ ConverterError_NotImplemented $ passPosition "Procedure declaration" token
       _ | isKeywordFunction token -> throwError $ ConverterError_NotImplemented $ passPosition "Function declaration" token
       _ | isKeywordType token -> do
-            (modType,modSubtype) <- lift $ parseType scopeStore unitStore architectureName
+            (modType,modSubtype) <- lift $ parseType scopeStore unitStore entityName
             let insertArchType arch =
                   arch
                      { archTypes = modType $ archTypes arch
@@ -140,11 +140,11 @@ parseArchitectureDeclares architectureName = do
                      }
             modify insertArchType
       _ | isKeywordSubtype token -> do
-         modSubtype <- lift $ parseSubtype scopeStore unitStore architectureName
+         modSubtype <- lift $ parseSubtype scopeStore unitStore entityName
          let insertArchSubtype arch = arch { archSubtypes = modSubtype $ archSubtypes arch }
          modify insertArchSubtype
       _ | isKeywordConstant token -> do
-            (constStore,modSubtype) <- lift $ parseConstant scopeStore unitStore architectureName
+            (constStore,modSubtype) <- lift $ parseConstant scopeStore unitStore entityName
             let insertArchConsts arch =
                   arch
                      { archConstants = MapS.union constStore $ archConstants arch
@@ -152,7 +152,7 @@ parseArchitectureDeclares architectureName = do
                      }
             modify insertArchConsts
       _ | isKeywordSignal token -> do
-            (signalStore,modSubtype) <- lift $ parseSignal scopeStore unitStore architectureName
+            (signalStore,modSubtype) <- lift $ parseSignal scopeStore unitStore entityName
             let insertArchSignals arch =
                   arch
                      { archSignals = MapS.union signalStore $ archSignals arch
@@ -168,10 +168,10 @@ parseArchitectureDeclares architectureName = do
       _ | isKeywordUse token -> throwError $ ConverterError_NotImplemented $ passPosition "Use" token
       _ | isKeywordBegin token -> return ()
       _ -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedArchDeclItemOrEnd token
-   unless (isKeywordBegin token) $ parseArchitectureDeclares architectureName
+   unless (isKeywordBegin token) $ parseArchitectureDeclares entityName
 
 parseArchitectureStatements :: NetlistName -> ArchBuildStack
-parseArchitectureStatements archName = do
+parseArchitectureStatements entityName = do
    (scopeStore,unitStore) <- gets convertArchitectureToGenericUnit
    token <- lift getToken
    case matchIdentifier token of
@@ -184,7 +184,7 @@ parseArchitectureStatements archName = do
                case keywordTok of
                   token | isKeywordBlock token -> throwError $ ConverterError_NotImplemented $ passPosition "Block statement" token
                   token | isKeywordProcess token -> do
-                     (label,newProcess) <- lift $ parseProcess scopeStore unitStore archName False $ Just upperLabel
+                     (label,newProcess) <- lift $ parseProcess scopeStore unitStore entityName False $ Just upperLabel
                      let insertProcess arch = arch { archProcesses = MapS.insert label newProcess $ archProcesses arch }
                      modify insertProcess
                   token | isIdentifier token -> throwError $ ConverterError_NotImplemented $ passPosition "Concurrent procedure call or concurrent signal assignment statement or component instantiation statement" token
@@ -199,7 +199,7 @@ parseArchitectureStatements archName = do
                throwError $ ConverterError_NotImplemented $ passPosition "Passive concurrent procedure call" token
             _ -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedColonInArchStatement nextTok -- ?? This error could also be malformed procedure call (etc.) with no label
       Nothing | isKeywordProcess token -> do
-         (autoLabel,newProcess) <- lift $ parseProcess scopeStore unitStore archName False Nothing
+         (autoLabel,newProcess) <- lift $ parseProcess scopeStore unitStore entityName False Nothing
          let insertProcess arch = arch { archProcesses = MapS.insert autoLabel newProcess $ archProcesses arch }
          modify insertProcess
       Nothing | isKeywordAssert token -> throwError $ ConverterError_NotImplemented $ passPosition "Concurrent assertion statement" token
@@ -207,4 +207,4 @@ parseArchitectureStatements archName = do
       Nothing | isKeywordWith token  -> throwError $ ConverterError_NotImplemented $ passPosition "Selected signal assignment" token
       Nothing | isKeywordEnd token -> return ()
       _ -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedArchStatementItemOrEnd token
-   unless (isKeywordEnd token) $ parseArchitectureStatements archName
+   unless (isKeywordEnd token) $ parseArchitectureStatements entityName

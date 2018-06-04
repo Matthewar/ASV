@@ -1,5 +1,6 @@
 module Sim.Functions.ConvertNames
    ( convertEntityNames
+   , convertArchitectureNames
    ) where
 
 import Parser.Netlist.Types.Representation
@@ -11,6 +12,7 @@ import Parser.Netlist.Types.Representation
          )
 import Parser.Netlist.Types.Stores
          ( Entity(..)
+         , Architecture(..)
          )
 
 convertEntityNames :: Entity -> NetlistName -> NetlistName -> Entity
@@ -21,16 +23,36 @@ convertEntityNames (Entity scope generics ports funcs types subtypes consts sign
       (convertPortNames ports oldName newName)
       -- ?? TODO
       funcs
-      types
-      subtypes
-      consts
-      signals
-      processes
       --(convertFunctionNames funcs oldName newName)
+      types
       --(convertTypeNames types oldName newName)
+      subtypes
       --(convertSubtypeNames subtypes oldName newName)
+      consts
       --(convertConstantNames consts oldName newName)
+      signals
       --(convertSignalNames signals oldName newName)
+      processes
+      --(convertProcessNames processes oldName newName)
+
+convertArchitectureNames :: Architecture -> NetlistName -> NetlistName -> Architecture
+convertArchitectureNames (Architecture scope generics ports funcs types subtypes consts signals processes) oldName newName =
+   Architecture
+      scope
+      (convertGenericNames generics oldName newName)
+      (convertPortNames ports oldName newName)
+      -- ?? TODO
+      funcs
+      --(convertFunctionNames funcs oldName newName)
+      types
+      --(convertTypeNames types oldName newName)
+      subtypes
+      --(convertSubtypeNames subtypes oldName newName)
+      consts
+      --(convertConstantNames consts oldName newName)
+      signals
+      --(convertSignalNames signals oldName newName)
+      processes
       --(convertProcessNames processes oldName newName)
 
 convertGenericNames :: [Generic] -> NetlistName -> NetlistName -> [Generic]

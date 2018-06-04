@@ -7,10 +7,13 @@ import qualified Data.Map.Strict as MapS
 import Data.Maybe (isNothing)
 import Control.Monad.Except
          ( ExceptT
+         , throwError
          , liftIO
          , when
          )
 
+import Lexer.Alex.Types (AlexPosn(..))
+import Lexer.Types.PositionWrapper
 import Parser.Netlist.Types.Representation
          ( NetlistName(..)
          , Generic(..)
@@ -19,28 +22,39 @@ import Parser.Netlist.Types.Stores
          ( Entity(..)
          , EntityStore
          , emptyScopeStore
+         , Architecture(..)
+         , ArchitectureStore
          )
+import Sim.Types.Error (SimOutputError(..))
 import Sim.Output.Entities (outputEntity)
+import Sim.Output.Architectures (outputArchitecture)
 import Sim.Output.Components (outputGenerics)
 import Sim.Output.Imports (outputImports)
 import Sim.Output.Names (printComponentSafeName)
-import Manager.Types.Error (ConverterError)
+import Manager.Types.Error (ConverterError(..))
 
 newline = "\n"
 tab = "   "
 
-outputControl :: FilePath -> NetlistName -> EntityStore -> ExceptT ConverterError IO ()
-outputControl buildDir topUnitName@(NetlistName topLib topUnit) entities = do
-   let componentName = ["TOP","MODULE"]
+outputControl :: FilePath -> NetlistName -> ArchitectureStore -> EntityStore -> ExceptT ConverterError IO ()
+outputControl buildDir topUnitName@(NetlistName topLib topUnit) architectures entities = do
+   let componentName = ["TOP"]
        topUnitFullName = NetlistName topLib $ topUnit ++ "'COMPONENT'" ++ printComponentSafeName componentName -- ?? Need to deal with separate entities and architectures
-   entity <- case MapS.lookup topUnitName entities of
-      Just entity -> return entity
-      Nothing -> error "No entity with top module name"
-   -- ?? Check architectures
-   let generics = entityGenerics entity
-   when (any (\generic -> isNothing $ generic_default generic) generics) $ error "Top module generics must have default values"
-   outputGenerics buildDir topUnitName componentName generics (entityScope entity)
-   outputEntity buildDir entity topUnitName componentName
+   case MapS.toList $ MapS.filterWithKey (\(libName,entityName,_) _ -> libName == topLib && entityName == topUnit) architectures of
+      [] -> do
+         entity <- case MapS.lookup topUnitName entities of
+            Just entity -> return entity
+            Nothing -> throwError $ ConverterError_Sim $ SimErr_NoEntityOrArchWithTopModuleName topUnitName
+         let generics = entityGenerics entity
+         when (any (\generic -> isNothing $ generic_default generic) generics) $ throwError $ ConverterError_Sim $ SimErr_TopGenericsWithoutDefaultValues
+         outputGenerics buildDir topUnitName componentName generics (entityScope entity)
+         outputEntity buildDir entity topUnitName componentName
+      [(_,architecture)] -> do
+         let generics = archGenerics architecture
+         when (any (\generic -> isNothing $ generic_default generic) generics) $ throwError $ ConverterError_Sim $ SimErr_TopGenericsWithoutDefaultValues
+         outputGenerics buildDir topUnitName componentName generics (archScope architecture)
+         outputArchitecture buildDir architecture topUnitName componentName
+      _ -> throwError $ ConverterError_NotImplemented $ PosnWrapper (AlexPn 0 0 0) "Multiple architectures for a single entity" -- ?? Need to wrap positions into table
    outputTopModule buildDir topUnitFullName
 
 outputTopModule :: FilePath -> NetlistName -> ExceptT ConverterError IO ()
@@ -85,15 +99,11 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          ++ "componentState'" ++ topUnitLib ++ "'" ++ topUnitName
          ++ " <- lift $ execStateT TopModule.entityControl $ component'" ++ topUnitLib ++ "'" ++ topUnitName ++ " components"
          ++ newline ++ tab
-         ++ "let updateState state = state { component'" ++ topUnitLib ++ "'" ++ topUnitName ++ " = componentState'" ++ topUnitLib ++ "'" ++ topUnitName ++ " }"
-         ++ newline ++ tab
-         ++ "modify updateState"
-         ++ newline ++ tab
          ++ "minTime'" ++ topUnitLib ++ "'" ++ topUnitName ++ " <- lift $ evalStateT TopModule.allTimes componentState'" ++ topUnitLib ++ "'" ++ topUnitName
          ++ newline ++ tab
-         ++ "areAnyActive <- lift $ evalStateT TopModule.anyActive componentState'" ++ topUnitLib ++ "'" ++ topUnitName
+         ++ "areAnyReady <- lift $ evalStateT TopModule.anyReady componentState'" ++ topUnitLib ++ "'" ++ topUnitName
          ++ newline ++ tab
-         ++ "if areAnyActive"
+         ++ "if areAnyReady"
          ++ newline ++ tab ++ tab
          ++ "then do"
          ++ newline ++ tab ++ tab ++ tab
@@ -111,13 +121,16 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          ++ newline ++ tab ++ tab ++ tab
          ++ "case minTime'" ++ topUnitLib ++ "'" ++ topUnitName ++ " of"
          ++ newline ++ tab ++ tab ++ tab ++ tab
-         ++ "Just minTime -> lift $ modify (\\(Control'Time _ delta) -> Control'Time minTime delta)"
+         ++ "Just minTime -> lift $ put $ Control'Time minTime 0"
          ++ newline ++ tab ++ tab ++ tab ++ tab
          ++ "Nothing -> error \"Nothing to do\""
          ++ newline ++ tab
-         ++ "endTime <- lift get"
+         ++ "newComponentState'" ++ topUnitLib ++ "'" ++ topUnitName
+         ++ " <- lift $ execStateT TopModule.signalUpdate componentState'" ++ topUnitLib ++ "'" ++ topUnitName
          ++ newline ++ tab
-         ++ "lift $ evalStateT (TopModule.signalUpdate endTime) componentState'" ++ topUnitLib ++ "'" ++ topUnitName
+         ++ "let updateState state = state { component'" ++ topUnitLib ++ "'" ++ topUnitName ++ " = newComponentState'" ++ topUnitLib ++ "'" ++ topUnitName ++ " }"
+         ++ newline ++ tab
+         ++ "modify updateState"
          ++ newline ++ tab
          ++ "topRepeat maxTime"
        topFixedFuncsStr =

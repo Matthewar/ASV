@@ -91,9 +91,9 @@ parsePackage scope libraryName = do -- ?? Need to check name is as expected
          unless (name1 == name2) $ throwError $ ConverterError_Parse $ PosnWrapper (getPos name2Info) $ ParseErr_PackageNamesNoMatch name1Info name2Info
          semiColonToken <- getToken
          unless (isSemicolon semiColonToken) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSemicolonInPackage semiColonToken
-         let addPackage scope = scope { packages = MapS.insert netlistName package $ packages scope }
-         modifyNetlist addPackage
       Nothing -> unless (isSemicolon possibleNameToken) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedPackageEndOfDec possibleNameToken
+   let addPackage scope = scope { packages = MapS.insert netlistName package $ packages scope }
+   modifyNetlist addPackage
 
 -- |Monad stack for package building
 type PackageBuildStack = StateT Package (StateT ParserState (StateT AlexState (StateT NetlistStore (ExceptT ConverterError IO)))) ()
