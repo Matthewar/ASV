@@ -15,8 +15,8 @@ import qualified Data.Map.Strict as MapS
 import Data.Char (toUpper)
 import Data.Maybe
          ( isNothing
-         , isJust
          , fromJust
+         , mapMaybe
          )
 import Data.List (elemIndex)
 import Data.Bits
@@ -1764,7 +1764,7 @@ parseTypeConversion staticLevel scope unit unitName subtypeName subtypeData pos 
             IntegerSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ExplicitTypeConversion (typeName,IntegerType) calcPair,Type_Type typeName IntegerType)
             FloatingSubtype _ typeName _ -> Just (Calc_SubtypeResult subtypeName $ Calc_ImplicitTypeConversion typeName calc,Type_Type typeName FloatingType)
             _ -> Nothing
-   case map fromJust $ filter isJust $ map convertType expressions of
+   case mapMaybe convertType expressions of
       calcPair@[_] -> return calcPair
       _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos NetlistError_FailedTypeConversion
 
@@ -1954,7 +1954,7 @@ subtypeAttributeVal scope unit unitName subtypeName subtypeData = do
    let filterTypes (calc,Type_Type _ IntegerType) = Just calc
        filterTypes (calc,Type_UniversalInt) = Just calc
        filterTypes _ = Nothing
-   int <- case map fromJust $ filter isJust $ map filterTypes calcs of
+   int <- case mapMaybe filterTypes calcs of
       [Calc_Value (Value_Int int) _] -> return int
       _ -> throwError $ ConverterError_Netlist $ passPosition NetlistError_CannotFindValueWithContext leftParenTok
    let typeData = subtypeToType subtypeData
@@ -2088,7 +2088,7 @@ parseWithExpectedType staticLevel parseFunction scope unit unitName expectedSubt
        findType (PhysicalSubtype _ typeName1 _ _ _) (calc,Type_Type typeName2 _)
          | typeName1 == typeName2 && notLocallyStatic staticLevel = Just $ Calc_SubtypeResult expectedSubtypeName calc
          | otherwise = Nothing
-       exp = map fromJust $ filter isJust $ map (findType expectedSubtype) expressions
+       exp = mapMaybe (findType expectedSubtype) expressions
    case exp of
       [] -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_CannotFindCalculationOfType expectedSubtypeName
       [calc] -> return calc

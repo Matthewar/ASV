@@ -12,10 +12,7 @@ module Parser.Netlist.Types.Error
 import Data.Char (toUpper)
 import Data.List (intersperse)
 import Data.Int (Int64)
-import Data.Maybe
-         ( isJust
-         , fromJust
-         )
+import Data.Maybe (catMaybes)
 import Numeric (showFFloat)
 
 import Lexer.Types.PositionWrapper (PosnWrapper(..))
@@ -327,8 +324,7 @@ instance (Show NetlistError) where
       in "New constraint in integer subtype is out of range ("
          ++ ( concat
             $ intersperse ", "
-            $ map fromJust
-            $ filter isJust
+            $ catMaybes
             [ if checkVal newLeft
                then Just $ "left bound " ++ show newLeft
                else Nothing
@@ -345,8 +341,7 @@ instance (Show NetlistError) where
       in "New constraint in floating subtype is out of range ("
          ++ ( concat
             $ intersperse ", "
-            $ map fromJust
-            $ filter isJust
+            $ catMaybes
             [ if checkVal newLeft
                then Just $ "left bound " ++ (showFFloat Nothing newLeft) ""
                else Nothing
@@ -363,8 +358,7 @@ instance (Show NetlistError) where
       in "New constraint in physical subtype is out of range ("
          ++ ( concat
             $ intersperse ", "
-            $ map fromJust
-            $ filter isJust
+            $ catMaybes
             [ if checkVal newLeft
                then Just $ "left bound " ++ show newLeft
                else Nothing
