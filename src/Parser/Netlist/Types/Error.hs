@@ -12,14 +12,19 @@ module Parser.Netlist.Types.Error
 import Data.Char (toUpper)
 import Data.List (intersperse)
 import Data.Int (Int64)
+import Data.Maybe
+         ( isJust
+         , fromJust
+         )
 import Numeric (showFFloat)
 
 import Lexer.Types.PositionWrapper (PosnWrapper(..))
 import Lexer.Types.Error (getLineAndColErrStr)
 import Parser.Netlist.Types.Representation
          ( Enumerate
-         , IntegerRange
-         , FloatRange
+         , IntegerRange(..)
+         , FloatRange(..)
+         , RangeDirection(..)
          , NetlistName
          )
 import Sim.Output.Names (showEnum)
@@ -319,53 +324,56 @@ instance (Show NetlistError) where
       let checkVal val = case direction of
                            To -> val >= oldLeft && val <= oldRight
                            Downto -> val <= oldLeft && val >= oldRight
-      "New constraint in integer subtype is out of range ("
-      ++ concat
-         $ intersperse ", "
-         $ map fromJust
-         $ filter isJust
-         [ if checkVal newLeft
-            then Just $ "left bound " ++ show newLeft
-            else Nothing
-         , if checkVal newRight
-            then Just $ "right bound " ++ show newRight
-            else Nothing
-         ]
-      ++ ")"
+      in "New constraint in integer subtype is out of range ("
+         ++ ( concat
+            $ intersperse ", "
+            $ map fromJust
+            $ filter isJust
+            [ if checkVal newLeft
+               then Just $ "left bound " ++ show newLeft
+               else Nothing
+            , if checkVal newRight
+               then Just $ "right bound " ++ show newRight
+               else Nothing
+            ]
+            )
+         ++ ")"
    show (NetlistError_InvalidSubtypeFloatConstraint (FloatRange oldLeft oldRight direction) (FloatRange newLeft newRight _)) =
       let checkVal val = case direction of
                            To -> val >= oldLeft && val <= oldRight
                            Downto -> val <= oldLeft && val >= oldRight
-      "New constraint in floating subtype is out of range ("
-      ++ concat
-         $ intersperse ", "
-         $ map fromJust
-         $ filter isJust
-         [ if checkVal newLeft
-            then Just $ "left bound " ++ (showFFloat Nothing newLeft) ""
-            else Nothing
-         , if checkVal newRight
-            then Just $ "right bound " ++ (showFFloat Nothing newRight) ""
-            else Nothing
-         ]
-      ++ ")"
+      in "New constraint in floating subtype is out of range ("
+         ++ ( concat
+            $ intersperse ", "
+            $ map fromJust
+            $ filter isJust
+            [ if checkVal newLeft
+               then Just $ "left bound " ++ (showFFloat Nothing newLeft) ""
+               else Nothing
+            , if checkVal newRight
+               then Just $ "right bound " ++ (showFFloat Nothing newRight) ""
+               else Nothing
+            ]
+            )
+         ++ ")"
    show (NetlistError_InvalidSubtypePhysConstraint (IntegerRange oldLeft oldRight direction) (IntegerRange newLeft newRight _)) = -- ?? Need base unit
       let checkVal val = case direction of
                            To -> val >= oldLeft && val <= oldRight
                            Downto -> val <= oldLeft && val >= oldRight
-      "New constraint in physical subtype is out of range ("
-      ++ concat
-         $ intersperse ", "
-         $ map fromJust
-         $ filter isJust
-         [ if checkVal newLeft
-            then Just $ "left bound " ++ show newLeft
-            else Nothing
-         , if checkVal newRight
-            then Just $ "right bound " ++ show newRight
-            else Nothing
-         ]
-      ++ ")"
+      in "New constraint in physical subtype is out of range ("
+         ++ ( concat
+            $ intersperse ", "
+            $ map fromJust
+            $ filter isJust
+            [ if checkVal newLeft
+               then Just $ "left bound " ++ show newLeft
+               else Nothing
+            , if checkVal newRight
+               then Just $ "right bound " ++ show newRight
+               else Nothing
+            ]
+            )
+         ++ ")"
    ---- |No valid enumerate ranges found from constraint for specified subtype
    --show NetlistError_NoValidEnumRangeFound = -- ?? Need more data here
    show (NetlistError_SubtypeNameAlreadyDefined name) =

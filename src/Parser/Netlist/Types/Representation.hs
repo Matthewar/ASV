@@ -53,7 +53,7 @@ instance (Show NetlistName) where
 --   | Subtype String BaseTypeAttributes SubtypeAttributes
 --   | ArrayType String BaseTypeAttributes ArrayTypeAttributes
 --
---type TypeAttributes = MapS.Map Attributes 
+--type TypeAttributes = MapS.Map Attributes
 --
 --data BaseAttributes = Base
 
@@ -297,7 +297,7 @@ data Calculation =
    -- | Calc_SignalActive (String,Signal)
    -- | Calc_SignalLastEvent (String,Signal)
    -- | Calc_SignalLastActive (String,Signal)
-   -- | Calc_SignalLastValue (String,Signal) 
+   -- | Calc_SignalLastValue (String,Signal)
    deriving (Eq,Show)
 
 data AllTypes =
