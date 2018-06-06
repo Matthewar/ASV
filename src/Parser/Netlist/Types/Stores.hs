@@ -4,6 +4,7 @@
 -}
 module Parser.Netlist.Types.Stores
    ( NetlistStore(..)
+   , emptyNetlistStore
    , TypeStore
    , SubtypeStore
    , FunctionStore
@@ -54,6 +55,13 @@ data NetlistStore =
       , architectures :: ArchitectureStore
       }
    deriving (Show)
+
+emptyNetlistStore :: NetlistStore
+emptyNetlistStore =
+   NetlistStore
+      MapS.empty
+      MapS.empty
+      MapS.empty
 
 -- |Store of type data
 type TypeStore = MapS.Map String Type

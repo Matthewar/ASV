@@ -19,8 +19,17 @@ import Lexer.Types.Token
 import Lexer.Types.Error
 import Lexer.Types.PositionWrapper
 import Lexer.Alex.Types (AlexPosn(..))
-import Parser.Netlist.Builtin.Netlist (netlist)
+import Parser.Netlist.Types.Stores (emptyNetlistStore)
 import Manager.Types.Error (ConverterError(ConverterError_Parse))
+
+import Generators.LexElements
+         ( genInteger
+         , genExponent
+         , genBasedStr
+         , genBitStr
+         , genIdentifier
+         , genDecimal
+         )
 
 -- |All lexer tests
 tests :: TestTree
@@ -47,7 +56,7 @@ singleKeywords = testGroup "Single keyword tests for lexer"
 
 -- |Run the lexer and get the result
 getLexResult :: String -> IO (Either ConverterError [Token])
-getLexResult input = runExceptT $ evalStateT (lexerList input) netlist
+getLexResult input = runExceptT $ evalStateT (lexerList input) emptyNetlistStore
 
 -- |Compare a single unit input
 compareBasicUnit :: String -> Token -> Assertion
@@ -468,7 +477,7 @@ singleBasedLiterals = testGroup "Single based values"
 singleBasedLiterals_cont :: Char -> QC.Property
 singleBasedLiterals_cont container =
    QC.ioProperty $ do
-      basedStr <- QC.generate $ generateBasedStr container
+      basedStr <- QC.generate $ genBasedStr container
       lexRun <- getLexResult basedStr
       let filteredBasedStr = filter (\char -> char /= '_') basedStr
           (baseChars,valueStr,exponentStr) = case splitOn [container] filteredBasedStr of
@@ -487,7 +496,7 @@ singleBasedLiterals_cont container =
                                        val -> val
                    in (read expStrNoPlus) - exponentAdjust
           convertedValue = (fromIntegral $ fromBase (toInteger $ floor baseVal) shiftedValue) * (baseVal ^^ expVal)
-      let expectedOutput =
+          expectedOutput =
             if isInfinite convertedValue then
                let errorType =
                      if elem '.' filteredBasedStr then
@@ -569,7 +578,7 @@ singleDecLit_real = QC.testProperty "Real value without exponent" $
 singleDecLit_int_exp :: TestTree
 singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
    QC.ioProperty $ do
-      value <- QC.generate genVal
+      value <- QC.generate $ genDecimal (1,10) Nothing True
       let [base,exp] =
             filter (\char -> not $ elem char "+_") value
             & splitOneOf "Ee"
@@ -582,207 +591,16 @@ singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
          else Right [Literal $ Univ_Int $ floor doubleValue]
       lexRun <- getLexResult value
       return $ lexRun == expectedValue
-   where genVal = do
-            intStr <- genInteger 1 10
-            expStr <- genExponent
-            return $ intStr ++ expStr
-
--- |Generate a VHDL specific integer
--- > integer ::= digit { [ underline ] digit }
--- Implemented as:
--- > 'genInteger' ::= digit { 'genUnderscoreDigit' }
-genInteger :: Int -> Int -> QC.Gen String
-genInteger fromLength toLength = do
-   firstInt <- QC.elements ['0'..'9']
-   lengthStr <- QC.elements [fromLength..toLength]
-   otherInts <- replicateM lengthStr genUnderscoreDigit
-   return $ [firstInt] ++ (concat otherInts)
-
--- |Generate latter part of a VHDL specific integer
--- > integer ::= digit { [ underline ] digit }
--- This function generates the latter part IE
--- > 'genUnderscoreDigit' ::= [ underline ] digit
-genUnderscoreDigit :: QC.Gen String
-genUnderscoreDigit = do
-   optionalUnderscore <- QC.elements [True,False]
-   otherDigit <- QC.elements ['0'..'9']
-   return $
-      if optionalUnderscore then ['_',otherDigit]
-      else [otherDigit]
-
--- |Generate a VHDL specific exponent
--- > exponent ::= E [ + ] integer  | E - integer
--- Note: case insensitive \\'E\\'
--- Implemented as:
--- @
---    'genExponent' ::= exponent_marker [ exponent_sign ] 'genInteger'
---    exponent_marker ::= E | e
---    exponent_sign ::= + | -
--- @
-genExponent :: QC.Gen String
-genExponent = do
-   expChar <- QC.elements "Ee"
-   expSign <- QC.elements ["+","-",""]
-   expVal <- genInteger 0 1
-   return $ (expChar:expSign) ++ expVal
-
--- |Generate a VHDL specific based literal
--- @
---    based_literal ::=
---       base # based_integer [ . based_integer ] # [ exponent ]
---    base ::= integer
---    based_integer ::=
---       extended_digit { [ underline ] extended_digit }
---    extended_digit ::= digit | letter
--- @
--- Note: \\'#\\' container can instead be \\':\\'
--- Implemented as:
--- @
---    'generateBasedStr' ::=
---       base based_container 'generateExtendedBasedStr' based_container [ 'genExponent' ]
---    base ::= HASKELL( [2..16] )
---    based_container ::= # | :
--- @
--- Note: based_container must be same on both sides
-generateBasedStr :: Char -> QC.Gen String
-generateBasedStr container = do
-   base <- QC.elements [2..16]
-   let baseChars = show base
-       basedStrGen = generateExtendedBasedStr base
-   optionalFractional <- QC.elements [True,False]
-   expStr <- genExponent
-   unitBasedStr <- basedStrGen
-   fullBasedStr <-
-         if optionalFractional then do
-            decBasedStr <- basedStrGen
-            return $ unitBasedStr ++ "." ++ decBasedStr
-         else
-            return unitBasedStr
-   return $ baseChars ++ [container] ++ fullBasedStr ++ [container] ++ expStr
-
--- |Generate latter part of a VHDL specific based literal
--- @
---    based_literal ::=
---       base # based_integer [ . based_integer ] # [ exponent ]
---    base ::= integer
---    based_integer ::=
---       extended_digit { [ underline ] extended_digit }
---    extended_digit ::= digit | letter
--- @
--- Note: \\'#\\' container can instead be \\':\\'
--- This function generates the latter part IE
--- > 'generateExtendedBasedStr' ::= based_integer [ . based_integer ]
--- Implemented as:
--- @
---    base_integer ::= REGEX( [0-9a-fA-F] )
--- @
--- Note: Relevant base restricts range of regex (only full range for hex/base16)
-generateExtendedBasedStr :: Int -> QC.Gen String
-generateExtendedBasedStr base = do
-   let allowedChars = charMap !! (base-2)
-   firstChar <- QC.elements allowedChars
-   lengthStr <- QC.elements [0..25]
-   otherChars <- replicateM lengthStr $ generateUnderscoreExtendedChar allowedChars
-   return $ [firstChar] ++ (concat otherChars)
-   where charMap =
-            [ "01"
-            , ['0'..'2']
-            , ['0'..'3']
-            , ['0'..'4']
-            , ['0'..'5']
-            , ['0'..'6']
-            , ['0'..'7']
-            , ['0'..'8']
-            , ['0'..'9']
-            , ['0'..'9'] ++ ['a'] ++ ['A']
-            , ['0'..'9'] ++ ['a'..'b'] ++ ['A'..'B']
-            , ['0'..'9'] ++ ['a'..'c'] ++ ['A'..'C']
-            , ['0'..'9'] ++ ['a'..'d'] ++ ['A'..'D']
-            , ['0'..'9'] ++ ['a'..'e'] ++ ['A'..'E']
-            , ['0'..'9'] ++ ['a'..'f'] ++ ['A'..'F']
-            ]
-
--- |Generate a VHDL specific bit string literal
--- @
---    bit_string_literal ::= base_specifier " bit_value "
---    bit_value ::= extended_digit { [ underline ] extended_digit }
---    base_specified ::= B | O | X
--- @
--- Note: B, O, X are case insensitive.
---       \\'%\\' can be used as a container instead of \\'\\"\\'
--- Implemented as:
--- @
---    'generateBitStr' ::= base_specifier base_container 'generateExtendedStr' base_container
---    base_specifier ::= B | b | O | o | X | x
---    base_container ::= " | %
--- @
--- Note: Base containers must match
-generateBitStr :: Char -> QC.Gen String
-generateBitStr container = do
-   base <- QC.elements [BinBased,OctBased,HexBased]
-   baseChar <- QC.elements $ baseCharMap MapS.! base
-   bitStr <- generateExtendedStr base
-   return $ [baseChar,container] ++ bitStr ++ [container]
-   where baseCharMap =
-            [ (BinBased,"Bb")
-            , (OctBased,"Oo")
-            , (HexBased,"Xx")
-            ]
-            & MapS.fromList
-
--- |Generate a VHDL specific bit_value
--- Part of VHDL bit string literal
--- > bit_value ::= extended_digit { [ underline ] extended_digit }
--- Implemented as:
--- @
---    'generateExtendedStr' ::= extended_digit { 'generateUnderscoreExtendedChar' }
---    extended_digit ::= REGEX( [0-9a-fA-F] )
--- @
--- Note: Relevant base restricts range of regex (only full range for hex/base16)
-generateExtendedStr :: LiteralBase -> QC.Gen String
-generateExtendedStr base = do
-   let allowedChars = charMap MapS.! base
-   firstChar <- QC.elements allowedChars
-   lengthStr <- QC.elements [0..100]
-   otherChars <- replicateM lengthStr $ generateUnderscoreExtendedChar allowedChars
-   return $ [firstChar] ++ (concat otherChars)
-   where charMap =
-            [ (BinBased,"01")
-            , (OctBased,['0'..'7'])
-            , (HexBased,['0'..'9']++['A'..'F']++['a'..'f'])
-            ]
-            & MapS.fromList
-
--- |Generate latter part of VHDL specific bit_value
--- Part of VHDL bit string literal
--- > bit_value ::= extended_digit { [ underline ] extended_digit }
--- Implemented as:
--- @
---    'generateUnderscoreExtendedChar' ::= [ _ ] extended_digit
---    extended_digit ::= REGEX( [0-9a-fA-F] )
--- @
--- Note: Relevant base restricts range of regex (only full range for hex/base16)
-generateUnderscoreExtendedChar :: [Char] -> QC.Gen String
-generateUnderscoreExtendedChar allowedChars = do
-   optionalUnderscore <- QC.elements [True,False]
-   otherChar <- QC.elements allowedChars
-   return $
-      if optionalUnderscore then ['_',otherChar]
-      else [otherChar]
 
 -- |Decimal literal token test type
 -- Tests the universal integer ('Univ_Real') type with an exponent
 singleDecLit_real_exp :: TestTree
 singleDecLit_real_exp = QC.testProperty "Real value with exponent" $
    QC.ioProperty $ do
-      value <- QC.generate genVal
+      value <- QC.generate $ genDecimal (1,10) (Just (1,10)) True
       expectedValue <- return $ Right [Literal $ Univ_Real $ read $ filter (/= '_') value]
       lexRun <- getLexResult value
       return $ lexRun == expectedValue
-   where genVal = do
-            intStr <- genInteger 1 10
-            expStr <- genExponent
-            return $ intStr ++ "." ++ intStr ++ expStr
 
 -- |Decimal literal token test type
 -- Tests for 'Univ_Int' and 'Univ_Real' (universal integer and real respectively) zero values:
@@ -824,7 +642,7 @@ singleBitStrLiterals = testGroup "Single bit strings"
 singleBitStrLiterals_cont :: Char -> QC.Property
 singleBitStrLiterals_cont container =
    QC.ioProperty $ do
-      bitStr <- QC.generate $ generateBitStr container
+      bitStr <- QC.generate $ genBitStr container
       lexRun <- getLexResult bitStr
       let (baseChar:_:strNoBase) = bitStr
           base = baseMap MapS.! baseChar
@@ -833,7 +651,7 @@ singleBitStrLiterals_cont container =
             & init
             & filter (\char -> char /= '_')
             & ByteString.pack
-      let expectedOutput = Right [Literal $ BitStr base unformattedStr]
+          expectedOutput = Right [Literal $ BitStr base unformattedStr]
       return $ lexRun == expectedOutput
    where baseMap =
             [ ('B', BinBased)
@@ -935,16 +753,7 @@ singleCharLiterals = QC.testProperty "Single random character" $
 singleIdentifiers :: TestTree
 singleIdentifiers = QC.testProperty "Single identifier" $
    QC.ioProperty $ do
-      identifierStr <- QC.generate generateIdentifier
+      identifierStr <- QC.generate $ genIdentifier 0 100
       lexRun <- getLexResult identifierStr
       let expectedAnswer = Right [Identifier identifierStr]
       return $ lexRun == expectedAnswer
-   where generateIdentifier :: QC.Gen String
-         generateIdentifier = do
-            stringLength <- QC.elements [0..200]
-            fstChar <- QC.elements validStartChar
-            let genOtherChars = QC.elements validOtherChar
-            otherChars <- replicateM stringLength genOtherChars
-            return $ fstChar:otherChars
-         validStartChar = ['a'..'z'] ++ ['A'..'Z']
-         validOtherChar = validStartChar ++ ['0'..'9'] ++ ['_']
