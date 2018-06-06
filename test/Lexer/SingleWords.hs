@@ -467,8 +467,7 @@ singleBasedLiterals = testGroup "Single based values"
 -- |Generator for a single based literal with specified containers
 singleBasedLiterals_cont :: Char -> QC.Property
 singleBasedLiterals_cont container =
-   QC.ioProperty $ do
-      basedStr <- QC.generate $ genBasedStr container
+   QC.forAll (genBasedStr container) $ \basedStr -> QC.ioProperty $ do
       lexRun <- getLexResult basedStr
       let filteredBasedStr = filter (\char -> char /= '_') basedStr
           (baseChars,valueStr,exponentStr) = case splitOn [container] filteredBasedStr of
@@ -547,9 +546,7 @@ singleDecLit_int = QC.testProperty "Integer value without exponent" $
          lexRun <- getLexResult $ show value
          let expectedOutput = Right [Literal $ Univ_Int $ fromIntegral value]
          return $ lexRun == expectedOutput
-   in QC.ioProperty $ do
-         val <- QC.generate QC.arbitrary
-         expression $ abs val
+   in QC.forAll QC.arbitrary $ \val -> QC.ioProperty $ expression $ abs val
 
 -- |Decimal literal token test type
 -- Tests the universal real ('Univ_Real') type without an exponent
@@ -560,16 +557,13 @@ singleDecLit_real = QC.testProperty "Real value without exponent" $
          lexRun <- getLexResult $ show value
          let expectedOutput = Right [Literal $ Univ_Real value]
          return $ lexRun == expectedOutput
-   in QC.ioProperty $ do
-         val <- QC.generate QC.arbitrary
-         expression $ abs val
+   in QC.forAll QC.arbitrary $ \val -> QC.ioProperty $ expression $ abs val
 
 -- |Decimal literal token test type
 -- Tests the universal integer ('Univ_Int') type with an exponent
 singleDecLit_int_exp :: TestTree
 singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
-   QC.ioProperty $ do
-      value <- QC.generate $ genDecimal (1,10) Nothing True
+   QC.forAll (genDecimal (1,10) Nothing True) $ \value -> QC.ioProperty $ do
       let [base,exp] =
             filter (\char -> not $ elem char "+_") value
             & splitOneOf "Ee"
@@ -587,8 +581,7 @@ singleDecLit_int_exp = QC.testProperty "Integer value with exponent" $
 -- Tests the universal integer ('Univ_Real') type with an exponent
 singleDecLit_real_exp :: TestTree
 singleDecLit_real_exp = QC.testProperty "Real value with exponent" $
-   QC.ioProperty $ do
-      value <- QC.generate $ genDecimal (1,10) (Just (1,10)) True
+   QC.forAll (genDecimal (1,10) (Just (1,10)) True) $ \value -> QC.ioProperty $ do
       expectedValue <- return $ Right [Literal $ Univ_Real $ read $ filter (/= '_') value]
       lexRun <- getLexResult value
       return $ lexRun == expectedValue
@@ -601,14 +594,8 @@ singleDecLit_zeroes :: TestTree
 singleDecLit_zeroes = testGroup "Zero values"
    [ testCase "0" $ compareBasicUnit "0" $ Literal $ Univ_Int 0
    , testCase "0.0" $ compareBasicUnit "0.0" $ Literal $ Univ_Real 0.0
-   , QC.testProperty "0[Ee][+-]?[0-9]+" $
-         QC.ioProperty $ do
-            input <- QC.generate $ genExp "0"
-            compareFunc input $ Univ_Int 0
-   , QC.testProperty "0.0[Ee][+-]?[0-9]+" $
-         QC.ioProperty $ do
-            input <- QC.generate $ genExp "0.0"
-            compareFunc input $ Univ_Real 0.0
+   , QC.testProperty "0[Ee][+-]?[0-9]+" $ QC.forAll (genExp "0") $ \input -> QC.ioProperty $ compareFunc input $ Univ_Int 0
+   , QC.testProperty "0.0[Ee][+-]?[0-9]+" $ QC.forAll (genExp "0.0") $ \input -> QC.ioProperty $ compareFunc input $ Univ_Real 0.0
    ]
    where genExp :: String -> QC.Gen String
          genExp start = do
@@ -632,8 +619,7 @@ singleBitStrLiterals = testGroup "Single bit strings"
 -- |Generator for a single bit string literal with specified containers
 singleBitStrLiterals_cont :: Char -> QC.Property
 singleBitStrLiterals_cont container =
-   QC.ioProperty $ do
-      bitStr <- QC.generate $ genBitStr container
+   QC.forAll (genBitStr container) $ \bitStr -> QC.ioProperty $ do
       lexRun <- getLexResult bitStr
       let (baseChar:_:strNoBase) = bitStr
           base = baseMap MapS.! baseChar
@@ -688,8 +674,7 @@ singleEmptyString_diffCont = testCase "%% == Literal Str \"\"" $
 -- Random string with \\" containers
 singleRandomString :: TestTree
 singleRandomString = QC.testProperty "Single random string with \" containers" $
-   QC.ioProperty $ do
-      stringContents <- QC.generate generateRandomString
+   QC.forAll generateRandomString $ \stringContents -> QC.ioProperty $ do
       lexRun <- getLexResult $
          replicateConts stringContents []
          & \lexInput -> "\"" ++ lexInput ++ "\""
@@ -708,8 +693,7 @@ singleRandomString = QC.testProperty "Single random string with \" containers" $
 -- Random string with \\% containers
 singleRandomString_diffCont :: TestTree
 singleRandomString_diffCont = QC.testProperty "Single random string with % containers" $
-   QC.ioProperty $ do
-      stringContents <- QC.generate generateRandomString
+   QC.forAll generateRandomString $ \stringContents -> QC.ioProperty $ do
       lexRun <- getLexResult $
          replicateConts stringContents []
          & \lexInput -> "%" ++ lexInput ++ "%"
@@ -733,8 +717,7 @@ validTestCharacters = ['A'..'Z'] ++ ['0'..'9'] ++ ['a'..'z'] ++
 -- A single string that lexes to a character literal token
 singleCharLiterals :: TestTree
 singleCharLiterals = QC.testProperty "Single random character" $
-   QC.ioProperty $ do
-      selectedChar <- QC.generate $ QC.elements validTestCharacters
+   QC.forAll (QC.elements validTestCharacters) $ \selectedChar -> QC.ioProperty $ do
       lexRun <- getLexResult $ "'" ++ [selectedChar] ++ "'"
       let expectedAnswer = Right [Literal $ Character selectedChar]
       return $ lexRun == expectedAnswer
@@ -743,8 +726,7 @@ singleCharLiterals = QC.testProperty "Single random character" $
 -- A single string that lexes to a identifier token
 singleIdentifiers :: TestTree
 singleIdentifiers = QC.testProperty "Single identifier" $
-   QC.ioProperty $ do
-      identifierStr <- QC.generate $ genIdentifier 0 100
+   QC.forAll (genIdentifier 0 100) $ \identifierStr -> QC.ioProperty $ do
       lexRun <- getLexResult identifierStr
       let expectedAnswer = Right [Identifier identifierStr]
       return $ lexRun == expectedAnswer
