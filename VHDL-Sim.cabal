@@ -117,8 +117,8 @@ test-suite VHDL-Sim-test
   main-is:             Spec.hs
   other-modules:       LexerSpec
                      , Generators.LexElements
-                     , ParserSpec
-                     , Generators.ParseElements
+                     --, ParserSpec
+                     --, Generators.ParseElements
   build-depends:       base
                      , VHDL-Sim
                      , tasty
