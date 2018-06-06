@@ -9,14 +9,22 @@ module Generators.LexElements
    , genBitStr
    , genIdentifier
    , genDecimal
+   , genKeyword
    ) where
 
 import qualified Test.Tasty.QuickCheck as QC
 import Data.Function ((&))
 import qualified Data.Map.Strict as MapS
+import Data.Char
+         ( toLower
+         , toUpper
+         )
 import Control.Monad
 
-import Lexer.Types.Token (LiteralBase(..))
+import Lexer.Types.Token
+         ( ReservedWord(..)
+         , LiteralBase(..)
+         )
 
 -- |Generate a VHDL specific integer
 -- Two arguments: minimum and maximum additional length
@@ -219,3 +227,97 @@ genDecimal (unitsFrom,unitsTo) decimalRange includeExponent = do
                Nothing -> return ""
    expStr <- if includeExponent then genExponent else return ""
    return $ intStr ++ decStr ++ expStr
+
+-- |Generate a VHDL keyword
+genKeyword :: QC.Gen String
+genKeyword = do
+   keyword <- QC.elements keywords
+   let keywordLowerStr = show keyword & \(first:others) -> (toLower first:others)
+       genBool = QC.elements [True,False]
+   keywordBools <- replicateM (length keywordLowerStr) genBool
+   return $ map chooseCase $ zip keywordBools keywordLowerStr
+   where chooseCase (True,chr) = toUpper chr
+         chooseCase (False,chr) = chr
+         keywords =
+            [ Abs
+            , Access
+            , After
+            , Alias
+            , All
+            , And
+            , Architecture
+            , Array
+            , Assert
+            , Attribute
+            , Begin
+            , Block
+            , Body
+            , Buffer
+            , Bus
+            , Case
+            , Component
+            , Configuration
+            , Constant
+            , Disconnect
+            , Downto
+            , Else
+            , Elsif
+            , End
+            , Entity
+            , Exit
+            , File
+            , For
+            , Function
+            , Generate
+            , Generic
+            , Guarded
+            , If
+            , In
+            , Inout
+            , Is
+            , Label
+            , Library
+            , Linkage
+            , Loop
+            , Map
+            , Mod
+            , Nand
+            , New
+            , Next
+            , Nor
+            , Not
+            , Null
+            , Of
+            , On
+            , Open
+            , Or
+            , Others
+            , Out
+            , Package
+            , Port
+            , Procedure
+            , Process
+            , Range
+            , Record
+            , Register
+            , Rem
+            , Report
+            , Return
+            , Select
+            , Severity
+            , Signal
+            , Subtype
+            , Then
+            , To
+            , Transport
+            , Type
+            , Units
+            , Until
+            , Use
+            , Variable
+            , Wait
+            , When
+            , While
+            , With
+            , Xor
+            ]

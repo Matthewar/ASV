@@ -36,6 +36,7 @@ import Generators.LexElements
          , genBitStr
          , genIdentifier
          , genDecimal
+         , genKeyword
          )
 
 -- |Single word lexer tests
@@ -54,6 +55,7 @@ singleKeywords :: TestTree
 singleKeywords = testGroup "Single keyword tests for lexer"
    [ singleKeywordsUpper
    , singleKeywordsLower
+   , singleKeywordsRandomCase
    ]
 
 -- |Single upper case keyword lexer unit tests
@@ -391,6 +393,99 @@ singleKeywordsLower = testGroup "Single lower case keywords"
    , testCase "\"xor\" == Keyword Xor" $
          compareBasicUnit "xor" $ Keyword Xor
    ]
+
+-- |Single randomly cased keyword lexer unit tests
+-- Unit test with random case strings that lex to keyword tokens
+singleKeywordsRandomCase :: TestTree
+singleKeywordsRandomCase = QC.testProperty "Single random case keywords" $
+   QC.forAll genKeyword $ \keyword -> QC.ioProperty $ do
+      lexRun <- getLexResult keyword
+      let expectedOutput = Right [Keyword $ keywordMap MapS.! (map toUpper keyword)]
+      return $ lexRun == expectedOutput
+   where keywordMap :: MapS.Map String ReservedWord
+         keywordMap = MapS.fromList $
+            [ ("ABS",Abs)
+            , ("ACCESS",Access)
+            , ("AFTER",After)
+            , ("ALIAS",Alias)
+            , ("ALL",All)
+            , ("AND",And)
+            , ("ARCHITECTURE",Architecture)
+            , ("ARRAY",Array)
+            , ("ASSERT",Assert)
+            , ("ATTRIBUTE",Attribute)
+            , ("BEGIN",Begin)
+            , ("BLOCK",Block)
+            , ("BODY",Body)
+            , ("BUFFER",Buffer)
+            , ("BUS",Bus)
+            , ("CASE",Case)
+            , ("COMPONENT",Component)
+            , ("CONFIGURATION",Configuration)
+            , ("CONSTANT",Constant)
+            , ("DISCONNECT",Disconnect)
+            , ("DOWNTO",Downto)
+            , ("ELSE",Else)
+            , ("ELSIF",Elsif)
+            , ("END",End)
+            , ("ENTITY",Entity)
+            , ("EXIT",Exit)
+            , ("FILE",File)
+            , ("FOR",For)
+            , ("FUNCTION",Function)
+            , ("GENERATE",Generate)
+            , ("GENERIC",Generic)
+            , ("GUARDED",Guarded)
+            , ("IF",If)
+            , ("IN",In)
+            , ("INOUT",Inout)
+            , ("IS",Is)
+            , ("LABEL",Label)
+            , ("LIBRARY",Library)
+            , ("LINKAGE",Linkage)
+            , ("LOOP",Loop)
+            , ("MAP",Map)
+            , ("MOD",Mod)
+            , ("NAND",Nand)
+            , ("NEW",New)
+            , ("NEXT",Next)
+            , ("NOR",Nor)
+            , ("NOT",Not)
+            , ("NULL",Null)
+            , ("OF",Of)
+            , ("ON",On)
+            , ("OPEN",Open)
+            , ("OR",Or)
+            , ("OTHERS",Others)
+            , ("OUT",Out)
+            , ("PACKAGE",Package)
+            , ("PORT",Port)
+            , ("PROCEDURE",Procedure)
+            , ("PROCESS",Process)
+            , ("RANGE",Range)
+            , ("RECORD",Record)
+            , ("REGISTER",Register)
+            , ("REM",Rem)
+            , ("REPORT",Report)
+            , ("RETURN",Return)
+            , ("SELECT",Select)
+            , ("SEVERITY",Severity)
+            , ("SIGNAL",Signal)
+            , ("SUBTYPE",Subtype)
+            , ("THEN",Then)
+            , ("TO",To)
+            , ("TRANSPORT",Transport)
+            , ("TYPE",Type)
+            , ("UNITS",Units)
+            , ("UNTIL",Until)
+            , ("USE",Use)
+            , ("VARIABLE",Variable)
+            , ("WAIT",Wait)
+            , ("WHEN",When)
+            , ("WHILE",While)
+            , ("WITH",With)
+            , ("XOR",Xor)
+            ]
 
 -- |Single operator lexer unit tests
 -- Unit tests with single strings that lex to operator tokens
