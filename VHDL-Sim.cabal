@@ -118,6 +118,7 @@ test-suite VHDL-Sim-test
   other-modules:       Lexer.Spec
                      , Lexer.Functions
                      , Lexer.SingleWords
+                     , Lexer.Sentences
                      , Generators.LexElements
                      --, ParserSpec
                      --, Generators.ParseElements

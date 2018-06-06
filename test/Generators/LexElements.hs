@@ -10,6 +10,7 @@ module Generators.LexElements
    , genIdentifier
    , genDecimal
    , genKeyword
+   , genDelimiter
    ) where
 
 import qualified Test.Tasty.QuickCheck as QC
@@ -321,3 +322,37 @@ genKeyword = do
             , With
             , Xor
             ]
+
+genDelimiter :: QC.Gen String
+genDelimiter =
+   let standardDelimiter =
+         QC.elements
+            [ "&"
+            , "'"
+            , "("
+            , ")"
+            , "*"
+            , "+"
+            , ","
+            , "-"
+            , "."
+            , "/"
+            , ":"
+            , ";"
+            , "<"
+            , "="
+            , ">"
+            , "|"
+            , "=>"
+            , "**"
+            , ":="
+            , "/="
+            , ">="
+            , "<="
+            , "<>"
+            ]
+       spaceDelimiter = do
+         length <- QC.choose (1,5)
+         let spaces = QC.elements "\t\n "
+         replicateM length spaces
+   in QC.oneof [standardDelimiter,spaceDelimiter]

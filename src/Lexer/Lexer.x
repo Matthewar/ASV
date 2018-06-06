@@ -6,7 +6,10 @@ import Control.Monad.Except
          ( ExceptT
          , runExceptT
          )
-import Control.Monad.Trans.State (StateT)
+import Control.Monad.Trans.State
+         ( StateT
+         , evalStateT
+         )
 
 import Lexer.Types.Token
 import Lexer.Types.Error
@@ -15,7 +18,10 @@ import Lexer.Types.PositionWrapper
 import Lexer.Functions.Lex
 import Lexer.Alex.Types
 import Lexer.Alex.Functions
-import Parser.Netlist.Types.Stores (NetlistStore)
+import Parser.Netlist.Types.Stores
+         ( NetlistStore
+         , emptyNetlistStore
+         )
 import Manager.Types.Error (ConverterError)
 }
 
@@ -334,7 +340,7 @@ tokens :-
 <0,separator>              "&"                                                   { makeToken (makeOperator Ampersand)            identifier  }
 <0,separator>              "'"                                                   { makeToken (makeOperator Apostrophe)           identifier  }
 <0,separator>              "("                                                   { makeToken (makeOperator LeftParen)            identifier  }
-<0,separator>              ")"                                                   { makeToken (makeOperator RightParen)           separator  }
+<0,separator>              ")"                                                   { makeToken (makeOperator RightParen)           identifier  }
 <0,separator>              "*"                                                   { makeToken (makeOperator Star)                 identifier  }
 <0,separator>              "+"                                                   { makeToken (makeOperator Plus)                 identifier  }
 <0,separator>              ","                                                   { makeToken (makeOperator Comma)                identifier  }
@@ -379,13 +385,13 @@ lexer cont = do
 -- | Basic call to lexer
 -- Can be used for debug
 -- Returns either error or list of tokens
-lexerList :: String -> StateT NetlistStore (ExceptT ConverterError IO) [Token]
-lexerList str = runAlex str $
+lexerList :: String -> IO (Either ConverterError [Token])
+lexerList str =
    let loop tknLst = do token <- alexMonadScan
                         case unPos token of
                            EOF -> return $ reverse tknLst
                            unPosToken -> loop (unPosToken:tknLst)
-   in loop []
+   in runExceptT $ evalStateT (runAlex str $ loop []) emptyNetlistStore
 
 -- |Lexer scan
 alexMonadScan :: Alex WrappedToken
