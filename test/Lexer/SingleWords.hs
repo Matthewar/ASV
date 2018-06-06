@@ -1,11 +1,11 @@
-module LexerSpec (tests) where
+module Lexer.SingleWords
+   ( singleWords
+   ) where
 
 import Test.Tasty
 import Test.Tasty.HUnit
 import qualified Test.Tasty.QuickCheck as QC
 import Control.Monad
-import Control.Monad.Except (runExceptT)
-import Control.Monad.Trans.State (evalStateT)
 import Data.Function ((&))
 import qualified Data.Map.Strict as MapS
 import Data.List.Split (splitOneOf,splitOn)
@@ -14,27 +14,29 @@ import Data.Char (toUpper,digitToInt)
 import Data.List (findIndex)
 import Numeric (readInt)
 
-import Lexer.Lexer (lexerList)
 import Lexer.Types.Token
+         ( Token(..)
+         , ReservedWord(..)
+         , LiteralBase(..)
+         , LitType(..)
+         , OperatorType(..)
+         )
 import Lexer.Types.Error
 import Lexer.Types.PositionWrapper
 import Lexer.Alex.Types (AlexPosn(..))
-import Parser.Netlist.Types.Stores (emptyNetlistStore)
 import Manager.Types.Error (ConverterError(ConverterError_Parse))
 
+import Lexer.Functions
+         ( getLexResult
+         , compareBasicUnit
+         )
 import Generators.LexElements
-         ( genInteger
-         , genExponent
+         ( genExponent
          , genBasedStr
          , genBitStr
          , genIdentifier
          , genDecimal
          )
-
--- |All lexer tests
-tests :: TestTree
-tests = testGroup "Lexer Tests"
-   [singleWords]
 
 -- |Single word lexer tests
 -- Consist of a string that will lex to a single token
@@ -53,17 +55,6 @@ singleKeywords = testGroup "Single keyword tests for lexer"
    [ singleKeywordsUpper
    , singleKeywordsLower
    ]
-
--- |Run the lexer and get the result
-getLexResult :: String -> IO (Either ConverterError [Token])
-getLexResult input = runExceptT $ evalStateT (lexerList input) emptyNetlistStore
-
--- |Compare a single unit input
-compareBasicUnit :: String -> Token -> Assertion
-compareBasicUnit input output = do
-   result <- getLexResult input
-   let expectedOutput = Right [output]
-   result @?= expectedOutput
 
 -- |Single upper case keyword lexer unit tests
 -- Unit tests with single upper case strings that lex to keyword tokens

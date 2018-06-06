@@ -115,7 +115,9 @@ test-suite VHDL-Sim-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       LexerSpec
+  other-modules:       Lexer.Spec
+                     , Lexer.Functions
+                     , Lexer.SingleWords
                      , Generators.LexElements
                      --, ParserSpec
                      --, Generators.ParseElements
