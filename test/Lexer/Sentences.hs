@@ -14,7 +14,8 @@ import Lexer.Functions
          , stringToDelimiter
          )
 import Generators.LexElements
-         ( genKeyword
+         ( genIdentifier
+         , genKeyword
          , genDelimiter
          )
 
@@ -32,7 +33,7 @@ singleItemSentences :: TestTree
 singleItemSentences = testGroup "Sentences made of a single type of lexical element"
    [ keywordSentences
    --, literalSetences
-   --, identifierSentences
+   , identifierSentences
    ]
 
 newtype Sentence = Sentence [(String,String)]
@@ -61,9 +62,30 @@ keywordSentences = QC.testProperty "Sentences made of only keywords" $
             return $ Sentence $ zip keywords delimiters
 
 --literalSetences :: TestTree
---literalSetences
---identifierSentences :: TestTree
---identifierSentences
+--literalSetences = QC.testProperty "Sentences made of only literals" $
+--   QC.forAll genSentence $ \(Sentence sentence) -> QC.ioProperty $ do
+--      lexRun <- getLexResult $ show $ Sentence sentence
+--      let (literalStrs,
+
+identifierSentences :: TestTree
+identifierSentences = QC.testProperty "Sentences made of only identifiers" $
+   QC.forAll genSentence $ \(Sentence sentence) -> QC.ioProperty $ do
+      lexRun <- getLexResult $ show $ Sentence sentence
+      let (identifierStrs,delimiterStrs) = unzip sentence
+          identifiers = map Identifier identifierStrs
+          joinOutput (identifier,delimiterStr) =
+            (identifier:case stringToDelimiter delimiterStr of
+               Nothing -> []
+               Just op -> [Operator op]
+            )
+          expectedOutput = Right $ concat $ map joinOutput $ zip identifiers delimiterStrs
+      return $ lexRun == expectedOutput
+   where genSentence :: QC.Gen Sentence
+         genSentence = do
+            length <- QC.choose (1,100)
+            identifiers <- replicateM length $ genIdentifier 1 10
+            delimiters <- replicateM length genDelimiter
+            return $ Sentence $ zip identifiers delimiters
 
 -- |Sentences made of different lexical elements types
 -- Consists of a string that will lex to a list of tokens of different types
