@@ -14,7 +14,9 @@ import Lexer.Functions
          , stringToDelimiter
          )
 import Generators.LexElements
-         ( genIdentifier
+         ( GenPair(..)
+         , combineGen
+         , genIdentifier
          , genKeyword
          , genDelimiter
          )
@@ -33,33 +35,21 @@ singleItemSentences :: TestTree
 singleItemSentences = testGroup "Sentences made of a single type of lexical element"
    [ keywordSentences
    --, literalSetences
-   , identifierSentences
+   --, identifierSentences
    ]
-
-newtype Sentence = Sentence [(String,String)]
-instance Show Sentence where
-   show (Sentence strs) = concat $ map (\(a,b) -> a ++ b) strs
 
 -- |Sentences made of only keywords
 keywordSentences :: TestTree
 keywordSentences = QC.testProperty "Sentences made of only keywords" $
-   QC.forAll genSentence $ \(Sentence sentence) -> QC.ioProperty $ do
-      lexRun <- getLexResult $ show $ Sentence sentence
-      let (keywordStrs,delimiterStrs) = unzip sentence
-          keywords = map (Keyword . stringToKeyword) keywordStrs
-          joinOutput (keyword,delimiterStr) =
-            (keyword:case stringToDelimiter delimiterStr of
-               Nothing -> []
-               Just op -> [Operator op]
-            )
-          expectedOutput = Right $ concat $ map joinOutput $ zip keywords delimiterStrs
-      return $ lexRun == expectedOutput
-   where genSentence :: QC.Gen Sentence
+   QC.forAll genSentence $ \(GenPair lexInput expectedTokens) -> QC.ioProperty $ do
+      lexRun <- getLexResult lexInput
+      return $ lexRun == Right expectedTokens
+   where genSentence :: QC.Gen (GenPair [Token])
          genSentence = do
             length <- QC.choose (1,100)
             keywords <- replicateM length genKeyword
             delimiters <- replicateM length genDelimiter
-            return $ Sentence $ zip keywords delimiters
+            return $ foldl (combineGen (++)) (GenPair "" []) $ zipWith (combineGen (\a b -> (a:b))) keywords delimiters
 
 --literalSetences :: TestTree
 --literalSetences = QC.testProperty "Sentences made of only literals" $
@@ -69,23 +59,15 @@ keywordSentences = QC.testProperty "Sentences made of only keywords" $
 
 identifierSentences :: TestTree
 identifierSentences = QC.testProperty "Sentences made of only identifiers" $
-   QC.forAll genSentence $ \(Sentence sentence) -> QC.ioProperty $ do
-      lexRun <- getLexResult $ show $ Sentence sentence
-      let (identifierStrs,delimiterStrs) = unzip sentence
-          identifiers = map Identifier identifierStrs
-          joinOutput (identifier,delimiterStr) =
-            (identifier:case stringToDelimiter delimiterStr of
-               Nothing -> []
-               Just op -> [Operator op]
-            )
-          expectedOutput = Right $ concat $ map joinOutput $ zip identifiers delimiterStrs
-      return $ lexRun == expectedOutput
-   where genSentence :: QC.Gen Sentence
+   QC.forAll genSentence $ \(GenPair lexInput expectedTokens) -> QC.ioProperty $ do
+      lexRun <- getLexResult lexInput
+      return $ lexRun == Right expectedTokens
+   where genSentence :: QC.Gen (GenPair [Token])
          genSentence = do
             length <- QC.choose (1,100)
             identifiers <- replicateM length $ genIdentifier 1 10
             delimiters <- replicateM length genDelimiter
-            return $ Sentence $ zip identifiers delimiters
+            return $ foldl (combineGen (++)) (GenPair "" []) $ zipWith (combineGen (\a b -> (a:b))) identifiers delimiters
 
 -- |Sentences made of different lexical elements types
 -- Consists of a string that will lex to a list of tokens of different types

@@ -32,7 +32,8 @@ import Lexer.Functions
          , stringToKeyword
          )
 import Generators.LexElements
-         ( genExponent
+         ( GenPair(..)
+         , genExponent
          , genBasedStr
          , genBitStr
          , genIdentifier
@@ -399,9 +400,9 @@ singleKeywordsLower = testGroup "Single lower case keywords"
 -- Unit test with random case strings that lex to keyword tokens
 singleKeywordsRandomCase :: TestTree
 singleKeywordsRandomCase = QC.testProperty "Single random case keywords" $
-   QC.forAll genKeyword $ \keyword -> QC.ioProperty $ do
-      lexRun <- getLexResult keyword
-      let expectedOutput = Right [Keyword $ stringToKeyword keyword]
+   QC.forAll genKeyword $ \(GenPair inputStr expectedToken) -> QC.ioProperty $ do
+      lexRun <- getLexResult inputStr
+      let expectedOutput = Right [expectedToken]
       return $ lexRun == expectedOutput
 
 -- |Single operator lexer unit tests
@@ -631,26 +632,9 @@ singleBitStrLiterals = testGroup "Single bit strings"
 -- |Generator for a single bit string literal with specified containers
 singleBitStrLiterals_cont :: Char -> QC.Property
 singleBitStrLiterals_cont container =
-   QC.forAll (genBitStr container) $ \bitStr -> QC.ioProperty $ do
+   QC.forAll (genBitStr container) $ \(GenPair bitStr expectedToken) -> QC.ioProperty $ do
       lexRun <- getLexResult bitStr
-      let (baseChar:_:strNoBase) = bitStr
-          base = baseMap MapS.! baseChar
-          unformattedStr =
-            strNoBase
-            & init
-            & filter (\char -> char /= '_')
-            & ByteString.pack
-          expectedOutput = Right [Literal $ BitStr base unformattedStr]
-      return $ lexRun == expectedOutput
-   where baseMap =
-            [ ('B', BinBased)
-            , ('b', BinBased)
-            , ('O', OctBased)
-            , ('o', OctBased)
-            , ('X', HexBased)
-            , ('x', HexBased)
-            ]
-            & MapS.fromList
+      return $ lexRun == Right [expectedToken]
 
 -- |All valid characters that can appear in a VHDL string
 validTestStringCharacters :: [Char]
@@ -738,7 +722,7 @@ singleCharLiterals = QC.testProperty "Single random character" $
 -- A single string that lexes to a identifier token
 singleIdentifiers :: TestTree
 singleIdentifiers = QC.testProperty "Single identifier" $
-   QC.forAll (genIdentifier 0 100) $ \identifierStr -> QC.ioProperty $ do
-      lexRun <- getLexResult identifierStr
-      let expectedAnswer = Right [Identifier identifierStr]
+   QC.forAll (genIdentifier 0 100) $ \(GenPair lexInput expectedToken) -> QC.ioProperty $ do
+      lexRun <- getLexResult lexInput
+      let expectedAnswer = Right [expectedToken]
       return $ lexRun == expectedAnswer
