@@ -17,13 +17,11 @@ import Control.Monad.Trans.State
          )
 
 import Lexer.Alex.Functions (runAlex)
-import Parser.Functions.Parse.Library (parseLibrary)
+import Parser.Functions.Parse.DesignFile (parseDesignFile)
 import Parser.Netlist.Types.Representation (NetlistName(..))
-import Parser.Netlist.Types.Stores
-         ( NetlistStore(..)
-         , emptyScopeStore
-         )
+import Parser.Netlist.Types.Stores (NetlistStore(..))
 import qualified Parser.Netlist.Builtin.Netlist as InitialNetlist
+import Manager.NewDesignUnit (create)
 import Manager.Types.Error (ConverterError)
 
 -- |All parser tests
@@ -35,11 +33,13 @@ tests = testGroup "Parser Tests"
 emptyDesignEntities :: TestTree
 emptyDesignEntities = testGroup "Empty design entities"
    [ emptyEntityDeclarations
+   , emptyPackageDeclarations
+   , emptyArchitectureBodies
    ]
 
 checkDesignEntity :: (NetlistStore -> a) -> (a -> Bool) -> String -> Assertion
 checkDesignEntity extractEntity checkEntity input = do
-   result <- runExceptT $ execStateT (runAlex input $ evalStateT (parseLibrary emptyScopeStore "WORK") []) InitialNetlist.netlist
+   result <- runExceptT $ execStateT (runAlex input $ parseDesignFile (create "" "" []) "WORK" []) InitialNetlist.netlist
    case result of
       Right netlist ->
          let entityType = extractEntity netlist
@@ -56,4 +56,20 @@ emptyEntityDeclarations = testGroup "Empty entities"
       checkDesignEntity entities (MapS.member $ NetlistName "WORK" "NAME") "entity name is begin end name;"
    , testCase "Empty entity with empty statement part and no final label" $
       checkDesignEntity entities (MapS.member $ NetlistName "WORK" "NAME") "entity name is begin end;"
+   ]
+
+emptyPackageDeclarations :: TestTree
+emptyPackageDeclarations = testGroup "Empty package headers"
+   [ testCase "Empty package header with final label" $
+      checkDesignEntity packages (MapS.member $ NetlistName "WORK" "NAME") "package name is end name;"
+   , testCase "Empty package header with no final label" $
+      checkDesignEntity packages (MapS.member $ NetlistName "WORK" "NAME") "package name is end;"
+   ]
+
+emptyArchitectureBodies :: TestTree
+emptyArchitectureBodies = testGroup "Empty architecture bodies"
+   [ testCase "Empty architecture body with final label" $
+      checkDesignEntity architectures (MapS.member ("WORK","NAME1","NAME2")) "entity name1 is end; architecture name2 of name1 is begin end name2;"
+   , testCase "Empty architecture body with no final label" $
+      checkDesignEntity architectures (MapS.member ("WORK","NAME1","NAME2")) "entity name1 is end; architecture name2 of name1 is begin end;"
    ]
