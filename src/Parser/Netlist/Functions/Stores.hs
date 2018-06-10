@@ -79,10 +79,10 @@ newEntity :: ScopeStore -> Entity
 newEntity scope = emptyEntity { entityScope = scope }
 
 -- |New architecture with with associated entity
-newArchitecture :: Entity -> Architecture
-newArchitecture (Entity scope generics ports funcs types subtypes consts signals processes) =
+newArchitecture :: ScopeStore -> Entity -> Architecture
+newArchitecture newScope (Entity entityScope generics ports funcs types subtypes consts signals processes) =
    emptyArchitecture
-      { archScope = scope
+      { archScope = mergeScopes newScope entityScope
       , archGenerics = generics
       , archPorts = ports
       , archFunctions = funcs

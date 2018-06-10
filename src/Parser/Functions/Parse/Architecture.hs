@@ -107,7 +107,7 @@ parseArchitecture scope libraryName = do
    entity <- case wrappedEntity of
       Just entityData -> return entityData
       Nothing -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_UnableToFindEntityForArch entityName name1) entityNameInfo
-   let baseArchitecture = newArchitecture entity
+   let baseArchitecture = newArchitecture scope entity
    initialArch <- execStateT (parseArchitectureDeclares entityName) baseArchitecture
    architecture <- execStateT (parseArchitectureStatements entityName) initialArch
    possibleNameToken <- getToken
