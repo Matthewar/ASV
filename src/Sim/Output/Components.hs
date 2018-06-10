@@ -33,6 +33,8 @@ import Sim.Output.Names
          , showEnum
          , showTypeName
          , showNewSubtypeValue
+         , showPortInName
+         , showInternalSignalName
          , showPortInDef
          , showPortOutDef
          , showInternalSignalDef
@@ -41,6 +43,8 @@ import Sim.Output.Names
          , showInternalSignalInitialValue
          , showProcessDef
          , showProcessSetInitial
+         , showProcessRead
+         , showInternalSignalRead
          )
 import Manager.Types.Error (ConverterError)
 
@@ -171,7 +175,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          \         ["
          ++ ( concat
             $ intersperse (newline ++ tab ++ tab ++ tab ++ ", ")
-            $ map (\signalName -> "signal'" ++ signalName ++ " signals")
+            $ map showInternalSignalRead
             $ MapS.keys signals
             )
          ++ newline
@@ -182,7 +186,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
             \         ["
          ++ ( concat
             $ intersperse (newline ++ tab ++ tab ++ tab ++ ", ")
-            $ map (\processName -> "processes'" ++ processName ++ " processes")
+            $ map showProcessRead
             $ processNames
             )
          ++ newline
@@ -204,7 +208,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
             \         [ "
          ++ ( concat
             $ intersperse (newline ++ tab ++ tab ++ tab ++ ", ")
-            $ map (\signalName -> "signal'" ++ signalName)
+            $ map showInternalSignalName
             $ MapS.keys signals
             )
          ++ newline
@@ -213,7 +217,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
             \         [ "
          ++ ( concat
             $ intersperse (newline ++ tab ++ tab ++ tab ++ ", ")
-            $ map (\portName -> "ports'in'" ++ portName)
+            $ map showPortInName
             $ map port_name
             $ filter (\port -> port_mode port == Mode_In)
             $ ports
