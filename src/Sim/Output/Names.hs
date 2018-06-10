@@ -228,7 +228,7 @@ showProcessName :: String -> String
 showProcessName processName = processNamePrefix ++ processName
 
 showProcessDef :: String -> String
-showProcessDef processName = showProcessName processName ++ " :: (Int,STD.STANDARD.Type'ANON'TIME)"
+showProcessDef processName = showProcessName processName ++ " :: ([Int],STD.STANDARD.Type'ANON'TIME)"
 
 showProcessSetInitial :: String -> String
 showProcessSetInitial processName = showProcessName processName ++ " = " ++ showProcessInitialName processName

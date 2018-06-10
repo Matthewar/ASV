@@ -70,8 +70,8 @@ outputStatements fileName unitName@(NetlistName _ entityName) nestedNames proces
        (processContents,timeouts) = makeProcessContents statements [] []
        numStages = length processContents - 1
        initialStateStr = case last timeouts of -- ?? Check that wait time is positive, this is globally static (uses initial value of any signals), should be analysed before printing
-                           Just timeExp -> "(0,control'delayCheck (" ++ convertCalculation nestedNames processName True timeExp ++ "))"
-                           Nothing -> "(0,STD.STANDARD.mkType'ANON'TIME 0)"
+                           Just timeExp -> "(repeat 0,control'delayCheck (" ++ convertCalculation nestedNames processName True timeExp ++ "))"
+                           Nothing -> "(repeat 0,STD.STANDARD.mkType'ANON'TIME 0)"
        convertContents :: Int -> [(Maybe [String],[[String]])] -> [[String]] -> [String] --[(String,[String])]
        convertContents val ((waitData,otherStrs):rest) contentsStr =
          let valStr = "stage" ++ show val
@@ -81,20 +81,20 @@ outputStatements fileName unitName@(NetlistName _ entityName) nestedNames proces
                      Just waitStr -> map (\s -> tab ++ s) $
                         waitStr
                         ++ [ tab ++ "then " ++ valStr
-                           , tab ++ "else return (" ++ show val ++ ",waitTime)"
+                           , tab ++ "else return (" ++ show val ++ ":stageStack,waitTime)"
                            ]
                      Nothing -> [tab ++ valStr]
              runStr =
                [valStr ++ " = do"]
                ++ (map (\s -> tab ++ s) $ concat $ reverse otherStrs)
                ++ [tab ++ case (last processContents,last timeouts) of
-                           ((Just _,_),Just timeExp) | numStages == val -> "return (0,STD.STANDARD.function'op'PLUS'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'TIME realTime (control'delayCheck (" ++ convertCalculation nestedNames processName False timeExp ++ ")))"
-                           ((Just _,_),Nothing) | numStages == val -> "return (0,STD.STANDARD.mkType'ANON'TIME 0)"
+                           ((Just _,_),Just timeExp) | numStages == val -> "return (0:stageStack,STD.STANDARD.function'op'PLUS'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'TIME realTime (control'delayCheck (" ++ convertCalculation nestedNames processName False timeExp ++ ")))"
+                           ((Just _,_),Nothing) | numStages == val -> "return (0:stageStack,STD.STANDARD.mkType'ANON'TIME 0)"
                            ((Nothing,_),_) | numStages == val -> "stage0check"
                            _ ->
                               "return ("
                               ++ (show $ val + 1)
-                              ++ ",STD.STANDARD.function'op'PLUS'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'TIME realTime (control'delayCheck ("
+                              ++ ":stageStack,STD.STANDARD.function'op'PLUS'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'TIME realTime (control'delayCheck ("
                               ++ (convertCalculation nestedNames processName False $ fromJust $ timeouts !! (numStages - (val + 1)))
                               ++ ")))"
                   ]
@@ -104,11 +104,11 @@ outputStatements fileName unitName@(NetlistName _ entityName) nestedNames proces
          concat $
          map (\s -> newline ++ tab ++ tab ++ s) $
          convertContents numStages processContents []
-       entityStackName = show unitName ++ ".Entity'" ++ entityName ++ "'Stack (Int,STD.STANDARD.Type'ANON'TIME)"
+       entityStackName = show unitName ++ ".Entity'" ++ entityName ++ "'Stack ([Int],STD.STANDARD.Type'ANON'TIME)"
        processFuncStr =
-         "process'" ++ processName ++ " :: (Int,STD.STANDARD.Type'ANON'TIME) -> " ++ entityStackName
+         "process'" ++ processName ++ " :: ([Int],STD.STANDARD.Type'ANON'TIME) -> " ++ entityStackName
          ++ newline
-         ++ "process'" ++ processName ++ " (stageNum,waitTime) = do"
+         ++ "process'" ++ processName ++ " ((stageNum:stageStack),waitTime) = do"
          ++ newline ++ tab
          ++ "curTime@(Control'Time realTime deltaTime) <- lift get"
          ++ newline ++ tab
@@ -129,7 +129,7 @@ outputStatements fileName unitName@(NetlistName _ entityName) nestedNames proces
          ++ "stageRun"
        processInitialStr =
          let constName = "process'initial'" ++ processName
-         in constName ++ " :: (Int,STD.STANDARD.Type'ANON'TIME)"
+         in constName ++ " :: ([Int],STD.STANDARD.Type'ANON'TIME)"
             ++ newline
             ++ constName ++ " = " ++ initialStateStr
    in liftIO $ appendFile fileName $
