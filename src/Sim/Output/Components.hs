@@ -67,7 +67,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          let printPort (Port portName _ subtypeName _ _) = showPortInDef portName subtypeName
          in "data PORTS'IN =\n\
             \   PORTS'IN\n\
-            \      {"
+            \      { "
             ++ ( concat
                $ intersperse (newline ++ tab ++ tab ++ ", ")
                $ map printPort
@@ -79,7 +79,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          let printPort (Port portName _ subtypeName subtype value) = showPortInInitialValue portName $ showNewSubtypeValue subtypeName subtype value
          in "initial'PORTS'IN =\n\
             \   PORTS'IN\n\
-            \      {"
+            \      { "
             ++ ( concat
                $ intersperse (newline ++ tab ++ tab ++ ", ")
                $ map printPort
@@ -91,7 +91,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          let printPort (Port portName _ subtypeName _ _) = showPortOutDef portName subtypeName
          in "data PORTS'OUT =\n\
             \   PORTS'OUT\n\
-            \      {"
+            \      { "
             ++ ( concat
                $ intersperse (newline ++ tab ++ tab ++ ", ")
                $ map printPort
@@ -103,7 +103,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          let printPort (Port portName _ subtypeName subtype value) = showPortOutInitialValue portName $ showNewSubtypeValue subtypeName subtype value
          in "initial'PORTS'OUT =\n\
             \   PORTS'OUT\n\
-            \      {"
+            \      { "
             ++ ( concat
                $ intersperse (newline ++ tab ++ tab ++ ", ")
                $ map printPort
@@ -115,7 +115,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          let printSignal (signalName,Signal typeName _ _) = showInternalSignalDef signalName typeName
          in "data STATE =\n\
             \   STATE\n\
-            \      {"
+            \      { "
             ++ ( concat
                $ intersperse (newline ++ tab ++ tab ++ ", ")
                $ map printSignal
@@ -127,7 +127,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          let printSignal (signalName,Signal subtypeName subtype value) = showInternalSignalInitialValue signalName $ showNewSubtypeValue subtypeName subtype value
          in "initial'STATE =\n\
             \   STATE\n\
-            \      {"
+            \      { "
             ++ ( concat
                $ intersperse (newline ++ tab ++ tab ++ ", ")
                $ map printSignal
