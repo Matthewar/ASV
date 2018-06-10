@@ -3,7 +3,7 @@ module Main (main) where
 import Test.Tasty
 
 import qualified Lexer.Spec
---import qualified ParserSpec
+import qualified Parser.Spec
 
 main :: IO ()
 main = defaultMain tests
@@ -12,5 +12,5 @@ main = defaultMain tests
 tests :: TestTree
 tests = testGroup "Top level test group"
    [ Lexer.Spec.tests
-   --, ParserSpec.tests
+   , Parser.Spec.tests
    ]

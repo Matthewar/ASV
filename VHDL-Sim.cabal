@@ -120,7 +120,7 @@ test-suite VHDL-Sim-test
                      , Lexer.SingleWords
                      , Lexer.Sentences
                      , Generators.LexElements
-                     --, ParserSpec
+                     , Parser.Spec
                      --, Generators.ParseElements
   build-depends:       base
                      , VHDL-Sim
