@@ -3,14 +3,20 @@ module Parser.Functions.Parse.SequentialStatements
    , parseAssertionStatement
    , parseSensitivityList
    , parseSignalAssignment
+   , parseIfStatement
    ) where
 
 import qualified Data.Map.Strict as MapS
 import Data.Char (toUpper)
 import Data.List (find)
+import Data.Maybe
+         ( isJust
+         , fromJust
+         )
 import Control.Monad.Except (throwError)
 import Control.Monad
          ( unless
+         , when
          , replicateM
          )
 
@@ -20,6 +26,7 @@ import Lexer.Functions.PositionWrapper
          , passPosition
          )
 import Lexer.Types.Error (ParserError(..))
+import Lexer.Alex.Types (AlexPosn)
 import Parser.Types.Monad (ParserStack)
 import Parser.Functions.Monad
          ( getToken
@@ -32,14 +39,27 @@ import Parser.Types.Expressions
 import Parser.Functions.IdentifyToken
          ( matchIdentifier
          , isComma
+         , isIdentifier
          , isKeywordAfter
+         , isKeywordAssert
+         , isKeywordCase
+         , isKeywordElse
+         , isKeywordElsif
+         , isKeywordEnd
+         , isKeywordExit
          , isKeywordFor
+         , isKeywordIf
+         , isKeywordNext
          , isKeywordNull
          , isKeywordOn
          , isKeywordReport
+         , isKeywordReturn
          , isKeywordSeverity
+         , isKeywordThen
          , isKeywordTransport
          , isKeywordUntil
+         , isKeywordWait
+         , isLeftParen
          , isSemicolon
          , isSignAssign
          )
@@ -58,11 +78,16 @@ import Parser.Netlist.Types.Representation
          , Signal(..)
          , Waveform(..)
          , Subtype
+         , SequentialStatement(..)
          )
 import Parser.Netlist.Types.Stores
          ( ScopeStore
          , UnitStore(..)
          , Package(..)
+         )
+import Parser.Netlist.Functions.Stores
+         ( matchPortNameInScope
+         , matchSignalNameInScope
          )
 import Parser.Netlist.Types.Error (NetlistError(..))
 import Parser.Netlist.Builtin.Standard (standardPackage)
@@ -150,6 +175,122 @@ parseSignalAssignment scope unit unitName signal = do
    finalTok <- getToken
    unless (isSemicolon finalTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSemicolonInSignalAssignment finalTok
    return waveforms
+
+parseIfStatement :: ScopeStore -> UnitStore -> NetlistName -> Bool -> Bool -> AlexPosn -> ParserStack ([(Calculation,[SequentialStatement])],[SequentialStatement])
+parseIfStatement scope unit unitName isPassive waitAllowed ifPos = do
+   condition <- parseWithExpectedType NotStatic parseExpression scope unit unitName (NetlistName "STD" "STANDARD","BOOLEAN") ((packageSubtypes standardPackage) MapS.! "BOOLEAN") ifPos
+   endConditionTok <- getToken
+   unless (isKeywordThen endConditionTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedKeywordThenInIfStatement endConditionTok
+   ifStatements <- parseIfStatements []
+   allStatements <- parseElsifStatements [(condition,ifStatements)]
+   [ifTok,semiTok] <- replicateM 2 getToken
+   unless (isKeywordIf ifTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedKeywordIfInEndIfStatement ifTok
+   unless (isSemicolon semiTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedSemicolonInEndIfStatement semiTok
+   return allStatements
+   where parseIfStatements statements = do
+            token <- getToken
+            newStatement <- case token of
+               _ | isKeywordWait token && waitAllowed -> do
+                  (sensitivity,condition,timeout) <- parseWaitStatement scope unit unitName
+                  return $ Just $ WaitStatement sensitivity condition timeout
+               _ | isKeywordWait token -> throwError $ ConverterError_Parse $ raisePosition ParseErr_WaitSeqStatementNotAllowedWithSensitivityList token
+               _ | isKeywordAssert token -> do
+                  (condition,report,severity) <- parseAssertionStatement scope unit unitName
+                  return $ Just $ AssertStatement condition report severity
+               _ | isIdentifier token ->
+                  let name = map toUpper $ unPos $ fromJust $ matchIdentifier token
+                      checkSignals = case matchSignalNameInScope scope unit name of
+                        Just _ | isPassive -> throwError $ ConverterError_Netlist $ passPosition NetlistError_SignalAssignmentInPassiveProcess token
+                        Just (signal,signalPackage) -> do
+                           when (isJust signalPackage) $ throwError $ ConverterError_Netlist $ passPosition NetlistError_PackageSignalInSignalAssign token
+                           calc <- parseSignalAssignment scope unit unitName signal
+                           return $ Just $ SignalAssignStatement name InternalSignal calc
+                        Nothing -> checkPorts
+                      checkPorts = case matchPortNameInScope unit name of
+                        Just port -> do
+                           portType <- case port_mode port of
+                              Mode_In -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_CannotAssignToInputPort name) token
+                              Mode_Out -> return PortOut
+                              _ -> throwError $ ConverterError_NotImplemented $ passPosition "Other port mode types in assign" token
+                           let portAsSignal = Signal (port_subtypeName port) (port_subtypeData port) (port_default port)
+                           calc <- parseSignalAssignment scope unit unitName portAsSignal
+                           return $ Just $ SignalAssignStatement name portType calc
+                        Nothing -> throwError $ ConverterError_NotImplemented $ passPosition "procedure call or variable assignment" token
+                  in checkSignals
+               _ | isLeftParen token -> throwError $ ConverterError_NotImplemented $ passPosition "Signal/variable assignment (aggregate)" token
+               _ | isKeywordIf token -> do
+                  (ifStatements,elseStatements) <- parseIfStatement scope unit unitName isPassive waitAllowed $ getPos token
+                  return $ Just $ IfStatement ifStatements elseStatements
+               _ | isKeywordCase token -> throwError $ ConverterError_NotImplemented $ passPosition "Case statement" token
+               --loop statement -- [ identifier : ] [ while or for ] loop
+               _ | isKeywordNext token -> throwError $ ConverterError_NotImplemented $ passPosition "Loop statement" token
+               _ | isKeywordExit token -> throwError $ ConverterError_NotImplemented $ passPosition "Exit statement" token
+               _ | isKeywordReturn token -> throwError $ ConverterError_NotImplemented $ passPosition "Return statement" token
+               _ | isKeywordNull token -> return $ Just NullStatement
+               _ | isKeywordElsif token || isKeywordElse token || isKeywordEnd token -> do
+                  saveToken token
+                  return Nothing
+            case newStatement of
+               Just statement -> parseIfStatements (statement:statements)
+               Nothing -> return $ reverse statements
+         parseElsifStatements elsifs = do
+            firstToken <- getToken
+            case firstToken of
+               token | isKeywordElsif token -> do
+                  condition <- parseWithExpectedType NotStatic parseExpression scope unit unitName (NetlistName "STD" "STANDARD","BOOLEAN") ((packageSubtypes standardPackage) MapS.! "BOOLEAN") ifPos
+                  endConditionTok <- getToken
+                  unless (isKeywordThen endConditionTok) $ throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedKeywordThenInIfStatement endConditionTok
+                  ifStatements <- parseIfStatements []
+                  parseElsifStatements ((condition,ifStatements):elsifs)
+               token | isKeywordElse token -> do
+                  elseStatements <- parseElseStatements []
+                  return (reverse elsifs,elseStatements)
+               token | isKeywordEnd token -> return (reverse elsifs,[])
+               token -> throwError $ ConverterError_Parse $ raisePosition ParseErr_ExpectedIfStatmentContinuation token
+         parseElseStatements statements = do
+            token <- getToken
+            newStatement <- case token of
+               _ | isKeywordWait token && waitAllowed -> do
+                  (sensitivity,condition,timeout) <- parseWaitStatement scope unit unitName
+                  return $ Just $ WaitStatement sensitivity condition timeout
+               _ | isKeywordWait token -> throwError $ ConverterError_Parse $ raisePosition ParseErr_WaitSeqStatementNotAllowedWithSensitivityList token
+               _ | isKeywordAssert token -> do
+                  (condition,report,severity) <- parseAssertionStatement scope unit unitName
+                  return $ Just $ AssertStatement condition report severity
+               _ | isIdentifier token ->
+                  let name = map toUpper $ unPos $ fromJust $ matchIdentifier token
+                      checkSignals = case matchSignalNameInScope scope unit name of
+                        Just _ | isPassive -> throwError $ ConverterError_Netlist $ passPosition NetlistError_SignalAssignmentInPassiveProcess token
+                        Just (signal,signalPackage) -> do
+                           when (isJust signalPackage) $ throwError $ ConverterError_Netlist $ passPosition NetlistError_PackageSignalInSignalAssign token
+                           calc <- parseSignalAssignment scope unit unitName signal
+                           return $ Just $ SignalAssignStatement name InternalSignal calc
+                        Nothing -> checkPorts
+                      checkPorts = case matchPortNameInScope unit name of
+                        Just port -> do
+                           portType <- case port_mode port of
+                              Mode_In -> throwError $ ConverterError_Netlist $ passPosition (NetlistError_CannotAssignToInputPort name) token
+                              Mode_Out -> return PortOut
+                              _ -> throwError $ ConverterError_NotImplemented $ passPosition "Other port mode types in assign" token
+                           let portAsSignal = Signal (port_subtypeName port) (port_subtypeData port) (port_default port)
+                           calc <- parseSignalAssignment scope unit unitName portAsSignal
+                           return $ Just $ SignalAssignStatement name portType calc
+                        Nothing -> throwError $ ConverterError_NotImplemented $ passPosition "procedure call or variable assignment" token
+                  in checkSignals
+               _ | isLeftParen token -> throwError $ ConverterError_NotImplemented $ passPosition "Signal/variable assignment (aggregate)" token
+               _ | isKeywordIf token -> do
+                  (ifStatements,elseStatements) <- parseIfStatement scope unit unitName isPassive waitAllowed $ getPos token
+                  return $ Just $ IfStatement ifStatements elseStatements
+               _ | isKeywordCase token -> throwError $ ConverterError_NotImplemented $ passPosition "Case statement" token
+               --loop statement -- [ identifier : ] [ while or for ] loop
+               _ | isKeywordNext token -> throwError $ ConverterError_NotImplemented $ passPosition "Loop statement" token
+               _ | isKeywordExit token -> throwError $ ConverterError_NotImplemented $ passPosition "Exit statement" token
+               _ | isKeywordReturn token -> throwError $ ConverterError_NotImplemented $ passPosition "Return statement" token
+               _ | isKeywordNull token -> return $ Just NullStatement
+               _ | isKeywordEnd token -> return Nothing
+            case newStatement of
+               Just statement -> parseElseStatements (statement:statements)
+               Nothing -> return $ reverse statements
 
 parseSensitivityList :: ScopeStore -> UnitStore -> NetlistName -> [(SignalType,String)] -> ParserStack [(SignalType,String)]
 parseSensitivityList scope unit unitName currentList = do
