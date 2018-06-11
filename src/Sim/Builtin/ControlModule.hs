@@ -84,6 +84,30 @@ controlModule = pack
    \-- |Entity stack\n\
    \type Entity'Stack a b = StateT a (StateT Control'Time (StateT Control'SEVERITY_TRACKER (ExceptT Control'SEVERITY_FAILURE IO))) b\n\
    \\n\
+   \data ProcessStatement a b c d =\n\
+   \   Control'Wait\n\
+   \      (Entity'State a b c d -> Bool) -- Sensitivity List\n\
+   \      (Entity'State a b c d -> Control'Time -> STD.STANDARD.Type'ANON'BOOLEAN) -- Condition\n\
+   \      (Either\n\
+   \         STD.STANDARD.Type'ANON'TIME -- Calculated wait time\n\
+   \         (Entity'State a b c d -> Control'Time -> STD.STANDARD.Type'ANON'TIME) -- Calculate new wait time\n\
+   \      )\n\
+   \   | Control'If (Entity'State a b c d -> Control'Time -> STD.STANDARD.Type'ANON'BOOLEAN) [ProcessStatement a b c d] [ProcessStatement a b c d]\n\
+   \   | Control'Statement (Entity'State a b c d -> Control'Time -> Entity'State a b c d)\n\
+   \\n\
+   \progressProcess :: Entity'State a b c d -> Control'Time -> [ProcessStatement a b c d] -> (Entity'State a b c d,[ProcessStatement a b c d])\n\
+   \progressProcess currentState currentTime all@(Control'Wait sensitivityCheck conditionCheck (Left waitTime):others)\n\
+   \   | time'Real currentTime == waitTime = progressProcess currentState currentTime others\n\
+   \   | (sensitivityCheck currentState) && (conditionCheck currentState currentTime) == STD.STANDARD.Type'ANON'BOOLEAN'Iden'TRUE =\n\
+   \      progressProcess currentState currentTime others\n\
+   \   | otherwise = (currentState,all)\n\
+   \progressProcess currentState currentTime (Control'Wait sensitivityCheck conditionCheck (Right modifyTime):others) =\n\
+   \   (currentState,(Control'Wait sensitivityCheck conditionCheck $ Left $ STD.STANDARD.function'op'PLUS'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'TIME (time'Real currentTime) (control'delayCheck $ modifyTime currentState currentTime)):others)\n\
+   \progressProcess currentState currentTime (Control'If conditionCheck trueStatements falseStatements:others)\n\
+   \   | conditionCheck currentState currentTime == STD.STANDARD.Type'ANON'BOOLEAN'Iden'TRUE = progressProcess currentState currentTime (trueStatements ++ others)\n\
+   \   | otherwise = progressProcess currentState currentTime (falseStatements ++ others)\n\
+   \progressProcess currentState currentTime (Control'Statement modifyState:others) = progressProcess (modifyState currentState currentTime) currentTime others\n\
+   \\n\
    \data Control'Signal a =\n\
    \   Control'Signal\n\
    \      --{ control'signal'current :: (Control'Time,a)\n\
