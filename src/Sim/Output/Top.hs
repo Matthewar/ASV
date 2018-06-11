@@ -38,11 +38,11 @@ outputTop buildDir netlist topModule = do
 
 makeDirectories :: FilePath -> NetlistStore -> IO ()
 makeDirectories buildDir netlist = do
-   let netlistNames = MapS.keys $ packages netlist
-       libNames =
-         netlistNames
-         & map (\(NetlistName libName _) -> libName)
-         & nub
+   let libNames =
+         nub $
+         extractLibNameFromNetlistName (packages netlist)
+         ++ extractLibNameFromNetlistName (entities netlist)
+         ++ map extractLibNameFromArchName (MapS.keys $ architectures netlist)
        srcDir = buildDir </> "src"
        genLibs (lib:others) = do
          let dir = srcDir </> lib
@@ -52,6 +52,8 @@ makeDirectories buildDir netlist = do
    createDirectoryIfMissing False srcDir
    createDirectoryIfMissing False $ buildDir </> "app"
    genLibs libNames
+   where extractLibNameFromNetlistName = (map $ \(NetlistName libName _) -> libName) . MapS.keys
+         extractLibNameFromArchName (lib,_,_) = lib
 
 outputBuiltins :: FilePath -> ExceptT ConverterError IO ()
 outputBuiltins buildDir = do
