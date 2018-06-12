@@ -162,14 +162,18 @@ controlModule = pack
    \      , control'signal'event :: Bool\n\
    \      }\n\
    \\n\
-   \control'printInitial :: STD.STANDARD.SignalOutput a => String -> Control'Time -> Control'Signal a -> IO ()\n\
-   \control'printInitial signalName currentTime (Control'Signal [(_,val)] _ _) =\n\
-   \   putStrLn $ \"SignalUpdate: \" ++ STD.STANDARD.sigOut currentTime ++ \": \" ++ signalName ++ \": \" ++ STD.STANDARD.sigOut val\n\
+   \control'printVars :: STD.STANDARD.SignalType a => String -> Control'Signal a -> IO ()\n\
+   \control'printVars signalName (Control'Signal [(_,val)] _ _) =\n\
+   \   appendFile \"waves.vcd\" $ \"$var \" ++ STD.STANDARD.sigType val ++ \" \" ++ signalName ++ \" \" ++ signalName ++ \" $end\"\n\
+   \\n\
+   \control'printVal :: STD.STANDARD.SignalOutput a => String -> Control'Signal a -> IO ()\n\
+   \control'printVal signalName (Control'Signal [(_,val)] _ _) =\n\
+   \   appendFile \"waves.vcd\" $ STD.STANDARD.sigOut val ++ signalName ++ \" \"\n\
    \\n\
    \control'updateSignal :: (Eq a, STD.STANDARD.SignalOutput a) => String -> Control'Time -> Control'Signal a -> IO (Control'Signal a)\n\
    \control'updateSignal signalName currentTime (Control'Signal originalTrans@((_,oldVal):(newTime,newVal):transactions) _ _)\n\
    \   | currentTime == newTime = do\n\
-   \      putStrLn $ \"SignalUpdate: \" ++ STD.STANDARD.sigOut currentTime ++ \": \" ++ signalName ++ \": \" ++ STD.STANDARD.sigOut newVal\n\
+   \      appendFile \"waves.vcd\" $ STD.STANDARD.sigOut val ++ signalName ++ \" \"\n\
    \      let event = oldVal /= newVal\n\
    \      return (Control'Signal ((newTime,newVal):transactions) True event)\n\
    \   | otherwise = return (Control'Signal originalTrans False False)\n\

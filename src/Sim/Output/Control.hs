@@ -82,6 +82,8 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          ++ newline
          ++ "topInitial maxTime component currentTime severity = do"
          ++ newline ++ tab
+         ++ "writeFile \"waves.vcd\" \"$timescale 1 fs $end\n\""
+         ++ newline ++ tab
          ++ "TopModule.initialUpdate (fst $ component'" ++ topUnitLib ++ "'" ++ topUnitName ++ " component) currentTime"
          ++ newline ++ tab
          ++ "topRepeat maxTime component currentTime severity"

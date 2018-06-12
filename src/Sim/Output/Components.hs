@@ -200,22 +200,42 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          "initialUpdate :: Entity'State PORTS'IN STATE PORTS'OUT -> Control'Time -> IO ()\n\
          \initialUpdate (Entity'State portsIn state portsOut) currentTime = do"
          ++ ( concat
-            $ map (\signalName -> newline ++ tab ++ "control'printInitial \"" ++ printComponentActualName componentName ++ "." ++ signalName ++ "\" currentTime $ signal'" ++ signalName ++ " state")
+            $ map (\signalName -> newline ++ tab ++ "control'printVars \"" ++ printComponentActualName componentName ++ "." ++ signalName ++ "\" $ signal'" ++ signalName ++ " state")
             $ MapS.keys signals
             )
          ++ ( concat
-            $ map (\portName -> newline ++ tab ++ "control'printInitial \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" currentTime $ ports'in'" ++ portName ++ " portsIn")
+            $ map (\portName -> newline ++ tab ++ "control'printVars \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" $ ports'in'" ++ portName ++ " portsIn")
             $ map port_name
             $ portsIn
             )
          ++ ( concat
-            $ map (\portName -> newline ++ tab ++ "control'printInitial \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" currentTime $ ports'out'" ++ portName ++ " portsOut")
+            $ map (\portName -> newline ++ tab ++ "control'printVars \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" $ ports'out'" ++ portName ++ " portsOut")
             $ map port_name
             $ portsOut
             )
+         ++ newline ++ tab
+         ++ "appendFile \"waves.vcd\" \"$enddefinitions $end\n#0\n$dumpvars \""
+         ++ ( concat
+            $ map (\signalName -> newline ++ tab ++ "control'printVal \"" ++ printComponentActualName componentName ++ "." ++ signalName ++ "\" $ signal'" ++ signalName ++ " state")
+            $ MapS.keys signals
+            )
+         ++ ( concat
+            $ map (\portName -> newline ++ tab ++ "control'printVal \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" $ ports'in'" ++ portName ++ " portsIn")
+            $ map port_name
+            $ portsIn
+            )
+         ++ ( concat
+            $ map (\portName -> newline ++ tab ++ "control'printVal \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" $ ports'out'" ++ portName ++ " portsOut")
+            $ map port_name
+            $ portsOut
+            )
+         ++ newline ++ tab
+         ++ "appendFile \"waves.vcd\" \"$end\""
        normalUpdateStr =
          "signalUpdate :: Entity'State PORTS'IN STATE PORTS'OUT -> Control'Time -> IO (Entity'State PORTS'IN STATE PORTS'OUT)\n\
          \signalUpdate (Entity'State portsIn signals portsOut) currentTime@(Control'Time realTime _) = do"
+         ++ newline ++ tab
+         ++ "appendFile \"waves.vcd\" $ \"#\" ++ show (STD.STANDARD.extractType'ANON'TIME realTime) ++ \"\\n$dumpall \""
          ++ ( concat
             $ map ((++) (newline ++ tab))
             $ map (\portName -> "new'ports'in'" ++ portName ++ " <- control'updateSignal \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" currentTime $ ports'in'" ++ portName ++ " portsIn")
@@ -233,6 +253,8 @@ outputComponentControl fileName baseName componentName generics ports signals pr
             $ map port_name
             $ portsOut
             )
+         ++ newline ++ tab
+         ++ "appendFile \"waves.vcd\" \"$end\""
          ++ newline
          ++ "   let newPortsIn =\n\
             \         PORTS'IN"
