@@ -242,7 +242,7 @@ data SequentialStatement =
    | SignalAssignStatement String SignalType [Waveform]
    -- | VariableAssignStatement
    -- | ProcedureCallStatement
-   -- | IfStatement
+   | IfStatement [(Calculation,[SequentialStatement])] [SequentialStatement]
    -- | CaseStatement
    -- | LoopStatement
    -- | NextStatement

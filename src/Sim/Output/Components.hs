@@ -33,6 +33,8 @@ import Sim.Output.Names
          , showEnum
          , showTypeName
          , showNewSubtypeValue
+         , showPortInName
+         , showInternalSignalName
          , showPortInDef
          , showPortOutDef
          , showInternalSignalDef
@@ -41,6 +43,8 @@ import Sim.Output.Names
          , showInternalSignalInitialValue
          , showProcessDef
          , showProcessSetInitial
+         , showProcessRead
+         , showInternalSignalRead
          )
 import Manager.Types.Error (ConverterError)
 
@@ -63,7 +67,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          let printPort (Port portName _ subtypeName _ _) = showPortInDef portName subtypeName
          in "data PORTS'IN =\n\
             \   PORTS'IN\n\
-            \      {"
+            \      { "
             ++ ( concat
                $ intersperse (newline ++ tab ++ tab ++ ", ")
                $ map printPort
@@ -75,7 +79,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          let printPort (Port portName _ subtypeName subtype value) = showPortInInitialValue portName $ showNewSubtypeValue subtypeName subtype value
          in "initial'PORTS'IN =\n\
             \   PORTS'IN\n\
-            \      {"
+            \      { "
             ++ ( concat
                $ intersperse (newline ++ tab ++ tab ++ ", ")
                $ map printPort
@@ -87,7 +91,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          let printPort (Port portName _ subtypeName _ _) = showPortOutDef portName subtypeName
          in "data PORTS'OUT =\n\
             \   PORTS'OUT\n\
-            \      {"
+            \      { "
             ++ ( concat
                $ intersperse (newline ++ tab ++ tab ++ ", ")
                $ map printPort
@@ -99,7 +103,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          let printPort (Port portName _ subtypeName subtype value) = showPortOutInitialValue portName $ showNewSubtypeValue subtypeName subtype value
          in "initial'PORTS'OUT =\n\
             \   PORTS'OUT\n\
-            \      {"
+            \      { "
             ++ ( concat
                $ intersperse (newline ++ tab ++ tab ++ ", ")
                $ map printPort
@@ -111,7 +115,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          let printSignal (signalName,Signal typeName _ _) = showInternalSignalDef signalName typeName
          in "data STATE =\n\
             \   STATE\n\
-            \      {"
+            \      { "
             ++ ( concat
                $ intersperse (newline ++ tab ++ tab ++ ", ")
                $ map printSignal
@@ -123,7 +127,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          let printSignal (signalName,Signal subtypeName subtype value) = showInternalSignalInitialValue signalName $ showNewSubtypeValue subtypeName subtype value
          in "initial'STATE =\n\
             \   STATE\n\
-            \      {"
+            \      { "
             ++ ( concat
                $ intersperse (newline ++ tab ++ tab ++ ", ")
                $ map printSignal
@@ -131,66 +135,36 @@ outputComponentControl fileName baseName componentName generics ports signals pr
                )
             ++ newline ++ tab ++ tab
             ++ "}"
-       processTypeStr =
-         "data PROCESSES =\n\
-         \   PROCESSES\n\
-         \      { "
-         ++ ( concat
-            $ intersperse (newline ++ tab ++ tab ++ ", ")
-            $ map showProcessDef
-            $ processNames
-            )
-         ++ newline ++ tab ++ tab
-         ++ "}"
-       processInitialStr =
-         "initial'PROCESSES = \n\
-         \   PROCESSES\n\
-         \      { "
-         ++ ( concat
-            $ intersperse (newline ++ tab ++ tab ++ ", ")
-            $ map showProcessSetInitial
-            $ processNames
-            )
-         ++ newline ++ tab ++ tab
-         ++ "}"
        entityStateInitialStr =
          "initialStack =\n\
          \   Entity'State\n\
          \      initial'PORTS'IN\n\
          \      initial'STATE\n\
-         \      initial'PORTS'OUT\n\
-         \      initial'PROCESSES"
+         \      initial'PORTS'OUT"
        collectTimingStr =
-         "allTimes :: Entity'" ++ baseName ++ "'Stack (Maybe STD.STANDARD.Type'ANON'TIME)\n\
-         \allTimes = do\n\
-         \   signals <- gets entity'state\n\
-         \   processes <- gets entity'processes\n\
-         \   let getSignalTime (_:(time,_):_) = Just $ time'Real time\n\
+         "allTimes :: Entity'State PORTS'IN STATE PORTS'OUT -> Control'Time -> [[ProcessStatement PORTS'IN STATE PORTS'OUT]] -> Maybe (Either () STD.STANDARD.Type'ANON'TIME)\n\
+         \allTimes (Entity'State _ signals _) (Control'Time realTime deltaTime) processes =\n\
+         \   let minTime = Control'Time realTime $ deltaTime + 1\n\
+         \       getSignalTime (_:(time,_):_)\n\
+         \         | time == minTime = Just $ Left ()\n\
+         \         | otherwise = Just $ Right $ time'Real time\n\
          \       getSignalTime _ = Nothing\n\
          \       signalData =\n\
-         \         ["
+         \         [ "
          ++ ( concat
             $ intersperse (newline ++ tab ++ tab ++ tab ++ ", ")
-            $ map (\signalName -> "signal'" ++ signalName ++ " signals")
+            $ map ((++) "getSignalTime $ control'signal'transactions $ ")
+            $ map showInternalSignalRead
             $ MapS.keys signals
             )
          ++ newline
          ++ "         ]\n\
-            \       signalTimes = map fromJust $ filter isJust $ map getSignalTime $ map control'signal'transactions signalData\n\
-            \       getProcessTime (_,time) = time\n\
-            \       processData =\n\
-            \         ["
-         ++ ( concat
-            $ intersperse (newline ++ tab ++ tab ++ tab ++ ", ")
-            $ map (\processName -> "processes'" ++ processName ++ " processes")
-            $ processNames
-            )
-         ++ newline
-         ++ "         ]\n\
-            \       processTimes = map getProcessTime processData\n\
-            \   case signalTimes ++ processTimes of\n\
-            \      [] -> return Nothing\n\
-            \      other -> return $ Just $ minimum other"
+            \       signalTimes = catMaybes signalData\n\
+            \   in case (processTime processes,signalTimes) of\n\
+            \         (Nothing,[]) -> Nothing\n\
+            \         (Just (Left ()),_) -> Just $ Left ()\n\
+            \         _ | any isLeft signalTimes -> Just $ Left ()\n\
+            \         (Just (Right time),_) -> Just $ minimum (Right time:signalTimes)"
        checkActiveStr =
          "anyReady :: Entity'" ++ baseName ++ "'Stack Bool"
          ++ newline
@@ -204,7 +178,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
             \         [ "
          ++ ( concat
             $ intersperse (newline ++ tab ++ tab ++ tab ++ ", ")
-            $ map (\signalName -> "signal'" ++ signalName)
+            $ map showInternalSignalName
             $ MapS.keys signals
             )
          ++ newline
@@ -213,7 +187,7 @@ outputComponentControl fileName baseName componentName generics ports signals pr
             \         [ "
          ++ ( concat
             $ intersperse (newline ++ tab ++ tab ++ tab ++ ", ")
-            $ map (\portName -> "ports'in'" ++ portName)
+            $ map showPortInName
             $ map port_name
             $ filter (\port -> port_mode port == Mode_In)
             $ ports
@@ -223,43 +197,39 @@ outputComponentControl fileName baseName componentName generics ports signals pr
             \       signalVals = map getSignalTime $ map (\\s -> map fst $ control'signal'transactions $ s signals) signalFuncs ++ map (\\p -> map fst $ control'signal'transactions $ p portsIn) portFuncs\n\
             \   return $ or signalVals"
        initialUpdateStr =
-         "initialUpdate :: Entity'" ++ baseName ++ "'Stack ()"
-         ++ newline
-         ++ "initialUpdate = do\n\
-            \   (Entity'State portsIn state portsOut _) <- get"
+         "initialUpdate :: Entity'State PORTS'IN STATE PORTS'OUT -> Control'Time -> IO ()\n\
+         \initialUpdate (Entity'State portsIn state portsOut) currentTime = do"
          ++ ( concat
-            $ map (\signalName -> newline ++ tab ++ "lift $ control'printInitial \"" ++ printComponentActualName componentName ++ "." ++ signalName ++ "\" $ signal'" ++ signalName ++ " state")
+            $ map (\signalName -> newline ++ tab ++ "control'printInitial \"" ++ printComponentActualName componentName ++ "." ++ signalName ++ "\" currentTime $ signal'" ++ signalName ++ " state")
             $ MapS.keys signals
             )
          ++ ( concat
-            $ map (\portName -> newline ++ tab ++ "lift $ control'printInitial \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" $ ports'in'" ++ portName ++ " portsIn")
+            $ map (\portName -> newline ++ tab ++ "control'printInitial \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" currentTime $ ports'in'" ++ portName ++ " portsIn")
             $ map port_name
             $ portsIn
             )
          ++ ( concat
-            $ map (\portName -> newline ++ tab ++ "lift $ control'printInitial \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" $ ports'out'" ++ portName ++ " portsOut")
+            $ map (\portName -> newline ++ tab ++ "control'printInitial \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" currentTime $ ports'out'" ++ portName ++ " portsOut")
             $ map port_name
             $ portsOut
             )
        normalUpdateStr =
-         "signalUpdate :: Entity'" ++ baseName ++ "'Stack ()\n\
-         \signalUpdate = do\n\
-         \   currentTime <- lift get\n\
-         \   (Entity'State portsIn state portsOut processes) <- get"
+         "signalUpdate :: Entity'State PORTS'IN STATE PORTS'OUT -> Control'Time -> IO (Entity'State PORTS'IN STATE PORTS'OUT)\n\
+         \signalUpdate (Entity'State portsIn signals portsOut) currentTime@(Control'Time realTime _) = do"
          ++ ( concat
             $ map ((++) (newline ++ tab))
-            $ map (\portName -> "new'ports'in'" ++ portName ++ " <- lift $ control'updateSignal \"" ++ portName ++ "\" currentTime $ ports'in'" ++ portName ++ " portsIn")
+            $ map (\portName -> "new'ports'in'" ++ portName ++ " <- control'updateSignal \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" currentTime $ ports'in'" ++ portName ++ " portsIn")
             $ map port_name
             $ portsIn
             )
          ++ ( concat
             $ map ((++) (newline ++ tab))
-            $ map (\signalName -> "new'signal'" ++ signalName ++ " <- lift $ control'updateSignal \"" ++ signalName ++ "\" currentTime $ signal'" ++ signalName ++ " state")
+            $ map (\signalName -> "new'signal'" ++ signalName ++ " <- control'updateSignal \"" ++ printComponentActualName componentName ++ "." ++ signalName ++ "\" currentTime $ signal'" ++ signalName ++ " signals")
             $ MapS.keys signals
             )
          ++ ( concat
             $ map ((++) (newline ++ tab))
-            $ map (\portName -> "new'ports'out'" ++ portName ++ " <- lift $ control'updateSignal \"" ++ portName ++ "\" currentTime $ ports'out'" ++ portName ++ " portsOut")
+            $ map (\portName -> "new'ports'out'" ++ portName ++ " <- control'updateSignal \"" ++ printComponentActualName componentName ++ "." ++ portName ++ "\" currentTime $ ports'out'" ++ portName ++ " portsOut")
             $ map port_name
             $ portsOut
             )
@@ -295,25 +265,20 @@ outputComponentControl fileName baseName componentName generics ports signals pr
             $ ports
             )
          ++ newline ++ tab
-         ++ "put $ Entity'State newPortsIn newSignals newPortsOut processes"
-       entityStateTypeStr = "type Entity'" ++ baseName ++ "'Stack a = Entity'Stack (Entity'State PORTS'IN STATE PORTS'OUT PROCESSES) a"
-       entityControlStr =
-         "entityControl :: Entity'" ++ baseName ++ "'Stack ()"
+         ++ "return $ Entity'State newPortsIn newSignals newPortsOut"
+       componentStr =
+         "initialComponent :: [[ProcessStatement PORTS'IN STATE PORTS'OUT]]"
          ++ newline
-         ++ "entityControl = do"
+         ++ "initialComponent ="
+         ++ newline ++ tab
+         ++ "[ "
          ++ ( concat
-            $ map ((++) (newline ++ tab))
-            $ concat
-            $ map (\s ->
-                     [ "processState'" ++ s ++ " <- gets entity'processes"
-                     , "newProcessState'" ++ s ++ " <- " ++ "process'" ++ s ++ " $ processes'" ++ s ++ " processState'" ++ s
-                     , "let newProcessState'total'" ++ s ++ " = processState'" ++ s ++ " { processes'" ++ s ++ " = newProcessState'" ++ s ++ " }"
-                     , tab ++ " update'" ++ s ++ " state = state { entity'processes = newProcessState'total'" ++ s ++ " }"
-                     , "modify update'" ++ s
-                     ]
-                  )
+            $ intersperse (newline ++ tab ++ ", ")
+            $ map (\s -> "process'" ++ s)
             $ processNames
             )
+         ++ newline ++ tab
+         ++ "]"
    in liftIO $ appendFile fileName $
          newline
          ++ genericTypeStr ++ newline
@@ -323,21 +288,17 @@ outputComponentControl fileName baseName componentName generics ports signals pr
          ++ portsOutInitialStr ++ newline
          ++ signalTypeStr ++ newline
          ++ signalInitialStr ++ newline
-         ++ processTypeStr ++ newline
-         ++ processInitialStr ++ newline
          ++ entityStateInitialStr ++ newline
          ++ newline
          ++ collectTimingStr ++ newline
-         ++ newline
-         ++ checkActiveStr ++ newline
+         -- ++ newline
+         -- ++ checkActiveStr ++ newline
          ++ newline
          ++ initialUpdateStr ++ newline
          ++ newline
          ++ normalUpdateStr ++ newline
          ++ newline
-         ++ entityStateTypeStr ++ newline
-         ++ newline
-         ++ entityControlStr ++ newline
+         ++ componentStr ++ newline
    where filterPortsByMode :: Mode -> [Port]
          filterPortsByMode expectedMode = filter (\(Port _ mode _ _ _) -> mode == expectedMode) ports
 

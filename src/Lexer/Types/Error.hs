@@ -235,6 +235,14 @@ data ParserError
    | ParseErr_ExpectedRightParenInSubtypeAttrFunc Token
    -- |Expected signal attribute (identifier) in attribute name
    | ParseErr_ExpectedSignalAttribute Token
+   -- |Expected keyword then after if statement condition
+   | ParseErr_ExpectedKeywordThenInIfStatement Token
+   -- |Expected keyword if at the end of an if statement
+   | ParseErr_ExpectedKeywordIfInEndIfStatement Token
+   -- |Expected semicolon at the end of an if statement
+   | ParseErr_ExpectedSemicolonInEndIfStatement Token
+   -- |Expected continuation of if statement (elsif, else, or end keywords)
+   | ParseErr_ExpectedIfStatmentContinuation Token
    deriving (Eq)
 
 instance (Show ParserError) where

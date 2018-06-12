@@ -5,7 +5,6 @@ module Sim.Output.Processes
 import qualified Data.Map.Strict as MapS
 import Data.List (intersperse)
 import Data.Int (Int64)
-import Data.Maybe (fromJust)
 import Control.Monad.Except
          ( ExceptT
          , liftIO
@@ -56,95 +55,37 @@ outputProcesses' _ _ [] = return ()
 
 outputStatements :: FilePath -> NetlistName -> [(NetlistName,String)] -> String -> [SequentialStatement] -> ExceptT ConverterError IO ()
 outputStatements fileName unitName@(NetlistName _ entityName) nestedNames processName statements =
-   let makeProcessContents :: [SequentialStatement] -> [(Maybe [String],[[String]])] -> [Maybe Calculation] -> ([(Maybe [String],[[String]])],[Maybe Calculation])
-       makeProcessContents (wait@(WaitStatement _ _ timeout):otherStatements) waitList otherTimeouts =
-         let newStatement = convertStatement wait unitName nestedNames processName Nothing
-         in makeProcessContents otherStatements ((Just newStatement,[]):waitList) (timeout:otherTimeouts)
-       makeProcessContents (nonWaitStatement:otherStatements) [] [] =
-         let newStatement = convertStatement nonWaitStatement unitName nestedNames processName (Just 0)
-         in makeProcessContents otherStatements [(Nothing,[newStatement])] [Nothing]
-       makeProcessContents (nonWaitStatement:otherStatements) ((wait,nonWaits):rest) otherTimeouts =
-         let newStatement = convertStatement nonWaitStatement unitName nestedNames processName (Just $ length nonWaits)
-         in makeProcessContents otherStatements ((wait,newStatement:nonWaits):rest) otherTimeouts
-       makeProcessContents [] results timeouts = (results,timeouts)
-       (processContents,timeouts) = makeProcessContents statements [] []
-       numStages = length processContents - 1
-       initialStateStr = case last timeouts of -- ?? Check that wait time is positive, this is globally static (uses initial value of any signals), should be analysed before printing
-                           Just timeExp -> "(0,control'delayCheck (" ++ convertCalculation nestedNames processName True timeExp ++ "))"
-                           Nothing -> "(0,STD.STANDARD.mkType'ANON'TIME 0)"
-       convertContents :: Int -> [(Maybe [String],[[String]])] -> [[String]] -> [String] --[(String,[String])]
-       convertContents val ((waitData,otherStrs):rest) contentsStr =
-         let valStr = "stage" ++ show val
-             checkStr =
-               [valStr ++ "check ="]
-               ++ case waitData of
-                     Just waitStr -> map (\s -> tab ++ s) $
-                        waitStr
-                        ++ [ tab ++ "then " ++ valStr
-                           , tab ++ "else return (" ++ show val ++ ",waitTime)"
-                           ]
-                     Nothing -> [tab ++ valStr]
-             runStr =
-               [valStr ++ " = do"]
-               ++ (map (\s -> tab ++ s) $ concat $ reverse otherStrs)
-               ++ [tab ++ case (last processContents,last timeouts) of
-                           ((Just _,_),Just timeExp) | numStages == val -> "return (0,STD.STANDARD.function'op'PLUS'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'TIME realTime (control'delayCheck (" ++ convertCalculation nestedNames processName False timeExp ++ ")))"
-                           ((Just _,_),Nothing) | numStages == val -> "return (0,STD.STANDARD.mkType'ANON'TIME 0)"
-                           ((Nothing,_),_) | numStages == val -> "stage0check"
-                           _ ->
-                              "return ("
-                              ++ (show $ val + 1)
-                              ++ ",STD.STANDARD.function'op'PLUS'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'TIME realTime (control'delayCheck ("
-                              ++ (convertCalculation nestedNames processName False $ fromJust $ timeouts !! (numStages - (val + 1)))
-                              ++ ")))"
-                  ]
-         in convertContents (val - 1) rest ((checkStr++runStr):contentsStr)
-       convertContents _ [] contentsStr = concat contentsStr
-       processContentsStr =
-         concat $
-         map (\s -> newline ++ tab ++ tab ++ s) $
-         convertContents numStages processContents []
-       entityStackName = show unitName ++ ".Entity'" ++ entityName ++ "'Stack (Int,STD.STANDARD.Type'ANON'TIME)"
-       processFuncStr =
-         "process'" ++ processName ++ " :: (Int,STD.STANDARD.Type'ANON'TIME) -> " ++ entityStackName
+   let processStr =
+         "process'" ++ processName ++ " :: [ProcessStatement PORTS'IN STATE PORTS'OUT]"
          ++ newline
-         ++ "process'" ++ processName ++ " (stageNum,waitTime) = do"
+         ++ "process'" ++ processName ++ " = cycle $"
          ++ newline ++ tab
-         ++ "curTime@(Control'Time realTime deltaTime) <- lift get"
-         ++ newline ++ tab
-         ++ "(Entity'State portsIn state _ _) <- get"
-         ++ newline ++ tab
-         ++ "let"
-         ++ processContentsStr
-         ++ newline ++ tab ++ tab
-         ++ "stageList = ["
+         ++ "[ "
          ++ ( concat
-            $ intersperse ","
-            $ map (\s -> "stage" ++ show s ++ "check") [0..numStages]
+            $ intersperse (newline ++ tab ++ ", ")
+            $ map
+               (\s ->
+                  concat
+                  $ intersperse (newline ++ tab ++ tab)
+                  $ convertStatement s unitName nestedNames processName
+               )
+            $ statements
             )
-         ++ "]"
-         ++ newline ++ tab ++ tab
-         ++ "stageRun = stageList !! stageNum"
+         -- ++ newline
+         -- ++ "   , Control'End\n\ -- ?? Need to deal with infinite loops within a process, if there are no wait statements
+         --    \   ]"
          ++ newline ++ tab
-         ++ "stageRun"
-       processInitialStr =
-         let constName = "process'initial'" ++ processName
-         in constName ++ " :: (Int,STD.STANDARD.Type'ANON'TIME)"
-            ++ newline
-            ++ constName ++ " = " ++ initialStateStr
-   in liftIO $ appendFile fileName $
-         newline
-         ++ processFuncStr ++ newline
-         ++ processInitialStr ++ newline
+         ++ "]"
+   in liftIO $ appendFile fileName $ newline ++ processStr ++ newline
 
-convertStatement :: SequentialStatement -> NetlistName -> [(NetlistName,String)] -> String -> Maybe Int -> [String]
-convertStatement (WaitStatement sensitivity condition timeout) unitName nestedNames processName _ =
+convertStatement :: SequentialStatement -> NetlistName -> [(NetlistName,String)] -> String -> [String]
+convertStatement (WaitStatement sensitivity condition timeout) unitName nestedNames processName =
    let convertSensitivity :: (SignalType,String) -> String
        convertSensitivity (signalType,signalName) =
          "("
          ++ "control'signal'event $ " -- ?? event or active
          ++ case signalType of
-               InternalSignal -> "signal'" ++ signalName ++ " $ state"
+               InternalSignal -> "signal'" ++ signalName ++ " $ signals"
                PortIn -> "ports'in'" ++ signalName ++ " $ portsIn"
          ++ ")"
        sensitivityStr = if null sensitivity
@@ -153,24 +94,27 @@ convertStatement (WaitStatement sensitivity condition timeout) unitName nestedNa
                               "("
                               ++ (concat $ intersperse " || " $ map convertSensitivity sensitivity)
                               ++ ")"
-       conditionStr = "((" ++ convertCalculation nestedNames processName False condition ++ ") == STD.STANDARD.Type'ANON'BOOLEAN'Iden'TRUE)"
-       timeoutStr = case timeout of
-                     Just _ -> "(waitTime == realTime)"
-                     Nothing -> "(STD.STANDARD.mkType'ANON'TIME " ++ show (maxBound :: Int64) ++ " == realTime)"
-   in ["if (" ++ sensitivityStr ++ " && " ++ conditionStr ++ ") || " ++ timeoutStr]
-convertStatement (AssertStatement condition report severity) unitName nestedNames processName _ =
+       conditionStr = "(" ++ convertCalculation nestedNames processName False condition ++ ")" -- ?? Remove initial bool argument
+   in [ "Control'Wait"
+      , tab ++ "(\\(Entity'State portsIn signals _) -> " ++ sensitivityStr ++ ")"
+      , tab ++ "(\\(Entity'State portsIn signals _) (Control'Time realTime _) -> " ++ conditionStr ++ ")"
+      , tab ++ case timeout of
+                  Just timeoutExp -> "(Right (\\(Entity'State portsIn signals _) (Control'Time realTime _) -> Just (" ++ convertCalculation nestedNames processName False timeoutExp ++ ")))"
+                  Nothing -> "(Right (\\_ _ -> Nothing))"
+      ]
+convertStatement (AssertStatement condition report severity) unitName nestedNames processName =
    let unitNameStr = show unitName
        conditionStr = convertCalculation nestedNames processName False condition
-       messageStr = "$ STD.STANDARD.mkType'ANON'STRING []" -- ?? Temp until arrays parsed
+       --messageStr = convertCalculation nestedNames processName False report
+       messageStr = "STD.STANDARD.mkType'ANON'STRING []" -- ?? Temp until arrays parsed
        severityStr = convertCalculation nestedNames processName False severity
-   in [ "when ((" ++ conditionStr ++ ") == STD.STANDARD.Type'ANON'BOOLEAN'Iden'TRUE) $"
-      , tab ++ "case " ++ severityStr ++ " of"
-      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'NOTE -> lift $ control'assertNote \"" ++ unitNameStr ++ "\" " ++ messageStr
-      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'WARNING -> lift $ control'assertWarning \"" ++ unitNameStr ++ "\" " ++ messageStr
-      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'ERROR -> lift $ control'assertError \"" ++ unitNameStr ++ "\" " ++ messageStr
-      , tab ++ tab ++ "STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'FAILURE -> lift $ control'assertFailure \"" ++ unitNameStr ++ "\" " ++ messageStr
+   in [ "Control'Assert"
+      , tab ++ "\"" ++ unitNameStr ++ "\""
+      , tab ++ "(\\(Entity'State portsIn signals _) (Control'Time realTime _) -> " ++ conditionStr ++ ")"
+      , tab ++ "(\\(Entity'State portsIn signals _) (Control'Time realTime _) -> " ++ messageStr ++ ")"
+      , tab ++ "(\\(Entity'State portsIn signals _) (Control'Time realTime _) -> " ++ severityStr ++ ")"
       ]
-convertStatement (SignalAssignStatement signalName signalType waveforms) unitName nestedNames processName (Just uniqID) =
+convertStatement (SignalAssignStatement signalName signalType waveforms) unitName nestedNames processName =
    let signalNameStr =
          case signalType of
             PortOut -> "ports'out'"
@@ -180,36 +124,49 @@ convertStatement (SignalAssignStatement signalName signalType waveforms) unitNam
          signalNameStr
          ++ case signalType of
                PortOut -> " portsOut"
-               InternalSignal -> " state"
-       modifyFuncStr =
-         ["let modify'" ++ show uniqID ++ " entState@(Entity'State portsIn signals portsOut _) ="
-         , tab ++ tab ++ "entState"
-         , tab ++ tab ++ tab ++ "{ entity'" ++ case signalType of
-                                                PortOut -> "portsOut = portsOut"
-                                                InternalSignal -> "state = signals"
-         , tab ++ tab ++ tab ++ tab ++ "{ " ++ signalNameStr ++ " ="
-         , tab ++ tab ++ tab ++ tab ++ tab ++ "control'updateSignal'inertial"
-         , tab ++ tab ++ tab ++ tab ++ tab ++ tab ++ "curTime"
-         , tab ++ tab ++ tab ++ tab ++ tab ++ tab ++ "[ " ++ (printWaveform $ head waveforms)
+               InternalSignal -> " signals"
+   in [ "Control'Statement (\\state@(Entity'State portsIn signals portsOut) currentTime@(Control'Time realTime _) ->"
+      , tab ++ "state { entity'" ++ case signalType of
+                                       PortOut -> "portsOut = portsOut"
+                                       InternalSignal -> "state = signals"
+      , tab ++ tab ++ "{ " ++ signalNameStr ++ " ="
+      , tab ++ tab ++ tab ++ "control'updateSignal'inertial"
+      , tab ++ tab ++ tab ++ tab ++ "currentTime"
+      , tab ++ tab ++ tab ++ tab ++ "[ " ++ (printWaveform $ head waveforms)
+      ]
+      ++ ( map ((++) (tab ++ tab ++ tab ++ tab ++ ", "))
+         $ map printWaveform
+         $ tail
+         $ waveforms
+         )
+      ++ [ tab ++ tab ++ tab ++ tab ++ "]"
+         , tab ++ tab ++ tab ++ tab ++ "(" ++ readSignalStr ++ ")"
+         , tab ++ tab ++ "}"
+         , tab ++ "}"
+         , ")"
          ]
-         ++ ( map ((++) (tab ++ tab ++ tab ++ tab ++ tab ++ tab ++ ", "))
-            $ map printWaveform
-            $ tail
-            $ waveforms
-            )
-         ++ [ tab ++ tab ++ tab ++ tab ++ tab ++ tab ++ "]"
-            , tab ++ tab ++ tab ++ tab ++ tab ++ tab ++ "(" ++ readSignalStr ++ ")"
-            , tab ++ tab ++ tab ++ tab ++ "}"
-            , tab ++ tab ++ tab ++ "}"
-            ]
-   in modifyFuncStr
-      ++ ["modify modify'" ++ show uniqID]
    where printWaveform (ValueWaveform valueExp timeExp) =
             "(" ++ convertCalculation nestedNames processName False timeExp
             ++ "," ++ convertCalculation nestedNames processName False valueExp
             ++ ")"
          --printWaveform (NullWaveform timeExp) = 
-convertStatement NullStatement _ _ _ _ = ["return ()"]
+convertStatement (IfStatement elsifs elses) unitName nestedNames processName =
+   convertIfs elsifs
+   where convertIfs ((condition,statements):otherIfs) =
+            [ "Control'If"
+            , tab ++ "(\\(Entity'State portsIn signals _) (Control'Time realTime _) -> " ++ convertCalculation nestedNames processName False condition ++ ")"
+            ]
+            ++ convertIfStatements statements
+            ++ [tab ++ "]"]
+            ++ case otherIfs of
+                  [] -> convertIfStatements elses
+                        ++ [tab ++ "]"]
+                  _ -> map ((++) tab) (convertIfs otherIfs)
+         convertIfStatements = (map ((++) tab)) . concat . printListStatement . (map (\s -> convertStatement s unitName nestedNames processName))
+         printListStatement (statement:statements) = (printStatements '[' statement:map (printStatements ',') statements)
+         printListStatement [] = [["["]]
+         printStatements char (statement:statements) = (([char,' '] ++ statement):map ((++) "  ") statements)
+convertStatement NullStatement _ _ _ = ["Control'Statement (\\currentState _ -> currentState)"]
 
 convertCalculation :: [(NetlistName,String)] -> String -> Bool -> Calculation -> String
 convertCalculation a1 a2 _ (Calc_Value value typeData) =
@@ -358,162 +315,162 @@ convertCalculation a1 a2 a3 (Calc_BuiltinAbs calc Type_UniversalReal) = "abs (" 
 convertCalculation a1 a2 a3 (Calc_BuiltinNot calc (Type_Type typeName _)) =
    (printUnaryFunctionName a1 a2 "NOT" typeName) ++ " (" ++ convertCalculation a1 a2 a3 calc ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_Type _ _)) =
-   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
-   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
-   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
-   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
-   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "EQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") == (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinEqual (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") == (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_Type _ _)) =
-   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
-   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
-   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
-   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
-   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "NEQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") /= (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinNotEqual (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") /= (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_Type _ _)) =
-   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
-   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
-   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
-   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
-   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "LESSTHAN" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") < (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThan (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") < (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_Type _ _)) =
-   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
-   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
-   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
-   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
-   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "LESSTHANOREQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") <= (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinLessThanOrEqual (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") <= (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_Type _ _)) =
-   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
-   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
-   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
-   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
-   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "GREATERTHAN" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_UniversalInt) (calc2,Type_UniversalInt)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") > (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThan (calc1,Type_UniversalReal) (calc2,Type_UniversalReal)) = "(" ++ convertCalculation a1 a2 a3 calc1 ++ ") > (" ++ convertCalculation a1 a2 a3 calc2 ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThanOrEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_Type _ _)) =
-   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThanOrEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalInt)) =
-   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThanOrEqual (calc1,Type_UniversalInt) (calc2,Type_Type typeName@(funcPackage,_) _)) =
-   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThanOrEqual (calc1,Type_Type typeName@(funcPackage,_) _) (calc2,Type_UniversalReal)) =
-   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinGreaterThanOrEqual (calc1,Type_UniversalReal) (calc2,Type_Type typeName@(funcPackage,_) _)) =
-   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName typeName)
+   (printFunctionName a1 a2 "GREATERTHANOREQUAL" funcPackage typeName typeName (NetlistName "STD" "STANDARD","ANON'BOOLEAN"))
    ++ " (" ++ printTypeConstructor a1 a2 typeName ++ " $ " ++ convertCalculation a1 a2 a3 calc1
    ++ ") (" ++ convertCalculation a1 a2 a3 calc2
    ++ ")"
@@ -561,7 +518,7 @@ convertCalculation a1 a2 a3 (Calc_ExplicitTypeConversion (typeName1,FloatingType
 convertCalculation _ _ isInitial (Calc_Signal signalName signalType) = "control'readSignal (" ++ printSignalName signalName signalType isInitial ++ ")"
 convertCalculation _ _ isInitial (Calc_SignalEvent signalName signalType)
    | isInitial = "STD.STANDARD.Type'ANON'BOOLEAN'Iden'FALSE"
-   | otherwise = "control'signal'event (" ++ printSignalName signalName signalType False ++ ")"
+   | otherwise = "STD.STANDARD.boolToBoolean (control'signal'event (" ++ printSignalName signalName signalType False ++ "))"
 
 printUnaryFunctionName :: [(NetlistName,String)] -> String -> String -> (NetlistName,String) -> String
 printUnaryFunctionName nestedNames processName opName typeName@(funcPackage,_) =

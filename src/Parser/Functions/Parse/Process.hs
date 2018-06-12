@@ -77,6 +77,7 @@ import Parser.Functions.Parse.SequentialStatements
          , parseAssertionStatement
          , parseSensitivityList
          , parseSignalAssignment
+         , parseIfStatement
          )
 import Parser.Netlist.Types.Representation
          ( NetlistName(..)
@@ -222,7 +223,9 @@ parseSequentialStatements scope unit unitName isPassive waitAllowed seqStatement
                Nothing -> throwError $ ConverterError_NotImplemented $ passPosition "procedure call or variable assignment" token
          in checkSignals
       _ | isLeftParen token -> throwError $ ConverterError_NotImplemented $ passPosition "Signal/variable assignment (aggregate)" token
-      _ | isKeywordIf token -> throwError $ ConverterError_NotImplemented $ passPosition "If statement" token
+      _ | isKeywordIf token -> do
+         (ifStatements,elseStatements) <- parseIfStatement scope unit unitName isPassive waitAllowed $ getPos token
+         return $ Just $ IfStatement ifStatements elseStatements
       _ | isKeywordCase token -> throwError $ ConverterError_NotImplemented $ passPosition "Case statement" token
       --loop statement -- [ identifier : ] [ while or for ] loop
       _ | isKeywordNext token -> throwError $ ConverterError_NotImplemented $ passPosition "Loop statement" token

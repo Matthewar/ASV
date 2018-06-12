@@ -68,7 +68,7 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          ++ newline ++ tab
          ++ "Components"
          ++ newline ++ tab ++ tab
-         ++ "{ component'" ++ topUnitLib ++ "'" ++ topUnitName ++ " :: Entity'State TopModule.PORTS'IN TopModule.STATE TopModule.PORTS'OUT TopModule.PROCESSES"
+         ++ "{ component'" ++ topUnitLib ++ "'" ++ topUnitName ++ " :: (Entity'State TopModule.PORTS'IN TopModule.STATE TopModule.PORTS'OUT,[[ProcessStatement TopModule.PORTS'IN TopModule.STATE TopModule.PORTS'OUT]])"
          ++ newline ++ tab ++ tab
          ++ "}"
        componentInitialStr =
@@ -76,77 +76,78 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          ++ newline ++ tab
          ++ "Components"
          ++ newline ++ tab ++ tab
-         ++ "TopModule.initialStack"
-       stackTypeStr =
-         "type TopStack a = Entity'Stack Components a"
+         ++ "(TopModule.initialStack,TopModule.initialComponent)"
        initialFuncStr =
-         "topInitial :: STD.STANDARD.Type'ANON'TIME -> TopStack ()"
+         "topInitial :: STD.STANDARD.Type'ANON'TIME -> Components -> Control'Time -> Control'SEVERITY_TRACKER -> IO ()"
          ++ newline
-         ++ "topInitial maxTime = do"
+         ++ "topInitial maxTime component currentTime severity = do"
          ++ newline ++ tab
-         ++ "componentState'" ++ topUnitLib ++ "'" ++ topUnitName ++ " <- gets component'" ++ topUnitLib ++ "'" ++ topUnitName
+         ++ "TopModule.initialUpdate (fst $ component'" ++ topUnitLib ++ "'" ++ topUnitName ++ " component) currentTime"
          ++ newline ++ tab
-         ++ "lift $ evalStateT TopModule.initialUpdate componentState'" ++ topUnitLib ++ "'" ++ topUnitName
-         ++ newline ++ tab
-         ++ "topRepeat maxTime"
+         ++ "topRepeat maxTime component currentTime severity"
        repeatFuncStr =
-         "topRepeat :: STD.STANDARD.Type'ANON'TIME -> TopStack ()"
+         "topRepeat :: STD.STANDARD.Type'ANON'TIME -> Components -> Control'Time -> Control'SEVERITY_TRACKER -> IO ()"
          ++ newline
-         ++ "topRepeat maxTime = do"
+         ++ "topRepeat maxTime component currentTime@(Control'Time realTime deltaTime) severity = do"
          ++ newline ++ tab
-         ++ "components <- get"
+         ++ "(componentSignals'" ++ topUnitLib ++ "'" ++ topUnitName
+         ++ ",componentProcess'" ++ topUnitLib ++ "'" ++ topUnitName
+         ++ ",componentSeverity'" ++ topUnitLib ++ "'" ++ topUnitName
+         ++ ") <- progressComponent (fst $ component'" ++ topUnitLib ++ "'" ++ topUnitName ++ " component) currentTime "
+         ++ "(snd $ component'" ++ topUnitLib ++ "'" ++ topUnitName ++ " component) [] severity"
          ++ newline ++ tab
-         ++ "componentState'" ++ topUnitLib ++ "'" ++ topUnitName
-         ++ " <- lift $ execStateT TopModule.entityControl $ component'" ++ topUnitLib ++ "'" ++ topUnitName ++ " components"
-         ++ newline ++ tab
-         ++ "minTime'" ++ topUnitLib ++ "'" ++ topUnitName ++ " <- lift $ evalStateT TopModule.allTimes componentState'" ++ topUnitLib ++ "'" ++ topUnitName
-         ++ newline ++ tab
-         ++ "areAnyReady <- lift $ evalStateT TopModule.anyReady componentState'" ++ topUnitLib ++ "'" ++ topUnitName
-         ++ newline ++ tab
-         ++ "if areAnyReady"
+         ++ "case TopModule.allTimes componentSignals'" ++ topUnitLib ++ "'" ++ topUnitName ++ " currentTime componentProcess'" ++ topUnitLib ++ "'" ++ topUnitName ++ " of"
          ++ newline ++ tab ++ tab
-         ++ "then do"
+         ++ "Just (Left ()) | deltaTime == 1000 -> do"
          ++ newline ++ tab ++ tab ++ tab
-         ++ "delta <- lift $ gets (\\time -> time'Delta time)"
+         ++ "putStrLn \"Possible infinite loop, delta is too high\""
          ++ newline ++ tab ++ tab ++ tab
-         ++ "when (delta == 1000) $ error \"Possible infinite loop, delta at infinity\""
-         ++ newline ++ tab ++ tab ++ tab
-         ++ "lift $ modify (\\(Control'Time real delta) -> Control'Time real (delta + 1))"
+         ++ "exitFailure"
          ++ newline ++ tab ++ tab
-         ++ "else do"
+         ++ "Just (Left ()) -> do"
          ++ newline ++ tab ++ tab ++ tab
-         ++ "time <- lift $ gets (\\time -> time'Real time)"
+         ++ "let newTime = Control'Time realTime $ deltaTime + 1"
          ++ newline ++ tab ++ tab ++ tab
-         ++ "when (time == maxTime) $ error \"Time limit reached\"" -- ?? Come up with better exit
+         ++ "newComponentSignals'" ++ topUnitLib ++ "'" ++ topUnitName ++ " <- TopModule.signalUpdate componentSignals'" ++ topUnitLib ++ "'" ++ topUnitName ++ " newTime"
          ++ newline ++ tab ++ tab ++ tab
-         ++ "case minTime'" ++ topUnitLib ++ "'" ++ topUnitName ++ " of"
-         ++ newline ++ tab ++ tab ++ tab ++ tab
-         ++ "Just minTime -> lift $ put $ Control'Time minTime 0"
-         ++ newline ++ tab ++ tab ++ tab ++ tab
-         ++ "Nothing -> error \"Nothing to do\""
-         ++ newline ++ tab
-         ++ "newComponentState'" ++ topUnitLib ++ "'" ++ topUnitName
-         ++ " <- lift $ execStateT TopModule.signalUpdate componentState'" ++ topUnitLib ++ "'" ++ topUnitName
-         ++ newline ++ tab
-         ++ "let updateState state = state { component'" ++ topUnitLib ++ "'" ++ topUnitName ++ " = newComponentState'" ++ topUnitLib ++ "'" ++ topUnitName ++ " }"
-         ++ newline ++ tab
-         ++ "modify updateState"
-         ++ newline ++ tab
-         ++ "topRepeat maxTime"
+         ++ "let newComponent = Components"
+         ++ newline ++ tab ++ tab ++ tab ++ tab ++ tab
+         ++ "{ component'" ++ topUnitLib ++ "'" ++ topUnitName ++ " = (newComponentSignals'" ++ topUnitLib ++ "'" ++ topUnitName ++ ",componentProcess'" ++ topUnitLib ++ "'" ++ topUnitName ++ ")"
+         ++ newline ++ tab ++ tab ++ tab ++ tab ++ tab
+         ++ "}"
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "topRepeat maxTime newComponent newTime componentSeverity'" ++ topUnitLib ++ "'" ++ topUnitName
+         ++ newline ++ tab ++ tab
+         ++ "Just (Right newTime) | newTime >= maxTime -> do"
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "putStrLn \"Time limit reached\""
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "exitSuccess"
+         ++ newline ++ tab ++ tab
+         ++ "Just (Right nextTime) -> do"
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "let newTime = Control'Time nextTime 0"
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "newComponentSignals'" ++ topUnitLib ++ "'" ++ topUnitName ++ " <- TopModule.signalUpdate componentSignals'" ++ topUnitLib ++ "'" ++ topUnitName ++ " newTime"
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "let newComponent = Components"
+         ++ newline ++ tab ++ tab ++ tab ++ tab ++ tab
+         ++ "{ component'" ++ topUnitLib ++ "'" ++ topUnitName ++ " = (newComponentSignals'" ++ topUnitLib ++ "'" ++ topUnitName ++ ",componentProcess'" ++ topUnitLib ++ "'" ++ topUnitName ++ ")"
+         ++ newline ++ tab ++ tab ++ tab ++ tab ++ tab
+         ++ "}"
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "topRepeat maxTime newComponent newTime componentSeverity'" ++ topUnitLib ++ "'" ++ topUnitName
+         ++ newline ++ tab ++ tab
+         ++ "Nothing -> do"
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "putStrLn \"Nothing to do\""
+         ++ newline ++ tab ++ tab ++ tab
+         ++ "exitSuccess"
        topFixedFuncsStr =
          "top :: Options -> IO ()\n\
          \top options = do\n\
          \   let maxTime = extractMaxTime options\n\
-         \   result <- runExceptT $\n\
-         \      execStateT\n\
-         \         ( evalStateT\n\
-         \            (evalStateT (topInitial maxTime) initialStack)\n\
-         \            (Control'Time (STD.STANDARD.mkType'ANON'TIME 0) 0)\n\
-         \         )\n\
-         \         (Control'SEVERITY_TRACKER 0 0)\n\
-         \   case result of\n\
-         \      Right res -> putStrLn $ show res\n\
-         \      Left (Control'SEVERITY_FAILURE str) -> putStrLn $ \"Severity Failure: \" ++ str\n\
+         \   topInitial maxTime initialStack initialTime (Control'SEVERITY_TRACKER 0 0)\n\
          \\n\
          \data Options = Options\n\
          \   { maxTime :: String\n\
@@ -192,8 +193,6 @@ outputTopModule buildDir topUnitFullName@(NetlistName topUnitLib topUnitName) = 
          ++ componentTypeStr
          ++ newline
          ++ componentInitialStr
-         ++ newline ++ newline
-         ++ stackTypeStr
          ++ newline ++ newline
          ++ initialFuncStr
          ++ newline ++ newline

@@ -9,8 +9,13 @@ controlModule = pack
    "module Control\n\
    \   ( Control'Time(..)\n\
    \   , initialTime\n\
+   \   , maxWaitTime\n\
    \   , Entity'State(..)\n\
    \   , Entity'Stack\n\
+   \   , ProcessStatement(..)\n\
+   \   , progressProcess\n\
+   \   , progressComponent\n\
+   \   , processTime\n\
    \   , Control'Signal(..)\n\
    \   , control'printInitial\n\
    \   , control'updateSignal\n\
@@ -18,29 +23,24 @@ controlModule = pack
    \   , control'updateSignal'inertial\n\
    \   , control'delayCheck\n\
    \   , Control'Stack\n\
-   \   , control'jumpTime\n\
+   \   --, control'jumpTime\n\
    \   , Control'SEVERITY_TRACKER(..)\n\
    \   , Control'SEVERITY_FAILURE(..)\n\
-   \   , control'incrementWarnings\n\
-   \   , control'incrementErrors\n\
    \   , control'assertNote\n\
    \   , control'assertWarning\n\
    \   , control'assertError\n\
    \   , control'assertFailure\n\
-   \   , now\n\
    \   ) where\n\
    \\n\
-   \import Control.Monad.Trans.State\n\
-   \         ( StateT\n\
-   \         , modify\n\
-   \         , gets\n\
-   \         )\n\
+   \import System.Exit (exitFailure)\n\
+   \import Control.Monad.Trans.State (StateT)\n\
    \import Control.Monad.Except\n\
    \         ( ExceptT\n\
    \         , throwError\n\
-   \         , lift\n\
    \         , liftIO\n\
+   \         , when\n\
    \         )\n\
+   \import Data.Int (Int64)\n\
    \import Data.List\n\
    \         ( sortOn\n\
    \         , nubBy\n\
@@ -66,23 +66,93 @@ controlModule = pack
    \initialTime :: Control'Time\n\
    \initialTime = Control'Time (STD.STANDARD.mkType'ANON'TIME 0) 0\n\
    \\n\
-   \--data META'Events portsInType stateType =\n\
-   \--   META'Events\n\
-   \--      { entity'PortsIn :: portsInType\n\
-   \--      , entity'State :: stateType\n\
-   \--      --, queue :: [(Control'Time,\n\
-   \--      }\n\
+   \maxWaitTime :: STD.STANDARD.Type'ANON'TIME\n\
+   \maxWaitTime = STD.STANDARD.mkType'ANON'TIME $ toInteger (maxBound :: Int64)\n\
    \\n\
-   \data Entity'State portsInType stateType portsOutType processesType =\n\
+   \data Entity'State portsInType stateType portsOutType =\n\
    \   Entity'State\n\
    \      { entity'portsIn :: portsInType\n\
    \      , entity'state :: stateType\n\
    \      , entity'portsOut :: portsOutType\n\
-   \      , entity'processes :: processesType\n\
    \      }\n\
    \\n\
    \-- |Entity stack\n\
    \type Entity'Stack a b = StateT a (StateT Control'Time (StateT Control'SEVERITY_TRACKER (ExceptT Control'SEVERITY_FAILURE IO))) b\n\
+   \\n\
+   \data ProcessStatement a b c =\n\
+   \   Control'Wait\n\
+   \      (Entity'State a b c -> Bool) -- Sensitivity List\n\
+   \      (Entity'State a b c -> Control'Time -> STD.STANDARD.Type'ANON'BOOLEAN) -- Condition\n\
+   \      (Either\n\
+   \         STD.STANDARD.Type'ANON'TIME -- Calculated wait time\n\
+   \         (Entity'State a b c -> Control'Time -> Maybe STD.STANDARD.Type'ANON'TIME) -- Calculate new wait time\n\
+   \      )\n\
+   \   | Control'If\n\
+   \      (Entity'State a b c -> Control'Time -> STD.STANDARD.Type'ANON'BOOLEAN) -- Condition\n\
+   \      [ProcessStatement a b c] -- If statements\n\
+   \      [ProcessStatement a b c] -- Else statements\n\
+   \   | Control'Assert\n\
+   \      String -- Component name\n\
+   \      (Entity'State a b c -> Control'Time -> STD.STANDARD.Type'ANON'BOOLEAN) -- Condition\n\
+   \      (Entity'State a b c -> Control'Time -> STD.STANDARD.Type'ANON'STRING) -- Report\n\
+   \      (Entity'State a b c -> Control'Time -> STD.STANDARD.Type'ANON'SEVERITY_LEVEL) -- Severity\n\
+   \   | Control'Statement (Entity'State a b c -> Control'Time -> Entity'State a b c)\n\
+   \   | Control'End\n\
+   \\n\
+   \progressProcess :: Entity'State a b c -> Control'Time -> [ProcessStatement a b c] -> Control'SEVERITY_TRACKER -> IO (Entity'State a b c,[ProcessStatement a b c],Control'SEVERITY_TRACKER)\n\
+   \progressProcess currentState currentTime all@(Control'Wait sensitivityCheck conditionCheck (Left waitTime):others) severity\n\
+   \   | time'Real currentTime == waitTime = progressProcess currentState currentTime others severity\n\
+   \   | (sensitivityCheck currentState) && (conditionCheck currentState currentTime) == STD.STANDARD.Type'ANON'BOOLEAN'Iden'TRUE =\n\
+   \      progressProcess currentState currentTime others severity\n\
+   \   | otherwise = return (currentState,all,severity)\n\
+   \progressProcess currentState currentTime (Control'Wait sensitivityCheck conditionCheck (Right modifyTime):others) severity =\n\
+   \   let newTime = case modifyTime currentState currentTime of\n\
+   \                  Just delayTime -> STD.STANDARD.function'op'PLUS'in'STD'STANDARD'Type'ANON'TIME'_'STD'STANDARD'Type'ANON'TIME'out'STD'STANDARD'Type'ANON'TIME (time'Real currentTime) (control'delayCheck delayTime)\n\
+   \                  Nothing -> maxWaitTime\n\
+   \   in return (currentState,(Control'Wait sensitivityCheck conditionCheck $ Left newTime):others,severity)\n\
+   \progressProcess currentState currentTime (Control'If conditionCheck trueStatements falseStatements:others) severity\n\
+   \   | conditionCheck currentState currentTime == STD.STANDARD.Type'ANON'BOOLEAN'Iden'TRUE = progressProcess currentState currentTime (trueStatements ++ others) severity\n\
+   \   | otherwise = progressProcess currentState currentTime (falseStatements ++ others) severity\n\
+   \progressProcess currentState currentTime (Control'Assert moduleName condition report severity:others) (Control'SEVERITY_TRACKER warnings errors) =\n\
+   \   let reportStr = report currentState currentTime\n\
+   \   in if (condition currentState currentTime == STD.STANDARD.Type'ANON'BOOLEAN'Iden'TRUE)\n\
+   \         then case severity currentState currentTime of\n\
+   \                 STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'NOTE -> do\n\
+   \                    control'assertNote moduleName reportStr\n\
+   \                    progressProcess currentState currentTime others (Control'SEVERITY_TRACKER warnings errors)\n\
+   \                 STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'WARNING -> do\n\
+   \                    control'assertWarning moduleName reportStr\n\
+   \                    progressProcess currentState currentTime others (Control'SEVERITY_TRACKER (warnings+1) errors)\n\
+   \                 STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'ERROR -> do\n\
+   \                    control'assertError moduleName reportStr\n\
+   \                    progressProcess currentState currentTime others (Control'SEVERITY_TRACKER warnings (errors+1))\n\
+   \                 STD.STANDARD.Type'ANON'SEVERITY_LEVEL'Iden'FAILURE -> do\n\
+   \                    control'assertFailure moduleName reportStr\n\
+   \                    exitFailure\n\
+   \         else progressProcess currentState currentTime others (Control'SEVERITY_TRACKER warnings errors)\n\
+   \progressProcess currentState currentTime (Control'Statement modifyState:others) severity = progressProcess (modifyState currentState currentTime) currentTime others severity\n\
+   \progressProcess currentState _ (Control'End:others) severity = return (currentState,others,severity)\n\
+   \\n\
+   \progressComponent :: Entity'State a b c -> Control'Time -> [[ProcessStatement a b c]] -> [[ProcessStatement a b c]] -> Control'SEVERITY_TRACKER -> IO (Entity'State a b c,[[ProcessStatement a b c]],Control'SEVERITY_TRACKER)\n\
+   \progressComponent currentState currentTime (process:processes) runProcesses severity = do\n\
+   \   (newState,runProcess,newSeverity) <- progressProcess currentState currentTime process severity\n\
+   \   progressComponent newState currentTime processes (runProcess:runProcesses) newSeverity\n\
+   \progressComponent finalState _ [] runProcesses severity = return (finalState,reverse runProcesses,severity)\n\
+   \\n\
+   \processTime :: [[ProcessStatement a b c]] -> Maybe (Either () STD.STANDARD.Type'ANON'TIME)\n\
+   \processTime processes =\n\
+   \   processTime' processes Nothing\n\
+   \   where processTime' (process:processes) Nothing = processTime' processes $ processTime'' process\n\
+   \         processTime' (process:processes) (Just (Left ())) = Just $ Left ()\n\
+   \         processTime' (process:processes) (Just (Right time)) =\n\
+   \            let newTime = processTime'' process\n\
+   \            in processTime' processes $ case newTime of\n\
+   \                                          Just (Left ()) -> Just $ Left ()\n\
+   \                                          Just (Right newTime) | newTime < time -> Just $ Right newTime\n\
+   \                                          _ -> Just $ Right time\n\
+   \         processTime' [] time = time\n\
+   \         processTime'' (Control'Wait _ _ (Left time):_) = Just $ Right $ time\n\
+   \         processTime'' _ = Just $ Left ()\n\
    \\n\
    \data Control'Signal a =\n\
    \   Control'Signal\n\
@@ -92,14 +162,14 @@ controlModule = pack
    \      , control'signal'event :: Bool\n\
    \      }\n\
    \\n\
-   \control'printInitial :: STD.STANDARD.SignalOutput a => String -> Control'Signal a -> Control'Stack ()\n\
-   \control'printInitial signalName (Control'Signal [(_,val)] _ _) =\n\
-   \   liftIO $ putStrLn $ \"SignalUpdate: \" ++ signalName ++ \": \" ++ STD.STANDARD.sigOut val\n\
+   \control'printInitial :: STD.STANDARD.SignalOutput a => String -> Control'Time -> Control'Signal a -> IO ()\n\
+   \control'printInitial signalName currentTime (Control'Signal [(_,val)] _ _) =\n\
+   \   putStrLn $ \"SignalUpdate: \" ++ STD.STANDARD.sigOut currentTime ++ \": \" ++ signalName ++ \": \" ++ STD.STANDARD.sigOut val\n\
    \\n\
-   \control'updateSignal :: (Eq a, STD.STANDARD.SignalOutput a) => String -> Control'Time -> Control'Signal a -> Control'Stack (Control'Signal a)\n\
+   \control'updateSignal :: (Eq a, STD.STANDARD.SignalOutput a) => String -> Control'Time -> Control'Signal a -> IO (Control'Signal a)\n\
    \control'updateSignal signalName currentTime (Control'Signal originalTrans@((_,oldVal):(newTime,newVal):transactions) _ _)\n\
    \   | currentTime == newTime = do\n\
-   \      liftIO $ putStrLn $ \"SignalUpdate: \" ++ STD.STANDARD.sigOut currentTime ++ \": \" ++ signalName ++ \": \" ++ STD.STANDARD.sigOut newVal\n\
+   \      putStrLn $ \"SignalUpdate: \" ++ STD.STANDARD.sigOut currentTime ++ \": \" ++ signalName ++ \": \" ++ STD.STANDARD.sigOut newVal\n\
    \      let event = oldVal /= newVal\n\
    \      return (Control'Signal ((newTime,newVal):transactions) True event)\n\
    \   | otherwise = return (Control'Signal originalTrans False False)\n\
@@ -150,14 +220,14 @@ controlModule = pack
    \-- Access to IO for file access/stdin/stdout\n\
    \type Control'Stack a = StateT Control'Time (StateT Control'SEVERITY_TRACKER (ExceptT Control'SEVERITY_FAILURE IO)) a\n\
    \\n\
-   \control'jumpTime :: STD.STANDARD.Type'ANON'TIME -> Control'Stack ()\n\
-   \control'jumpTime time =\n\
-   \   let incDelta curTime =\n\
-   \         curTime\n\
-   \            { time'Real = time\n\
-   \            , time'Delta = 1 + (time'Delta curTime)\n\
-   \            }\n\
-   \   in modify incDelta\n\
+   \--control'jumpTime :: STD.STANDARD.Type'ANON'TIME -> Control'Stack ()\n\
+   \--control'jumpTime time =\n\
+   \--   let incDelta curTime =\n\
+   \--         curTime\n\
+   \--            { time'Real = time\n\
+   \--            , time'Delta = 1 + (time'Delta curTime)\n\
+   \--            }\n\
+   \--   in modify incDelta\n\
    \\n\
    \-- |Track number of non-fatal asserts that have occurred\n\
    \data Control'SEVERITY_TRACKER =\n\
@@ -172,40 +242,22 @@ controlModule = pack
    \-- |Fail on SEVERITY_LEVEL'IDEN'FAILURE assert\n\
    \data Control'SEVERITY_FAILURE = Control'SEVERITY_FAILURE String\n\
    \\n\
-   \control'incrementWarnings :: Control'Stack ()\n\
-   \control'incrementWarnings =\n\
-   \   let incWarning :: Control'SEVERITY_TRACKER -> Control'SEVERITY_TRACKER\n\
-   \       incWarning trackers = trackers { control'warnings = 1 + (control'warnings trackers) }\n\
-   \   in lift $ modify $ incWarning\n\
-   \\n\
-   \control'incrementErrors :: Control'Stack ()\n\
-   \control'incrementErrors =\n\
-   \   let incError :: Control'SEVERITY_TRACKER -> Control'SEVERITY_TRACKER\n\
-   \       incError trackers = trackers { control'errors = 1 + (control'errors trackers) }\n\
-   \   in lift $ modify $ incError\n\
-   \\n\
-   \control'assertNote :: String -> STD.STANDARD.Type'ANON'STRING -> Control'Stack ()\n\
+   \control'assertNote :: String -> STD.STANDARD.Type'ANON'STRING -> IO ()\n\
    \control'assertNote unitName message = control'assert unitName $ \"NOTE: \" ++ anon'stringToString message\n\
    \\n\
-   \control'assertWarning :: String -> STD.STANDARD.Type'ANON'STRING -> Control'Stack ()\n\
-   \control'assertWarning unitName message = do\n\
-   \   control'assert unitName $ \"WARNING: \" ++ anon'stringToString message\n\
-   \   control'incrementWarnings\n\
+   \control'assertWarning :: String -> STD.STANDARD.Type'ANON'STRING -> IO ()\n\
+   \control'assertWarning unitName message = control'assert unitName $ \"WARNING: \" ++ anon'stringToString message\n\
    \\n\
-   \control'assertError :: String -> STD.STANDARD.Type'ANON'STRING -> Control'Stack ()\n\
-   \control'assertError unitName message = do\n\
-   \   control'assert unitName $ \"ERROR: \" ++ anon'stringToString message\n\
-   \   control'incrementErrors\n\
+   \control'assertError :: String -> STD.STANDARD.Type'ANON'STRING -> IO ()\n\
+   \control'assertError unitName message = control'assert unitName $ \"ERROR: \" ++ anon'stringToString message\n\
    \\n\
-   \control'assertFailure :: String -> STD.STANDARD.Type'ANON'STRING -> Control'Stack ()\n\
-   \control'assertFailure unitName message = do\n\
-   \   control'assert unitName $ \"FAILURE: \" ++ anon'stringToString message\n\
-   \   throwError $ Control'SEVERITY_FAILURE \"\" --message\n\
+   \control'assertFailure :: String -> STD.STANDARD.Type'ANON'STRING -> IO ()\n\
+   \control'assertFailure unitName message = control'assert unitName $ \"FAILURE: \" ++ anon'stringToString message\n\
    \\n\
-   \control'assert :: String -> String -> Control'Stack ()\n\
+   \control'assert :: String -> String -> IO ()\n\
    \control'assert unitName message =\n\
    \   let completeMessage = \"ASSERT: \" ++ unitName ++ \": \" ++ message\n\
-   \   in liftIO $ putStrLn completeMessage\n\
+   \   in putStrLn completeMessage\n\
    \\n\
    \anon'stringToString :: STD.STANDARD.Type'ANON'STRING -> String -- ?? Need to add array extract function\n\
    \anon'stringToString (STD.STANDARD.Type'ANON'STRING str) = ((map anon'characterToChar) . MapS.elems) str\n\
@@ -306,9 +358,4 @@ controlModule = pack
    \anon'characterToChar STD.STANDARD.Type'ANON'CHARACTER'Char'BAR = '|'\n\
    \anon'characterToChar STD.STANDARD.Type'ANON'CHARACTER'Char'RIGHTBRACE = '}'\n\
    \anon'characterToChar STD.STANDARD.Type'ANON'CHARACTER'Char'TILDE = '~'\n\
-   \anon'characterToChar _ = error \"Cannot print non-character enumerate\"\n\
-   \\n\
-   \--now :: SimStack TIME\n\
-   \--now = gets $ timeVal\n\
-   \now :: Control'Stack STD.STANDARD.Type'ANON'TIME\n\
-   \now = gets $ time'Real"
+   \anon'characterToChar _ = error \"Cannot print non-character enumerate\""

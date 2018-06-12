@@ -19,6 +19,10 @@ module Sim.Output.Names
    , showProcessDef
    , showProcessSetInitial
    , showProcessInitialName
+   , showProcessRead
+   , showPortInRead
+   , showPortOutRead
+   , showInternalSignalRead
    ) where
 
 import qualified Data.Map.Strict as MapS
@@ -224,7 +228,7 @@ showProcessName :: String -> String
 showProcessName processName = processNamePrefix ++ processName
 
 showProcessDef :: String -> String
-showProcessDef processName = showProcessName processName ++ " :: (Int,STD.STANDARD.Type'ANON'TIME)"
+showProcessDef processName = showProcessName processName ++ " :: ([Int],STD.STANDARD.Type'ANON'TIME)"
 
 showProcessSetInitial :: String -> String
 showProcessSetInitial processName = showProcessName processName ++ " = " ++ showProcessInitialName processName
@@ -234,3 +238,19 @@ processInitialNamePrefix = "process'initial'"
 
 showProcessInitialName :: String -> String
 showProcessInitialName processName = processInitialNamePrefix ++ processName
+
+showProcessRead :: String -> String
+showProcessRead processName = showProcessName processName ++ " processes"
+
+showSignalNameRead :: (String -> String) -> String -> String -> String
+showSignalNameRead nameMaker signalStateName signalName =
+   nameMaker signalName ++ " " ++ signalStateName
+
+showPortInRead :: String -> String
+showPortInRead = showSignalNameRead showPortInName "portsIn"
+
+showPortOutRead :: String -> String
+showPortOutRead = showSignalNameRead showPortOutName "portsOut"
+
+showInternalSignalRead :: String -> String
+showInternalSignalRead = showSignalNameRead showInternalSignalName "signals"
