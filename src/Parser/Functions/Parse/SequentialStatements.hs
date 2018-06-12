@@ -80,6 +80,7 @@ import Parser.Netlist.Types.Representation
          , Subtype
          , SequentialStatement(..)
          )
+import Parser.Netlist.Functions.Representation (findSignalsInCalculation)
 import Parser.Netlist.Types.Stores
          ( ScopeStore
          , UnitStore(..)
@@ -115,9 +116,9 @@ parseWaitStatement scope unit unitName = do
       token -> do
          saveToken token
          return $ Calc_Value (Value_Enum (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ Enum_Identifier "TRUE") $ Type_Type (NetlistName "STD" "STANDARD","ANON'BOOLEAN") $ (packageTypes standardPackage) MapS.! "ANON'BOOLEAN"
-   sensitivity <- case initialSensitivity of
-      Nothing -> throwError $ ConverterError_NotImplemented $ passPosition "Auto sensitivity list" onTok -- searchCalcForSignals 
-      Just list -> return list
+   let sensitivity = case initialSensitivity of
+                        Nothing -> findSignalsInCalculation condition
+                        Just list -> list
    forTok <- getToken
    timeout <- case forTok of
       token | isKeywordFor token -> do

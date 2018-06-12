@@ -21,6 +21,7 @@ module Parser.Netlist.Functions.Representation
    , float_scalarRight
    , float_scalarHigh
    , float_scalarLow
+   , findSignalsInCalculation
    ) where
 
 import Data.Int (Int64)
@@ -32,6 +33,8 @@ import Parser.Netlist.Types.Representation
          , IntegerRange(..)
          , FloatRange(..)
          , RangeDirection(..)
+         , Calculation(..)
+         , SignalType
          )
 
 enum_scalarLeft :: [Enumerate] -> Enumerate
@@ -111,3 +114,36 @@ float_scalarHigh (FloatRange _ val To) = val
 float_scalarLow :: FloatRange -> Double
 float_scalarLow (FloatRange _ val Downto) = val
 float_scalarLow (FloatRange val _ To) = val
+
+findSignalsInCalculation :: Calculation -> [(SignalType,String)]
+findSignalsInCalculation (Calc_Value _ _) = []
+findSignalsInCalculation (Calc_FunctionCall _ calcs) = concat $ map findSignalsInCalculation calcs
+findSignalsInCalculation (Calc_Const _) = []
+findSignalsInCalculation (Calc_BuiltinNegate calc _) = findSignalsInCalculation calc
+findSignalsInCalculation (Calc_BuiltinSum (calc1,_) (calc2,_)) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinSubtract (calc1,_) (calc2,_)) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinMult (calc1,_) (calc2,_)) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinDiv (calc1,_) (calc2,_)) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinMod calc1 calc2 _) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinRem calc1 calc2 _) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinExp (calc1,_) (calc2,_)) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinAbs calc _) = findSignalsInCalculation calc
+findSignalsInCalculation (Calc_BuiltinNot calc _) = findSignalsInCalculation calc
+findSignalsInCalculation (Calc_BuiltinEqual (calc1,_) (calc2,_)) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinNotEqual (calc1,_) (calc2,_)) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinLessThan (calc1,_) (calc2,_)) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinLessThanOrEqual (calc1,_) (calc2,_)) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinGreaterThan (calc1,_) (calc2,_)) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinGreaterThanOrEqual (calc1,_) (calc2,_)) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinAnd calc1 calc2 _) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinOr calc1 calc2 _) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinXor calc1 calc2 _) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinNand calc1 calc2 _) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_BuiltinNor calc1 calc2 _) = concat $ map findSignalsInCalculation [calc1,calc2]
+findSignalsInCalculation (Calc_ImplicitTypeConversion _ calc) = findSignalsInCalculation calc
+findSignalsInCalculation (Calc_SubtypeResult _ calc) = findSignalsInCalculation calc
+findSignalsInCalculation (Calc_ExplicitTypeConversion _ (calc,_)) = findSignalsInCalculation calc
+findSignalsInCalculation (Calc_Signal (Nothing,signalName) signalType) = [(signalType,signalName)]
+findSignalsInCalculation (Calc_Signal (Just _,_) _) = []
+findSignalsInCalculation (Calc_SignalEvent (Nothing,signalName) signalType) = [(signalType,signalName)]
+findSignalsInCalculation (Calc_SignalEvent (Just _,_) _) = []

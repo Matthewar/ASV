@@ -89,7 +89,7 @@ convertStatement (WaitStatement sensitivity condition timeout) unitName nestedNa
                PortIn -> "ports'in'" ++ signalName ++ " $ portsIn"
          ++ ")"
        sensitivityStr = if null sensitivity
-                           then "True"
+                           then "False"
                            else
                               "("
                               ++ (concat $ intersperse " || " $ map convertSensitivity sensitivity)
