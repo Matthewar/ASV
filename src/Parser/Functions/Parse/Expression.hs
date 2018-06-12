@@ -2061,8 +2061,8 @@ parseWithExpectedType staticLevel parseFunction scope unit unitName expectedSubt
        findType (IntegerSubtype _ typeName1 constraint) (calc@(Calc_Value (Value_Int int) _),Type_Type typeName2 _)
          | typeName1 == typeName2 && valueInIntRange int constraint = Just calc
          | otherwise = Nothing
-       findType (IntegerSubtype _ _ constraint) (calc@(Calc_Value (Value_Int int) _),Type_UniversalInt)
-         | valueInIntRange int constraint = Just calc
+       findType (IntegerSubtype _ baseTypeName constraint) (calc@(Calc_Value (Value_Int int) _),Type_UniversalInt)
+         | valueInIntRange int constraint = Just $ Calc_ImplicitTypeConversion baseTypeName calc
          | otherwise = Nothing
        findType (IntegerSubtype _ typeName1 _) (calc,Type_Type typeName2 _)
          | typeName1 == typeName2 && notLocallyStatic staticLevel = Just $ Calc_SubtypeResult expectedSubtypeName calc
@@ -2073,8 +2073,8 @@ parseWithExpectedType staticLevel parseFunction scope unit unitName expectedSubt
        findType (FloatingSubtype _ typeName1 constraint) (calc@(Calc_Value (Value_Float flt) _),Type_Type typeName2 _)
          | typeName1 == typeName2 && valueInFloatRange flt constraint = Just calc
          | otherwise = Nothing
-       findType (FloatingSubtype _ _ constraint) (calc@(Calc_Value (Value_Float flt) _),Type_UniversalReal)
-         | valueInFloatRange flt constraint = Just calc
+       findType (FloatingSubtype _ baseTypeName constraint) (calc@(Calc_Value (Value_Float flt) _),Type_UniversalReal)
+         | valueInFloatRange flt constraint = Just $ Calc_ImplicitTypeConversion baseTypeName calc
          | otherwise = Nothing
        findType (FloatingSubtype _ typeName1 _) (calc,Type_Type typeName2 _)
          | typeName1 == typeName2 && notLocallyStatic staticLevel = Just $ Calc_SubtypeResult expectedSubtypeName calc

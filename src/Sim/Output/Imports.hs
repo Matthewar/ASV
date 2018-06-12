@@ -30,7 +30,9 @@ outputImports fileName scope =
          \import Data.Maybe\n\
          \   ( isJust\n\
          \   , fromJust\n\
+         \   , catMaybes\n\
          \   )\n\
+         \import Data.Either (isLeft)\n\
          \import Data.Char\n\
          \   ( isAlpha\n\
          \   , isDigit\n\
@@ -51,5 +53,9 @@ outputImports fileName scope =
          \   , runExceptT\n\
          \   )\n\
          \import Control\n\
-         \import Numeric (showFloat)"
+         \import Numeric (showFloat)\n\
+         \import System.Exit\n\
+         \   ( exitSuccess\n\
+         \   , exitFailure\n\
+         \   )"
    in liftIO $ appendFile fileName $ newline ++ baseImportsStr ++ newline ++ importStr

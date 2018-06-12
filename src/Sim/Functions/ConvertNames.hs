@@ -198,6 +198,12 @@ convertSequentialStatementName (SignalAssignStatement sigName sigType waveforms)
    where convertWaveform (ValueWaveform calc1 calc2) = ValueWaveform (convertCalc calc1) (convertCalc calc2)
          convertWaveform (NullWaveform calc) = NullWaveform $ convertCalc calc
          convertCalc calc = convertCalculationNames calc oldName newName
+convertSequentialStatementName (IfStatement elsifs elses) oldName newName =
+   let convertElsifs (calc,statements) = (convertCalculationNames calc oldName newName,convertSeqNames statements)
+       convertSeqNames statements = convertSequentialStatementNames statements oldName newName
+   in IfStatement
+         (map convertElsifs elsifs)
+         (convertSeqNames elses)
 convertSequentialStatementName NullStatement _ _ = NullStatement
 
 convertCalculationNames :: Calculation -> NetlistName -> NetlistName -> Calculation
