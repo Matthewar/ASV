@@ -1,6 +1,21 @@
 # VHDL-Sim
+Read the [documentation](docs/README.md) before contributing, or for further details about the project.
+
+See the issues for potential contributions to be made.
+For first time contributors, there may be issues with the 'good first issue' label to indicate these are more approachable.
+
+If you want to report a bug, please see the [bug reporting section](#reporting-bugs).
+
+For a quick start go to [Running a Simulation](#creating-and-running-a-simulation).
+
+## Introduction
+This project is a VHDL simulator, whose initial aim is to implement the entirety of the 1076-1987 VHDL specification.
+Currently a subset of the language has been implemented, see the documentation for details on features.
+Issues may have more up to date progress on feature implementation.
+
 ## Prerequisites
-Just need `stack`, it should install all dependencies.
+The only tool required to use this software is [Stack](https://github.com/commercialhaskell/stack).
+This tool will install all dependencies as required when building the tool.
 
 ### Ubuntu/Debian
 To get `stack`, simply run the command:
@@ -9,13 +24,12 @@ sudo apt-get install haskell-stack
 ```
 
 ## Stack Commands
-To build: `stack build`
+Installing and using the tool is done through the `stack` tool.
 
-To test: `stack test`
-
-To generate documentation: `stack haddock`
-
-To run tool: `stack exec VHDL-Sim-exe`
+- To build: `stack build`
+- To test: `stack test`
+- To generate documentation: `stack haddock`
+- To run tool: `stack exec VHDL-Sim-exe`
 
 ### Creating and Running a Simulation
 - Build the tool: `stack build`
@@ -40,3 +54,24 @@ To run tool: `stack exec VHDL-Sim-exe`
 
 ## Documentation
 Documentation [here](docs/README.md)
+
+## Similar Projects
+Most VHDL simulators are closed source products, this project aims to provide an open source tool that anyone can use.
+
+This was largely inspired by [GHDL](https://github.com/ghdl/ghdl), another open source simulator.
+GHDL implements a large portion of the VHDL specification however it is written mostly in Ada, an old and not widely used language which could discourage contributors.
+An aim of this project is provide code that can be understood and modified easily.
+
+## Reporting Bugs
+To report a bug, please use the issues section of this repository.
+The following information is useful for replicating the bug, in order to test it:
+- Version of the tool (what commit you are currently running on)
+   - If you are not on an up-to-date version of the tool, please update and try again before reporting an issue
+- Command run that triggered the bug
+- Output of the tool (any error or debug messages that have occurred)
+- (If the bug occurred when parsing a design) Any files used by the simulator IE contents of library directories
+
+## Licensing
+While this repository is private, there is no license.
+
+Once published either the MIT or GPLv3 license will apply.
