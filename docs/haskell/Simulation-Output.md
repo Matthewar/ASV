@@ -51,44 +51,136 @@ Relevant module `Sim.Builtin.ControlModule`, found [here](/src/Sim/Builtin/Contr
 | Type | Description |
 | :--- | :---------- |
 | Control'Time | Simulation time type. Contains both the real time (VHDL type `STD.STANDARD.TIME`) and current delta (point within the current time frame). Has VHDL _Ord_ instance and _SignalOutput_ instance. |
-| Entity'State | Component state, containing all data stored and used in a component. |
+| Entity'State | See description [here](#Entity'State). |
 | Entity'Stack | Monad stack for components: component state, time , error tracker, exceptions, IO. |
-| Control'Signal | Data within a signal: Transactions (list of time and signal value pairs), active marker, event marker. |
+| ProcessStatement | See description [here](#ProcessStatement). |
+| Control'Signal | See description [here](#Control'Signal). |
 | Control'Stack | Monad stack for control functions: time, error tracker, exceptions, IO. |
 | Control'SEVERITY_TRACKER | Tracks number of warnings and errors that have occurred during the simulation. Also has show instance for output at end of simulation. |
 | Control'SEVERITY_FAILURE | Holds severity failure string, used in monad stack as exception result. |
 
+Note: Having removed monads from the current design, potentially not using:
+- Entity'Stack
+- Control'Stack
+- Control'SEVERITY_FAILURE
+
+##### Entity'State
+Component state, containing all data stored and used in a component.
+IE the signal values:
+- Input ports
+- Internal signals
+- Output ports
+
+Implementation:
+```haskell
+data Entity'State portsInType stateType portsOutType =
+   Entity'State
+      { entity'portsIn :: portsInType
+      , entity'state :: stateType
+      , entity'portsOut :: portsOutType
+      }
+```
+##### ProcessStatement
+Control mechanism for processes.
+Various control statements (for changing flow of process) and state change statements (for updating signal values).
+
+Available statements:
+- Wait statement
+   - Sensitivity list expression
+      - Contains generated expression that returns true if an event occurs on a signal in the sensitivity list
+      - `Entity'State a b c -> Bool`
+      - `\_ -> False` if sensitivity list is not provided and provided condition is missing or has no signals in it
+   - Condition expression
+      - Generated expression from condition in design
+      - `Entity'State a b c -> Control'Time -> STD.STANDARD.Type'ANON'BOOLEAN`
+   - Wait time
+      - Either:
+         - Calculated time
+            - Next `STD.STANDARD.Type'ANON'TIME` value when the expression expires
+         - Calculation for wait time
+            - Generated time expression from `for` clause
+            - `\_ _ -> Nothing` if for clause not provided
+            - `Entity'State a b c -> Control'Time -> Maybe STD.STANDARD.Type'ANON'TIME`
+- If statement
+   - Condition expression
+      - Generated expression from condition in design
+      - `Entity'State a b c -> Control'Time -> STD.STANDARD.Type'ANON'BOOLEAN`
+   - True statements
+      - Nested process statements if condition is true
+   - False statements
+      - Nested process statements if condition is not true
+- Assert statement
+   - Component name
+   - Condition expression
+      - Generated expression from condition in design
+      - `Entity'State a b c -> Control'Time -> STD.STANDARD.Type'ANON'BOOLEAN`
+   - Report expression
+      - Generated expression from 'report' clause
+      - Message to be printed in assertion statement (in VHDL string type)
+      - `Entity'State a b c -> Control'Time -> STD.STANDARD.Type'ANON'STRING`
+   - Severity expression
+      - Generated expression from 'severity' clause
+      - Severity level of assertion statement
+      - `Entity'State a b c -> Control'Time -> STD.STANDARD.Type'ANON'SEVERITY_LEVEL`
+- Regular statement
+   - Any other statement is converted to this
+   - Contains a generated expression that modifies the state as specified in the design
+   - `Entity'State a b c -> Control'Time -> Entity'State a b c`
+- End
+   - Contains no other information
+   - Stops the process until the next delta
+
+Note:
+- End statement is not used
+
+##### Control'Signal
+Data within a signal:
+- Transactions (list of time and signal value pairs)
+- Active marker
+- Event marker 
+
+Implementation:
+```haskell
+data Control'Signal a =
+   Control'Signal
+      { control'signal'transactions :: [(Control'Time,a)]
+      , control'signal'active :: Bool
+      , control'signal'event :: Bool
+      }
+```
+
 #### Functions
 | Function | Description |
 | :------- | :---------- |
+| progressProcess | Takes a set of process statements and progresses the simulation up until the next suspension of the process. |
+| progressComponent | Takes a component (list of processes within the component) and progresses the simulation for all processes within the component. |
+| processTime | Finds the lowest time within the component's processes. Returns `Nothing` if no times available, `Just (Right val)` if minimum time found, `Just (Left ())` if progressing to next delta (minimum time jump). |
 | control'printInitial | Outputs initial signal values to the simulation output. |
 | control'updateSignal | Updates signal value (adjusts transactions according to next time and modifies markers accordingly) and prints any signal changes to the simulation output. |
 | control'readSignal | Read the current value of a signal. |
 | control'updateSignal'inertial | Add new waveforms to a signal using the inertial delay method (as described in 1076-1987). |
 | control'delayCheck | Check whether a non-static delay expression evaluates to a non-negative time. Error if it is negative. |
 | control'jumpTime | Jump forward to specified time value. |
-| control'incrementWarnings | Increment number of warnings occurred in the simulation state. |
-| control'incrementErrors | Increment number of errors occurred in the simulation state. |
 | control'assertNote | Print NOTE level assertion to simulation output. |
 | control'assertWarning | Print WARNING level assertion to simulation output. |
 | control'assertError | Print ERROR level assertion to simulation output. |
 | control'assertFailure | Print FAILURE level assertion to simulation output. |
-| now | Gets current (real, IE VHDL) time. |
 
-NOTE:
-- `control'jumpTime` is unused.
-- `now` is not yet used because function calls are not implemented.
+Note, potentially not using:
+- control'jumpTime
 
 ##### Internal Functions
 | Function | Description |
 | :------- | :---------- |
 | anon'stringToString | Convert VHDL `STD.STANDARD.STRING` type to Haskell `String` (`[Char]`) for printing to simulation output. |
 | anon'characterToChar | Convert VHDL `STD.STANDARD.CHARACTER` type to Haskell `Char` for printing to simulation output. |
+| control'assert | Print assertion message to simulation output. |
 
 #### Constants
 | Constant | Description |
 | :------- | :---------- |
 | initialTime | Starting time, used for the initial time in initial state declarations. |
+| maxWaitTime | Maximum time value that a wait statement can be set to. Upper bound of Int64 used for real time value. |
 
 ### STD.STANDARD
 This is the VHDL standard package as specified in IEEE 1076-1987.
@@ -96,8 +188,11 @@ Most of this has been autogenerated with this tool, however it also has addition
 - Logical functions (only builtin for types _STD.STANDARD.BOOLEAN_ and _STD.STANDARD.BIT_)
 - Haskell typeclass for outputting signals
 - Conversion of `Bool` Haskell type to `STD.STANDARD.BOOLEAN` VHDL type (used for autogenerated comparisons)
+- SignalOutput typeclass used to convert the type value to a waveform value
 
 This is located in `<build-dir>/src/STD/STANDARD.hs`.
+
+Relevant module `Sim.Builtin.STD.STANDARD`, found [here](/src/Sim/Builtin/STD/STANDARD.hs).
 
 ## Fully Generated Modules
 ### Components (Entities and Architectures)
