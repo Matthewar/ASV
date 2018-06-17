@@ -1,8 +1,8 @@
-name:                VHDL-Sim
+name:                ASV
 version:             0.1.0.0
 -- synopsis:
 -- description:
-homepage:            https://github.com/Matthewar/VHDL-Sim#readme
+homepage:            https://github.com/Matthewar/ASV#readme
 --license:             BSD3
 --license-file:        LICENSE
 author:              Matt A-R
@@ -99,25 +99,25 @@ library
                      , happy
   default-language:    Haskell2010
 
-executable VHDL-Sim-exe
+executable asv
   hs-source-dirs:      app
   main-is:             Main.hs
 --  other-modules:       
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
-                     , VHDL-Sim
+                     , ASV
                      , array
                      , split
                      , optparse-applicative
   default-language:    Haskell2010
 
-test-suite VHDL-Sim-test
+test-suite ASV-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
   other-modules:       LexerSpec
   build-depends:       base
-                     , VHDL-Sim
+                     , ASV
                      , tasty
                      , tasty-hunit
                      , tasty-quickcheck
@@ -131,4 +131,4 @@ test-suite VHDL-Sim-test
 
 source-repository head
   type:     git
-  location: https://github.com/Matthewar/FYP
+  location: https://github.com/Matthewar/ASV

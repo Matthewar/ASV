@@ -1,4 +1,4 @@
-# VHDL-Sim
+# ASV Simulates VHDL
 Read the [documentation](docs/README.md) before contributing, or for further details about the project.
 
 See the issues for potential contributions to be made.
@@ -29,7 +29,7 @@ Installing and using the tool is done through the `stack` tool.
 - To build: `stack build`
 - To test: `stack test`
 - To generate documentation: `stack haddock`
-- To run tool: `stack exec VHDL-Sim-exe`
+- To run tool: `stack exec asv`
 
 ### Creating and Running a Simulation
 - Build the tool: `stack build`
@@ -40,7 +40,7 @@ Installing and using the tool is done through the `stack` tool.
    - IEEE files are not fully parsable by the tool because of aliases and aggregates, so an empty directory is sufficient
 - Run tool through stack
    - Stack puts compiled binary (from tool build stage) into a hidden folder, so run through command
-   - `stack exec VHDL-Sim-exe -- --top <top-file> --build-dir <build-dir> --work-dir <work-dir> --ieee-dir <ieee-dir>`
+   - `stack exec asv -- --top <top-file> --build-dir <build-dir> --work-dir <work-dir> --ieee-dir <ieee-dir>`
       - `<top-file>`: Name of top level entity/architecture to compile (case insensitive)
       - `<work-dir>`, `<ieee-dir>`: As specified earlier
       - `<build-dir>`: Directory to place simulation files (directory should already exist and preferably be empty)
