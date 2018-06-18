@@ -51,10 +51,10 @@ Relevant module `Sim.Builtin.ControlModule`, found [here](../../src/Sim/Builtin/
 | Type | Description |
 | :--- | :---------- |
 | Control'Time | Simulation time type. Contains both the real time (VHDL type `STD.STANDARD.TIME`) and current delta (point within the current time frame). Has VHDL _Ord_ instance and _SignalOutput_ instance. |
-| Entity'State | See description [here](#Entity'State). |
+| Entity'State | See description [here](#entitystate). |
 | Entity'Stack | Monad stack for components: component state, time , error tracker, exceptions, IO. |
-| ProcessStatement | See description [here](#ProcessStatement). |
-| Control'Signal | See description [here](#Control'Signal). |
+| ProcessStatement | See description [here](#processstatement). |
+| Control'Signal | See description [here](#controlsignal). |
 | Control'Stack | Monad stack for control functions: time, error tracker, exceptions, IO. |
 | Control'SEVERITY_TRACKER | Tracks number of warnings and errors that have occurred during the simulation. Also has show instance for output at end of simulation. |
 | Control'SEVERITY_FAILURE | Holds severity failure string, used in monad stack as exception result. |
@@ -205,7 +205,7 @@ Generated in `Sim.Output.Components` module, found [here](../../src/Sim/Output/C
 #### Module Names
 Entities and architectures names are ignored, they are renamed to a component name:
 - `<LIBRARY>.<ENTITY>'COMPONENT'<COMPONENT>`
-- `<LIBRARY>.<ENTITY>'COMPONENT'<COMPONENT>'GENERICS` (see [Generics](#Generics))
+- `<LIBRARY>.<ENTITY>'COMPONENT'<COMPONENT>'GENERICS` (see [Generics](#generics))
 
 | Symbol | Meaning |
 | :----- | :------ |
@@ -270,7 +270,7 @@ initialStack =
 A fixed function that uses the internally namespaced initial states to form an entire initial state for the component.
 
 #### Processes
-Processes are an infinite list of process statements, which are specified [here](#ProcessStatement).
+Processes are an infinite list of process statements, which are specified [here](#processstatement).
 
 Implementation:
 ```haskell
