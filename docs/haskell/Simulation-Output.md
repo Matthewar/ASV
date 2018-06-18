@@ -287,27 +287,24 @@ If a label is not provided they are give the name `ANON'<ID>`, where `<ID>` is a
 Components have a number of inherent functions defined that are used by the module that instantiates them to interface with the component.
 
 ##### All Times
-The `allTimes` function is a monadic function with the type signature `Entity'<COMPONENT>'Stack (Maybe STD.STANDARD.Type'ANON'TIME)`.
+The `allTimes` function has the type signature `Entity'State PORTS'IN STATE PORTS'OUT -> Control'Time -> [[ProcessStatement PORTS'IN STATE PORTS'OUT]] -> Maybe (Either () STD.STANDARD.Type'ANON'TIME)`.
 This returns the next time this component has something to do:
-- Wait statement timeout
-- Signal update
-
-##### Any Ready
-Similar to the `allTimes` function, this monitors whether any signals will update in the next delta.
-This is used to check whether the simulation should increment the delta, and remain within the current real time period.
-Otherwise, it uses the `allTimes` function to jump to the next time.
+- `Nothing` if there are no times to jump to
+   - No processes in the entity
+   - No signal future signal changes
+- `Just (Left ())` if the simulation should progress to the next delta (minimum time jump)
+- `Just (Right time)` if the simulation should jump to some real time value
 
 ##### Initial Update
-The `initialUpdate` function calls the `control'printInitial` function for all signals within the component to print initial values of signals.
+The `initialUpdate` function calls the `control'printInitial` function for all signals within the component to print the initial values of all signals within the component.
 
 ##### Normal Update
 `signalUpdate` function updates the signal values for all signals within the component (and prints the signal values to the output).
+It is a monadic function with the type signature `Entity'State PORTS'IN STATE PORTS'OUT -> Control'Time -> IO (Entity'State PORTS'IN STATE PORTS'OUT)`:
+- Returns the updated state
 
-##### Component Stack
-Type `Entity'<COMPONENT>'Stack` is a custom form of `Entity'Stack` with a state setup for this component.
-
-##### Component Control
-The top level control function is `entityControl`, this calls all necessary processes, etc.
+##### Component
+This is the top level of the component containing the processes stored within it that are run when the simulation progresses.
 
 #### Generics
 To add portability, components are generated the same way no matter how generic and port maps for the component are assigned.
