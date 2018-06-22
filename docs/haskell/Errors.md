@@ -22,7 +22,7 @@ Each of the error types defined for various components of the tool.
 - [Scope Converter Errors](Errors/Scope.md)
 - Parser Errors
 - Netlist Converter Errors
-- Simulation Output Generator Errors
+- [Simulation Output Generator Errors](Errors/Sim.md)
 
 ### Not Implemented Error
 This is the weakest form of error, designed to be easy to remove as the features are implemented.

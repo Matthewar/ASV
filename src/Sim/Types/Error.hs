@@ -12,3 +12,13 @@ data SimOutputError =
    -- |Top module generics must have default values
    | SimErr_TopGenericsWithoutDefaultValues
    deriving (Eq)
+
+instance Show SimOutputError where
+   show (SimErr_ConstantNoValue constName) =
+      "no value was specified for the deferred constant "
+      ++ constName
+   show (SimErr_NoEntityOrArchWithTopModuleName packageName) =
+      "cannot find an entity or architecture with the name "
+      ++ show packageName
+   show SimErr_TopGenericsWithoutDefaultValues =
+      "the top level module generics must have default values provided"

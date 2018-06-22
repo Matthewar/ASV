@@ -280,7 +280,7 @@ instance (Show ParserError) where
       let maxVal = show $ getFloatBound (0.0 :: Double)
       in "Lexer found out of bounds real value "
          ++ str
-         ++ " note that integer range is "
+         ++ " note that floating range is "
          ++ maxVal
          ++ " to -"
          ++ maxVal
