@@ -22,6 +22,7 @@ import Parser.Netlist.Types.Representation
          ( NetlistName(..)
          , Enumerate(..)
          , IntegerRange(..)
+         , FloatRange(..)
          , RangeDirection(..)
          , Subtype(..)
          )
@@ -96,7 +97,7 @@ scalarTypes :: TestTree
 scalarTypes = testGroup "Scalar type declarations"
    [ enumTypes
    , integerTypes
-   --, floatingTypes
+   , floatingTypes
    , physicalTypes
    ]
 
@@ -152,7 +153,7 @@ checkIntegerType subtypeName expectedRange input = do
              subtype = entitySubtypes entity
          in case MapS.lookup subtypeName subtype of
                Nothing -> assertFailure $ "No integer type found"
-               Just (IntegerSubtype _ _ range) -> assertBool "Incorrect enums found" $ range == expectedRange
+               Just (IntegerSubtype _ _ range) -> assertBool "Incorrect integer range found" $ range == expectedRange
                _ -> assertFailure $ "Incorrect subtype"
       Left err -> assertFailure $ "Failed with error: " ++ show err
 
@@ -180,11 +181,42 @@ integerTypes = testGroup "Integer type declarations"
       "entity name1 is type abstype is range 0 to abs ( -31 ) ; end;"
    ]
 
---floatingTypes :: TestTree
---floatingTypes = testGroup "Floating type declarations"
---   [ testCase "Test 1"
---   , testCase "Test 2"
---   ]
+checkFloatingType :: String -> FloatRange -> String -> Assertion
+checkFloatingType subtypeName expectedRange input = do
+   result <- runExceptT $ execStateT (runAlex input $ parseDesignFile (create "" "" []) "WORK" []) InitialNetlist.netlist
+   case result of
+      Right netlist ->
+         let entity = (entities netlist) MapS.! (NetlistName "WORK" "NAME1")
+             subtype = entitySubtypes entity
+         in case MapS.lookup subtypeName subtype of
+               Nothing -> assertFailure $ "No floating type found"
+               Just (FloatingSubtype _ _ range) -> assertBool "Incorrect floating range found" $ range == expectedRange
+               _ -> assertFailure $ "Incorrect subtype"
+      Left err -> assertFailure $ "Failed with error: " ++ show err
+
+floatingTypes :: TestTree
+floatingTypes = testGroup "Floating type declarations"
+   [ testCase "Test 1" $
+      checkFloatingType
+         "TWOS_COMPLEMENT_REAL"
+         (FloatRange (-32768.0) 32767.0 To)
+         "entity name1 is type TWOS_COMPLEMENT_real is range -32768.0 to 32767.0; end;"
+   , testCase "Test 2" $
+      checkFloatingType
+         "TEST2"
+         (FloatRange 0.3 255.7 To)
+         "entity name1 is type test2 is range 0.3 to 255.7; end;"
+   , testCase "Test 3" $
+      checkFloatingType
+         "TEST3"
+         (FloatRange 31.9 0.1 Downto)
+      "entity name1 is type test3 is range 31.9 downto 0.1; end;"
+   , testCase "Floating type with abs" $
+      checkFloatingType
+         "ABSTYPE"
+         (FloatRange 0.0 31.0 To)
+      "entity name1 is type abstype is range 0.0 to abs ( -31.0 ) ; end;"
+   ]
 
 physicalTypes :: TestTree
 physicalTypes = testGroup "Physical type declarations"
