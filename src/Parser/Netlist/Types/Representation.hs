@@ -258,6 +258,8 @@ data Calculation =
    | Calc_FunctionCall (NetlistName,Function) [Calculation]
    -- |Non-static (deferred) constant in expression
    | Calc_Const (NetlistName,String)
+   -- |Globally-static generic constant in expression
+   | Calc_Generic String
    -- |Builtin non-static negate call
    | Calc_BuiltinNegate Calculation AllTypes
    | Calc_BuiltinSum (Calculation,AllTypes) (Calculation,AllTypes)
@@ -324,7 +326,7 @@ data Generic =
       { generic_name :: String
       , generic_subtypeName :: (NetlistName,String)
       , generic_subtypeData :: Subtype
-      , generic_default :: Maybe Value -- ?? Should be globally static calculation
+      , generic_default :: Maybe Value
       }
    deriving (Show)
 

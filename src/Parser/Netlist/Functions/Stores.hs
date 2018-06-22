@@ -24,6 +24,7 @@ module Parser.Netlist.Functions.Stores
    , matchConstantNameInScope
    , matchSignalNameInScope
    , matchPortNameInScope
+   , matchGenericNameInScope
    , mergeUnits
    , mergeScopes
    ) where
@@ -356,6 +357,14 @@ matchPortNameInScope :: UnitStore -> String -> Maybe Port
 matchPortNameInScope unit name = findPort $ unitPorts unit
    where portCheck port = name == port_name port
          findPort = find portCheck
+
+-- |Check if generic name is within scope
+-- If not, returns Nothing
+-- If it is, returns generic data
+matchGenericNameInScope :: UnitStore -> String -> Maybe Generic
+matchGenericNameInScope unit name = findGeneric $ unitGenerics unit
+   where genericCheck generic = name == generic_name generic
+         findGeneric = find genericCheck
 
 --matchVariableNameInScope :: ScopeStore -> UnitStore -> String -> Maybe (Type,VariableValue)
 

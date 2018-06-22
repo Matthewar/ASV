@@ -187,6 +187,7 @@ convertCalculation a1 a2 _ (Calc_Value value typeData) =
 convertCalculation nestedNames processName _ (Calc_Const (unitName,constName))
    | elem (unitName,constName) nestedNames = show unitName ++ ".constant'" ++ processName ++ "'" ++ constName
    | otherwise = show unitName ++ "." ++ constName
+convertCalculation _ _ _ (Calc_Generic genericName) = "GENERICS.generic'" ++ genericName
 convertCalculation a1 a2 a3 (Calc_BuiltinNegate calc (Type_Type typeName _)) =
    (printUnaryFunctionName a1 a2 "MINUS" typeName) ++ " (" ++ convertCalculation a1 a2 a3 calc ++ ")"
 convertCalculation a1 a2 a3 (Calc_BuiltinNegate calc Type_UniversalInt) = "negate (" ++ convertCalculation a1 a2 a3 calc ++ ")"

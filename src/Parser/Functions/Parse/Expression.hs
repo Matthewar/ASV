@@ -95,6 +95,7 @@ import Parser.Netlist.Types.Representation
          , SignalType(..)
          , Port(..)
          , Mode(..)
+         , Generic(..)
          )
 import Parser.Netlist.Functions.Representation
          ( enum_discretePos
@@ -131,6 +132,7 @@ import Parser.Netlist.Functions.Stores
          , matchConstantNameInScope
          , matchSignalNameInScope
          , matchPortNameInScope
+         , matchGenericNameInScope
          )
 import qualified Parser.Netlist.Types.Operators as Operators
 import Parser.Types.Monad (ParserStack)
@@ -1672,6 +1674,17 @@ parsePrimaryIdentifier staticLevel scope unit unitName (PosnWrapper pos iden) =
          case matchSignalNameInScope scope unit upperIden of
             Just (sig,packageName) | isNotStatic staticLevel -> parseSignalName scope unit unitName (packageName,upperIden) sig InternalSignal
             Just _ -> throwError $ ConverterError_Netlist $ PosnWrapper pos $ NetlistError_SignalNameInStaticExpression upperIden
+            Nothing -> checkGenerics
+       checkGenerics =
+         case matchGenericNameInScope unit upperIden of
+            Just generic | not $ isLocallyStatic staticLevel ->
+               let typeData = generic_subtypeData generic
+                   allType = subtypeToType typeData
+                   value = generic_default generic
+                   calc = case value of
+                           Just value -> Calc_Value value allType
+                           Nothing -> Calc_Generic upperIden
+               in return [(calc,allType)]
             Nothing -> checkPorts
        checkPorts =
          case matchPortNameInScope unit upperIden of
