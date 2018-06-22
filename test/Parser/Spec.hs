@@ -97,7 +97,7 @@ scalarTypes = testGroup "Scalar type declarations"
    [ enumTypes
    , integerTypes
    --, floatingTypes
-   --, physicalTypes
+   , physicalTypes
    ]
 
 checkEnumerateType :: String -> [Enumerate] -> String -> Assertion
@@ -173,6 +173,11 @@ integerTypes = testGroup "Integer type declarations"
          "WORD_INDEX"
          (IntegerRange 31 0 Downto)
       "entity name1 is type WORD_INDEX is range 31 downto 0; end;"
+   , testCase "Integer type with abs" $
+      checkIntegerType
+         "ABSTYPE"
+         (IntegerRange 0 31 To)
+      "entity name1 is type abstype is range 0 to abs ( -31 ) ; end;"
    ]
 
 --floatingTypes :: TestTree
@@ -180,28 +185,59 @@ integerTypes = testGroup "Integer type declarations"
 --   [ testCase "Test 1"
 --   , testCase "Test 2"
 --   ]
---
---physicalTypes :: TestTree
---physicalTypes = testGroup "Physical type declarations"
---   [ testCase "1076-1987 Example 2"
---      "type DISTANCE is range 0 to 1E16\n\
---      \   units\n\
---      \      A;\n\
---      \      nm = 10 A;\n\
---      \      um = 1000 nm;\n\
---      \      mm = 1000 um;\n\
---      \      cm = 10 mm;\n\
---      \      m = 1000 mm;\n\
---      \      km = 1000 m;\n\
---      \      mil = 254000 A;\n\
---      \      inch = 1000 mil;\n\
---      \      ft = 12 inch;\n\
---      \      yd = 3 ft;\n\
---      \      fm = 6 ft;\n\
---      \      mi = 5280 ft;\n\
---      \      lg = 3 mi;\n\
---      \   end units;"
---
+
+physicalTypes :: TestTree
+physicalTypes = testGroup "Physical type declarations"
+   [ testCase "1076-1987 Example 2" $ do
+      let input =
+            "entity name1 is\n\
+            \type DISTANCE is range 0 to 1E16\n\
+            \   units\n\
+            \      A;\n\
+            \      nm = 10 A;\n\
+            \      um = 1000 nm;\n\
+            \      mm = 1000 um;\n\
+            \      cm = 10 mm;\n\
+            \      m = 1000 mm;\n\
+            \      km = 1000 m;\n\
+            \      mil = 254000 A;\n\
+            \      inch = 1000 mil;\n\
+            \      ft = 12 inch;\n\
+            \      yd = 3 ft;\n\
+            \      fm = 6 ft;\n\
+            \      mi = 5280 ft;\n\
+            \      lg = 3 mi;\n\
+            \   end units;\n\
+            \end;"
+          expectedUnits = MapS.fromList
+            [ ("NM",10)
+            , ("UM",10000)
+            , ("MM",10000000)
+            , ("CM",100000000)
+            , ("M",10000000000)
+            , ("KM",10000000000000)
+            , ("MIL",254000)
+            , ("INCH",254000000)
+            , ("FT",3048000000)
+            , ("YD",9144000000)
+            , ("FM",18288000000)
+            , ("MI",16093440000000)
+            , ("LG",48280320000000)
+            ]
+      result <- runExceptT $ execStateT (runAlex input $ parseDesignFile (create "" "" []) "WORK" []) InitialNetlist.netlist
+      case result of
+         Right netlist ->
+            let entity = (entities netlist) MapS.! (NetlistName "WORK" "NAME1")
+                subtype = entitySubtypes entity
+            in case MapS.lookup "DISTANCE" subtype of
+                  Nothing -> assertFailure $ "No physical type found"
+                  Just (PhysicalSubtype _ _ baseUnit _ _) | baseUnit /= "A" -> assertFailure "Incorrect base unit"
+                  Just (PhysicalSubtype _ _ _ secondUnits _) | secondUnits /= expectedUnits -> assertFailure "Incorrect secondary units"
+                  Just (PhysicalSubtype _ _ _ _ range) -> assertBool "Non-matching range" $ range == (IntegerRange 0 (10^16) To)
+                  _ -> assertFailure $ "Incorrect subtype"
+         Left err -> assertFailure $ "Failed with error: " ++ show err
+   ]
+
 --subtypeDeclarations :: TestTree
 --subtypeDeclarations = testGroup "Subtype declarations"
 --   [ 
