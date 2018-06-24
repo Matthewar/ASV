@@ -289,7 +289,7 @@ instance (Show NetlistError) where
    show NetlistError_ResFuncNotAllowedInSubtypeIndic =
       "resolution functions cannot occur in the subtype indication of a constant declaration"
    show NetlistError_UnrecognisedNameInSubtypeIndic =
-      "unrecognised type mark in constant delcaration"
+      "unrecognised type mark in constant declaration"
    show (NetlistError_EnumValueOutOfRange (typePackage,typeName) enum) =
       "enum value ("
       ++ show typePackage ++ "." ++ showEnum typeName enum

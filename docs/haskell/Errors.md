@@ -21,7 +21,7 @@ Each of the error types defined for various components of the tool.
 - [Filing Errors](Errors/Filing.md)
 - [Scope Converter Errors](Errors/Scope.md)
 - Parser Errors
-- Netlist Converter Errors
+- [Netlist Converter Errors](Errors/Netlister.md)
 - [Simulation Output Generator Errors](Errors/Sim.md)
 
 ### Not Implemented Error
