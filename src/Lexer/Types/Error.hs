@@ -361,9 +361,6 @@ instance (Show ParserError) where
    show (ParseErr_ExpectedEnumCont token) =
       "Expected ',' or ')' to continue or end enumeration literal definition, but got "
       ++ show token
-   show (ParseErr_ExpectedSubtypeName token) =
-      "Expected a name (identifier) in the subtype declaration, but got "
-      ++ show token
    show (ParseErr_ExpectedDirection token) =
       "Expected a range direction keyword (keyword to/keyword downto) in a range, but got "
       ++ show token
