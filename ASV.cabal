@@ -115,7 +115,13 @@ test-suite ASV-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       LexerSpec
+  other-modules:       Lexer.Spec
+                     , Lexer.Functions
+                     , Lexer.SingleWords
+                     , Lexer.Sentences
+                     , Generators.LexElements
+                     , Parser.Spec
+                     --, Generators.ParseElements
   build-depends:       base
                      , ASV
                      , tasty
