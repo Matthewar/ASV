@@ -20,7 +20,7 @@ Each of the error types defined for various components of the tool.
 ### Contents
 - [Filing Errors](Errors/Filing.md)
 - [Scope Converter Errors](Errors/Scope.md)
-- Parser Errors
+- [Parser Errors](Errors/Parser.md)
 - [Netlist Converter Errors](Errors/Netlister.md)
 - [Simulation Output Generator Errors](Errors/Sim.md)
 
