@@ -364,6 +364,51 @@ instance (Show ParserError) where
    show (ParseErr_ExpectedSubtypeName token) =
       "Expected a name (identifier) in the subtype declaration, but got "
       ++ show token
+   show (ParseErr_ExpectedDirection token) =
+      "Expected a range direction keyword (keyword to/keyword downto) in a range, but got "
+      ++ show token
+   show (ParseErr_ExpectedBaseUnitIdentifierInTypeDef token) =
+      "Expected base unit name (identifier) in the physical type definition, but got "
+      ++ show token
+   show (ParseErr_ExpectedSemicolonInPhysTypeDef token) =
+      "Expected a semicolon in the base or secondary unit declaration in a physical type definition, but got "
+      ++ show token
+   show (ParseErr_ExpectedEqualInSecondaryUnitDecl token) =
+      "Expected an equals operator in the secondary unit declaration in a physical type definition, but got "
+      ++ show token
+   show (ParseErr_ExpectedPhysicalUnitName token) =
+      "Expected a unit name (identifier) in the secondary unit declaration in a physical type definition, but got "
+      ++ show token
+   show (ParseErr_ExpectedEndUnitsInPhysType token) =
+      "Expected the unit keyword at the end of the secondary units in a physical type definition, but got "
+      ++ show token
+   show (ParseErr_ExpectedSecondaryDeclarationOrEndInPhysType token) =
+      "Expected the next secondary unit declaration or the end keyword to mark end of secondary units in the physical type definition, but got "
+      ++ show token
+   show (ParseErr_ExpectedRightParenInPrimary token) =
+      "Expected end of primary expression or aggregate (right parenthesis), but got "
+      ++ show token
+   show (ParseErr_ExpectedColonInConstDecl token) =
+      "Expected a colon in the constant declaration to indicate start of subtybe indication, but got "
+      ++ show token
+   show (ParseErr_ExpectedTypeMarkInSubtypeIndic token) =
+      "Expected type mark (identifier) in constant declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedConstEnd token) =
+      "Expected a semicolon to end a constant declaration, but got "
+      ++ show token
+   show (ParseErr_ExpectedConstValueOrEnd token) =
+      "Expected the indicator of the start of the constant value (:= operator) or end of declaration for deferred constant (semicolon operator), but got "
+      ++ show token
+   show (ParseErr_ExpectedConstName token) =
+      "Expected constant name (identifier) in constant declaration, but got "
+      ++ show token
+   show (ParseErr_RangeConstraintForArrayType token) =
+      "Range constraint not permitted for array subtype indication (should be discrete constraint), but got "
+      ++ show token
+   show (ParseErr_ExpectedSubtypeName token) =
+      "Expected subtype name (identifier) in subtype declaration, but got "
+      ++ show token
    show (ParseErr_ExpectedKeywordIsInSubtypeDecl token) =
       "Expected keyword is, marking the start of the subtype indication in a subtype declaration, but got "
       ++ show token
@@ -497,7 +542,7 @@ instance (Show ParserError) where
       "Expected semicolon at the end of an architecture body declaration, but got "
       ++ show token
    show (ParseErr_ExpectedArchitectureEndOfDec token) =
-      "Expected a semicolon of the repeated architecture name (identifier) to mark the end of an architecture body declaration, but got "
+      "Expected a semicolon or the repeated architecture name (identifier) to mark the end of an architecture body declaration, but got "
       ++ show token
    show (ParseErr_ExpectedArchDeclItemOrEnd token) =
       "Expected architecture declarative item, or the keyword begin to mark the end of the architecture declaration region, but got "
@@ -540,6 +585,18 @@ instance (Show ParserError) where
       ++ show token
    show (ParseErr_ExpectedSignalAttribute token) =
       "Expected signal attribute (identifier) in signal attribute name, but got "
+      ++ show token
+   show (ParseErr_ExpectedKeywordThenInIfStatement token) =
+      "Expected keyword then after an if statement condition, but got "
+      ++ show token
+   show (ParseErr_ExpectedKeywordIfInEndIfStatement token) =
+      "Expected keyword if at the end of an if statement, but got "
+      ++ show token
+   show (ParseErr_ExpectedSemicolonInEndIfStatement token) =
+      "Expected semicolon at the end of an if statement, but got "
+      ++ show token
+   show (ParseErr_ExpectedIfStatmentContinuation token) =
+      "Expected continuation of if statement (elsif, else, or end keywords), but got "
       ++ show token
 
 -- | Find largest (and by extension smallest) possible value of double
