@@ -949,19 +949,19 @@ parseUnarySignExpression staticLevel scope unit unitName = do
          let staticVal = applyStatic valComb (Calc_Value (Value_Physical $ -val) typeData,typeData)
          in applyStaticAndNonStatic staticVal (constPhysFunctionFinder typeData) (Calc_Value (Value_Physical val) typeData)
        applyArith valComb@(_,typeData@(Type_Type _ IntegerType))
-         -- | isSignalCalc calc = applyNonStatic (sigIntFunctionFinder typeData) valComb
+         ---- | isSignalCalc calc = applyNonStatic (sigIntFunctionFinder typeData) valComb
          | otherwise = applyNonStaticBuiltin (constIntFunctionFinder typeData) valComb
        applyArith valComb@(_,typeData@(Type_Type _ FloatingType))
-         -- | isSignalCalc calc = applyNonStatic (sigFloatFunctionFinder typeData) valComb
+         ---- | isSignalCalc calc = applyNonStatic (sigFloatFunctionFinder typeData) valComb
          | otherwise = applyNonStaticBuiltin (constFloatFunctionFinder typeData) valComb
        applyArith valComb@(_,typeData@(Type_Type _ (PhysicalType _ _)))
-         -- | isSignalCalc calc = applyNonStatic (sigPhysFunctionFinder typeData) valComb
+         ---- | isSignalCalc calc = applyNonStatic (sigPhysFunctionFinder typeData) valComb
          | otherwise = applyNonStaticBuiltin (constPhysFunctionFinder typeData) valComb
        applyArith valComb@(_,Type_UniversalInt)
-         -- | isSignalCalc calc = applyNonStatic (sigIntFunctionFinder typeData) valComb
+         ---- | isSignalCalc calc = applyNonStatic (sigIntFunctionFinder typeData) valComb
          | otherwise = applyNonStaticBuiltin (constIntFunctionFinder Type_UniversalInt) valComb
        applyArith valComb@(_,Type_UniversalReal)
-         -- | isSignalCalc calc = applyNonStatic (sigFloatFunctionFinder typeData) valComb
+         ---- | isSignalCalc calc = applyNonStatic (sigFloatFunctionFinder typeData) valComb
          | otherwise = applyNonStaticBuiltin (constFloatFunctionFinder Type_UniversalReal) valComb
        -- ?? Finish patterns
        --applyArith (,Type_Type name (EnumerationType enums))
@@ -1871,7 +1871,7 @@ data SubtypeAttributeDesignators =
    | PredSubtypeAttribute
    | LeftOfSubtypeAttribute
    | RightOfSubtypeAttribute
-   -- | CustomSubtypeAttribute ?? Not implemented
+   ---- | CustomSubtypeAttribute ?? Not implemented
 
 parseSubtypeAttribute :: Staticity -> ScopeStore -> UnitStore -> NetlistName -> (NetlistName,String) -> Subtype -> ParserStack [(Calculation,AllTypes)]
 parseSubtypeAttribute staticLevel scope unit unitName subtypeName subtypeData = do

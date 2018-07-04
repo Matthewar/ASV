@@ -294,12 +294,12 @@ data Calculation =
    -- | Calc_SignalQuiet (NetlistName,String) Int64
    --
    | Calc_SignalEvent (Maybe NetlistName,String) SignalType
-   -- -- ?? Signal transaction
-   -- | Calc_SignalEvent (String,Signal)
-   -- | Calc_SignalActive (String,Signal)
-   -- | Calc_SignalLastEvent (String,Signal)
-   -- | Calc_SignalLastActive (String,Signal)
-   -- | Calc_SignalLastValue (String,Signal)
+   ---- -- ?? Signal transaction
+   ---- | Calc_SignalEvent (String,Signal)
+   ---- | Calc_SignalActive (String,Signal)
+   ---- | Calc_SignalLastEvent (String,Signal)
+   ---- | Calc_SignalLastActive (String,Signal)
+   ---- | Calc_SignalLastValue (String,Signal)
    deriving (Eq,Show)
 
 data AllTypes =
