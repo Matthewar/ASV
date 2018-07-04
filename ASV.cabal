@@ -96,7 +96,6 @@ library
                      , filepath
                      , text
   build-tools:         alex
-                     , happy
   default-language:    Haskell2010
 
 executable asv
