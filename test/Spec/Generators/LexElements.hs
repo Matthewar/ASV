@@ -1,216 +1,216 @@
 {-|
-   Module      : Generators.LexElements
+   Module      : Spec.Generators.LexElements
    Description : Generators of basic lexical elements of VHDL
 -}
-module Generators.LexElements 
-   ( GenPair(..)
-   , combineGen
-   , genInteger
-   , genExponent
-   , genBasedStr
-   , genBitStr
-   , genIdentifier
-   , genDecimal
-   , genKeyword
-   , genDelimiter
+module Spec.Generators.LexElements 
+   --( GenPair(..)
+   --, combineGen
+   --, genInteger
+   --, genExponent
+   --, genBasedStr
+   --, genBitStr
+   ( genIdentifier
+   --, genDecimal
+   --, genKeyword
+   --, genDelimiter
    ) where
 
 import qualified Test.Tasty.QuickCheck as QC
-import Data.Function ((&))
-import qualified Data.Map.Strict as MapS
-import qualified Data.ByteString.Char8 as ByteString
-import Data.Char
-         ( toLower
-         , toUpper
-         )
+--import Data.Function ((&))
+--import qualified Data.Map.Strict as MapS
+--import qualified Data.ByteString.Char8 as ByteString
+--import Data.Char
+--         ( toLower
+--         , toUpper
+--         )
 import Control.Monad
 
-import Lexer.Types.Token
-         ( Token(..)
-         , ReservedWord(..)
-         , LiteralBase(..)
-         , LitType(..)
-         , OperatorType(..)
-         )
-import Manager.Types.Error (ConverterError)
+--import Lexer.Types.Token
+--         ( Token(..)
+--         , ReservedWord(..)
+--         , LiteralBase(..)
+--         , LitType(..)
+--         , OperatorType(..)
+--         )
+--import Manager.Types.Error (ConverterError)
 
--- |Pair of lexer input and expected token
-data GenPair a = GenPair String a
-instance Show a => Show (GenPair a) where
-   show (GenPair str expected) =
-      "Input: \"" ++ str ++ "\"\n"
-      ++ "Expected Output: " ++ show expected
-
-combineGen :: (a -> b -> c) -> GenPair a -> GenPair b -> GenPair c
-combineGen combineFunc (GenPair lexInput1 list1) (GenPair lexInput2 list2) =
-   GenPair (lexInput1 ++ lexInput2) (combineFunc list1 list2)
-
--- |Generate a VHDL specific integer
--- Two arguments: minimum and maximum additional length
--- Total length = randomly selected length within range + 1
+---- |Pair of lexer input and expected token
+--data GenPair a = GenPair String a
+--instance Show a => Show (GenPair a) where
+--   show (GenPair str expected) =
+--      "Input: \"" ++ str ++ "\"\n"
+--      ++ "Expected Output: " ++ show expected
 --
--- > integer ::= digit { [ underline ] digit }
--- Implemented as:
--- @
---    'genInteger' ::= digit { 'genUnderscoreDigit' }
---    'genUnderscoreDigit' ::= [ underline ] digit
--- @
-genInteger :: Int -> Int -> QC.Gen String
-genInteger fromLength toLength = do
-   firstInt <- QC.elements ['0'..'9']
-   lengthStr <- QC.elements [fromLength..toLength]
-   otherInts <- replicateM lengthStr genUnderscoreDigit
-   return $ [firstInt] ++ (concat otherInts)
-   where genUnderscoreDigit = do
-            optionalUnderscore <- QC.elements [True,False]
-            otherDigit <- QC.elements ['0'..'9']
-            return $
-               if optionalUnderscore then ['_',otherDigit]
-               else [otherDigit]
-
--- |Generate a VHDL specific exponent
--- > exponent ::= E [ + ] integer  | E - integer
--- Note: case insensitive \\'E\\'
--- Implemented as:
--- @
---    'genExponent' ::= exponent_marker [ exponent_sign ] 'genInteger'
---    exponent_marker ::= E | e
---    exponent_sign ::= + | -
--- @
-genExponent = do
-   expChar <- QC.elements "Ee"
-   expSign <- QC.elements ["+","-",""]
-   expVal <- genInteger 0 1
-   return $ (expChar:expSign) ++ expVal
-
--- |Generate a VHDL specific based literal
--- @
---    based_literal ::=
---       base # based_integer [ . based_integer ] # [ exponent ]
---    base ::= integer
---    based_integer ::=
---       extended_digit { [ underline ] extended_digit }
---    extended_digit ::= digit | letter
--- @
--- Note: \\'#\\' container can instead be \\':\\'
--- Implemented as:
--- @
---    'genBasedStr' ::=
---       base based_container 'genExtendedBasedStr' based_container [ 'genExponent' ]
---    base ::= HASKELL( [2..16] )
---    based_container ::= # | :
---    'genExtendedBasedStr' ::= based_integer [ . based_integer ]
---    based_integer ::= REGEX( [0-9a-fA-F] )
--- @
--- Note: based_container must be same on both sides
---       Relevant base restricts range of regex (only full range for hex/base16)
-genBasedStr :: Char -> QC.Gen String
-genBasedStr container = do
-   base <- QC.elements [2..16]
-   let baseChars = show base
-       basedStrGen = genExtendedBasedStr base
-   optionalFractional <- QC.elements [True,False]
-   expStr <- genExponent
-   unitBasedStr <- basedStrGen
-   fullBasedStr <-
-         if optionalFractional then do
-            decBasedStr <- basedStrGen
-            return $ unitBasedStr ++ "." ++ decBasedStr
-         else
-            return unitBasedStr
-   return $ baseChars ++ [container] ++ fullBasedStr ++ [container] ++ expStr
-   where genExtendedBasedStr :: Int -> QC.Gen String
-         genExtendedBasedStr base = do
-            let allowedChars = charMap !! (base-2)
-            firstChar <- QC.elements allowedChars
-            lengthStr <- QC.elements [0..25]
-            otherChars <- replicateM lengthStr $ genUnderscoreExtendedChar allowedChars
-            return $ [firstChar] ++ (concat otherChars)
-         charMap =
-            [ "01"
-            , ['0'..'2']
-            , ['0'..'3']
-            , ['0'..'4']
-            , ['0'..'5']
-            , ['0'..'6']
-            , ['0'..'7']
-            , ['0'..'8']
-            , ['0'..'9']
-            , ['0'..'9'] ++ ['a'] ++ ['A']
-            , ['0'..'9'] ++ ['a'..'b'] ++ ['A'..'B']
-            , ['0'..'9'] ++ ['a'..'c'] ++ ['A'..'C']
-            , ['0'..'9'] ++ ['a'..'d'] ++ ['A'..'D']
-            , ['0'..'9'] ++ ['a'..'e'] ++ ['A'..'E']
-            , ['0'..'9'] ++ ['a'..'f'] ++ ['A'..'F']
-            ]
-
--- |Generate a VHDL specific bit string literal
--- @
---    bit_string_literal ::= base_specifier " bit_value "
---    bit_value ::= extended_digit { [ underline ] extended_digit }
---    base_specified ::= B | O | X
--- @
--- Note: B, O, X are case insensitive.
---       \\'%\\' can be used as a container instead of \\'\\"\\'
--- Implemented as:
--- @
---    'genBitStr' ::= base_specifier base_container 'genExtendedStr' base_container
---    base_specifier ::= B | b | O | o | X | x
---    base_container ::= " | %
---    'genExtendedStr' ::= extended_digit { 'genUnderscoreExtendedChar' }
---    extended_digit ::= REGEX( [0-9a-fA-F] )
--- @
--- Note: Base containers must match
---       Relevant base restricts range of regex (only full range for hex/base16)
-genBitStr :: Char -> QC.Gen (GenPair Token)
-genBitStr container = do
-   base <- QC.elements [BinBased,OctBased,HexBased]
-   baseChar <- QC.elements $ baseCharMap MapS.! base
-   bitStr <- genExtendedStr base
-   let expectedToken = Literal $ BitStr base $ ByteString.pack $ filter ((/=) '_') bitStr
-       lexInput = [baseChar,container] ++ bitStr ++ [container]
-   return $ GenPair lexInput $ expectedToken
-   where baseCharMap =
-            [ (BinBased,"Bb")
-            , (OctBased,"Oo")
-            , (HexBased,"Xx")
-            ]
-            & MapS.fromList
-         genExtendedStr :: LiteralBase -> QC.Gen String
-         genExtendedStr base = do
-            let allowedChars = charMap MapS.! base
-            firstChar <- QC.elements allowedChars
-            lengthStr <- QC.elements [0..100]
-            otherChars <- replicateM lengthStr $ genUnderscoreExtendedChar allowedChars
-            return $ [firstChar] ++ (concat otherChars)
-         charMap =
-            [ (BinBased,"01")
-            , (OctBased,['0'..'7'])
-            , (HexBased,['0'..'9']++['A'..'F']++['a'..'f'])
-            ]
-            & MapS.fromList
-
--- |Generate latter part of VHDL specific bit_value (or based_integer)
--- Part of VHDL bit string literal
--- @
---    bit_value ::= extended_digit { [ underline ] extended_digit }
---    based_integer ::=
---       extended_digit { [ underline ] extended_digit }
--- @
--- Implemented as:
--- @
---    'genUnderscoreExtendedChar' ::= [ _ ] extended_digit
---    extended_digit ::= REGEX( [0-9a-fA-F] )
--- @
--- Note: Relevant base restricts range of regex (only full range for hex/base16)
---       Regex range is actually passed into this function
-genUnderscoreExtendedChar :: [Char] -> QC.Gen String
-genUnderscoreExtendedChar allowedChars = do
-   optionalUnderscore <- QC.elements [True,False]
-   otherChar <- QC.elements allowedChars
-   return $
-      if optionalUnderscore then ['_',otherChar]
-      else [otherChar]
+--combineGen :: (a -> b -> c) -> GenPair a -> GenPair b -> GenPair c
+--combineGen combineFunc (GenPair lexInput1 list1) (GenPair lexInput2 list2) =
+--   GenPair (lexInput1 ++ lexInput2) (combineFunc list1 list2)
+--
+---- |Generate a VHDL specific integer
+---- Two arguments: minimum and maximum additional length
+---- Total length = randomly selected length within range + 1
+----
+---- > integer ::= digit { [ underline ] digit }
+---- Implemented as:
+---- @
+----    'genInteger' ::= digit { 'genUnderscoreDigit' }
+----    'genUnderscoreDigit' ::= [ underline ] digit
+---- @
+--genInteger :: Int -> Int -> QC.Gen String
+--genInteger fromLength toLength = do
+--   firstInt <- QC.elements ['0'..'9']
+--   lengthStr <- QC.elements [fromLength..toLength]
+--   otherInts <- replicateM lengthStr genUnderscoreDigit
+--   return $ [firstInt] ++ (concat otherInts)
+--   where genUnderscoreDigit = do
+--            optionalUnderscore <- QC.elements [True,False]
+--            otherDigit <- QC.elements ['0'..'9']
+--            return $
+--               if optionalUnderscore then ['_',otherDigit]
+--               else [otherDigit]
+--
+---- |Generate a VHDL specific exponent
+---- > exponent ::= E [ + ] integer  | E - integer
+---- Note: case insensitive \\'E\\'
+---- Implemented as:
+---- @
+----    'genExponent' ::= exponent_marker [ exponent_sign ] 'genInteger'
+----    exponent_marker ::= E | e
+----    exponent_sign ::= + | -
+---- @
+--genExponent = do
+--   expChar <- QC.elements "Ee"
+--   expSign <- QC.elements ["+","-",""]
+--   expVal <- genInteger 0 1
+--   return $ (expChar:expSign) ++ expVal
+--
+---- |Generate a VHDL specific based literal
+---- @
+----    based_literal ::=
+----       base # based_integer [ . based_integer ] # [ exponent ]
+----    base ::= integer
+----    based_integer ::=
+----       extended_digit { [ underline ] extended_digit }
+----    extended_digit ::= digit | letter
+---- @
+---- Note: \\'#\\' container can instead be \\':\\'
+---- Implemented as:
+---- @
+----    'genBasedStr' ::=
+----       base based_container 'genExtendedBasedStr' based_container [ 'genExponent' ]
+----    base ::= HASKELL( [2..16] )
+----    based_container ::= # | :
+----    'genExtendedBasedStr' ::= based_integer [ . based_integer ]
+----    based_integer ::= REGEX( [0-9a-fA-F] )
+---- @
+---- Note: based_container must be same on both sides
+----       Relevant base restricts range of regex (only full range for hex/base16)
+--genBasedStr :: Char -> QC.Gen String
+--genBasedStr container = do
+--   base <- QC.elements [2..16]
+--   let baseChars = show base
+--       basedStrGen = genExtendedBasedStr base
+--   optionalFractional <- QC.elements [True,False]
+--   expStr <- genExponent
+--   unitBasedStr <- basedStrGen
+--   fullBasedStr <-
+--         if optionalFractional then do
+--            decBasedStr <- basedStrGen
+--            return $ unitBasedStr ++ "." ++ decBasedStr
+--         else
+--            return unitBasedStr
+--   return $ baseChars ++ [container] ++ fullBasedStr ++ [container] ++ expStr
+--   where genExtendedBasedStr :: Int -> QC.Gen String
+--         genExtendedBasedStr base = do
+--            let allowedChars = charMap !! (base-2)
+--            firstChar <- QC.elements allowedChars
+--            lengthStr <- QC.elements [0..25]
+--            otherChars <- replicateM lengthStr $ genUnderscoreExtendedChar allowedChars
+--            return $ [firstChar] ++ (concat otherChars)
+--         charMap =
+--            [ "01"
+--            , ['0'..'2']
+--            , ['0'..'3']
+--            , ['0'..'4']
+--            , ['0'..'5']
+--            , ['0'..'6']
+--            , ['0'..'7']
+--            , ['0'..'8']
+--            , ['0'..'9']
+--            , ['0'..'9'] ++ ['a'] ++ ['A']
+--            , ['0'..'9'] ++ ['a'..'b'] ++ ['A'..'B']
+--            , ['0'..'9'] ++ ['a'..'c'] ++ ['A'..'C']
+--            , ['0'..'9'] ++ ['a'..'d'] ++ ['A'..'D']
+--            , ['0'..'9'] ++ ['a'..'e'] ++ ['A'..'E']
+--            , ['0'..'9'] ++ ['a'..'f'] ++ ['A'..'F']
+--            ]
+--
+---- |Generate a VHDL specific bit string literal
+---- @
+----    bit_string_literal ::= base_specifier " bit_value "
+----    bit_value ::= extended_digit { [ underline ] extended_digit }
+----    base_specified ::= B | O | X
+---- @
+---- Note: B, O, X are case insensitive.
+----       \\'%\\' can be used as a container instead of \\'\\"\\'
+---- Implemented as:
+---- @
+----    'genBitStr' ::= base_specifier base_container 'genExtendedStr' base_container
+----    base_specifier ::= B | b | O | o | X | x
+----    base_container ::= " | %
+----    'genExtendedStr' ::= extended_digit { 'genUnderscoreExtendedChar' }
+----    extended_digit ::= REGEX( [0-9a-fA-F] )
+---- @
+---- Note: Base containers must match
+----       Relevant base restricts range of regex (only full range for hex/base16)
+--genBitStr :: Char -> QC.Gen (GenPair Token)
+--genBitStr container = do
+--   base <- QC.elements [BinBased,OctBased,HexBased]
+--   baseChar <- QC.elements $ baseCharMap MapS.! base
+--   bitStr <- genExtendedStr base
+--   let expectedToken = Literal $ BitStr base $ ByteString.pack $ filter ((/=) '_') bitStr
+--       lexInput = [baseChar,container] ++ bitStr ++ [container]
+--   return $ GenPair lexInput $ expectedToken
+--   where baseCharMap =
+--            [ (BinBased,"Bb")
+--            , (OctBased,"Oo")
+--            , (HexBased,"Xx")
+--            ]
+--            & MapS.fromList
+--         genExtendedStr :: LiteralBase -> QC.Gen String
+--         genExtendedStr base = do
+--            let allowedChars = charMap MapS.! base
+--            firstChar <- QC.elements allowedChars
+--            lengthStr <- QC.elements [0..100]
+--            otherChars <- replicateM lengthStr $ genUnderscoreExtendedChar allowedChars
+--            return $ [firstChar] ++ (concat otherChars)
+--         charMap =
+--            [ (BinBased,"01")
+--            , (OctBased,['0'..'7'])
+--            , (HexBased,['0'..'9']++['A'..'F']++['a'..'f'])
+--            ]
+--            & MapS.fromList
+--
+---- |Generate latter part of VHDL specific bit_value (or based_integer)
+---- Part of VHDL bit string literal
+---- @
+----    bit_value ::= extended_digit { [ underline ] extended_digit }
+----    based_integer ::=
+----       extended_digit { [ underline ] extended_digit }
+---- @
+---- Implemented as:
+---- @
+----    'genUnderscoreExtendedChar' ::= [ _ ] extended_digit
+----    extended_digit ::= REGEX( [0-9a-fA-F] )
+---- @
+---- Note: Relevant base restricts range of regex (only full range for hex/base16)
+----       Regex range is actually passed into this function
+--genUnderscoreExtendedChar :: [Char] -> QC.Gen String
+--genUnderscoreExtendedChar allowedChars = do
+--   optionalUnderscore <- QC.elements [True,False]
+--   otherChar <- QC.elements allowedChars
+--   return $
+--      if optionalUnderscore then ['_',otherChar]
+--      else [otherChar]
 
 -- |Generate a VHDL specific identifier
 -- > identifier ::= letter { [ underline ] letter_or_digit }
@@ -219,13 +219,13 @@ genUnderscoreExtendedChar allowedChars = do
 --    'genIdentifier' ::= letter { 'genUnderscoreLetterOrDigit' }
 --    'genUnderscoreLetterOrDigit' ::= [ underline ] letter_or_digit
 -- @
-genIdentifier :: Int -> Int -> QC.Gen (GenPair Token)
+genIdentifier :: Int -> Int -> QC.Gen String
 genIdentifier fromLength toLength = do
    letter <- QC.elements letters
    lengthStr <- QC.elements [fromLength..toLength]
    otherLetters <- replicateM lengthStr genUnderscoreLetterOrDigit
    let identifier = (letter:concat otherLetters)
-   return $ GenPair identifier $ Identifier identifier
+   return identifier
    where letters = ['a'..'z'] ++ ['A'..'Z']
          letters_or_digits = ['0'..'9'] ++ letters
          genUnderscoreLetterOrDigit :: QC.Gen String
@@ -236,147 +236,147 @@ genIdentifier fromLength toLength = do
                if optionalUnderscore then ['_',letter_or_digit]
                else [letter_or_digit]
 
--- |Generate a VHDL specific decimal literal
--- Arguments: range of unit string, range of optional decimal part, whether exponent used
--- > decimal_literal ::= integer [ . integer ] [ exponent ]
-genDecimal :: (Int,Int) -> Maybe (Int,Int) -> Bool -> QC.Gen String
-genDecimal (unitsFrom,unitsTo) decimalRange includeExponent = do
-   intStr <- genInteger unitsFrom unitsTo
-   decStr <- case decimalRange of
-               Just (decsFrom,decsTo) -> do
-                  baseDecStr <- genInteger decsFrom decsTo
-                  return $ "." ++ baseDecStr
-               Nothing -> return ""
-   expStr <- if includeExponent then genExponent else return ""
-   return $ intStr ++ decStr ++ expStr
-
--- |Generate a VHDL keyword
-genKeyword :: QC.Gen (GenPair Token)
-genKeyword = do
-   keyword <- QC.elements keywords
-   let keywordLowerStr = show keyword & \(first:others) -> (toLower first:others)
-       genBool = QC.elements [True,False]
-   keywordBools <- replicateM (length keywordLowerStr) genBool
-   let lexInput = map chooseCase $ zip keywordBools keywordLowerStr
-   return $ GenPair lexInput $ Keyword keyword
-   where chooseCase (True,chr) = toUpper chr
-         chooseCase (False,chr) = chr
-         keywords =
-            [ Abs
-            , Access
-            , After
-            , Alias
-            , All
-            , And
-            , Architecture
-            , Array
-            , Assert
-            , Attribute
-            , Begin
-            , Block
-            , Body
-            , Buffer
-            , Bus
-            , Case
-            , Component
-            , Configuration
-            , Constant
-            , Disconnect
-            , Downto
-            , Else
-            , Elsif
-            , End
-            , Entity
-            , Exit
-            , File
-            , For
-            , Function
-            , Generate
-            , Generic
-            , Guarded
-            , If
-            , In
-            , Inout
-            , Is
-            , Label
-            , Library
-            , Linkage
-            , Loop
-            , Map
-            , Mod
-            , Nand
-            , New
-            , Next
-            , Nor
-            , Not
-            , Null
-            , Of
-            , On
-            , Open
-            , Or
-            , Others
-            , Out
-            , Package
-            , Port
-            , Procedure
-            , Process
-            , Range
-            , Record
-            , Register
-            , Rem
-            , Report
-            , Return
-            , Select
-            , Severity
-            , Signal
-            , Subtype
-            , Then
-            , To
-            , Transport
-            , Type
-            , Units
-            , Until
-            , Use
-            , Variable
-            , Wait
-            , When
-            , While
-            , With
-            , Xor
-            ]
-
-genDelimiter :: QC.Gen (GenPair [Token])
-genDelimiter =
-   let standardDelimiter = do
-         op <- QC.elements
-            [ Arrow
-            , DoubleStar
-            , VarAssign
-            , Inequality
-            , GreaterThanOrEqual
-            , SignAssign
-            , Box
-            , Ampersand
-            , Apostrophe
-            , LeftParen
-            , RightParen
-            , Star
-            , Plus
-            , Comma
-            , Hyphen
-            , Period
-            , Slash
-            , Colon
-            , Semicolon
-            , LessThan
-            , Equal
-            , GreaterThan
-            , Bar
-            ]
-         return $ GenPair (show op) [Operator op]
-       spaceDelimiter = do
-         length <- QC.choose (1,5)
-         let spaces = QC.elements "\t\n "
-         lexInput <- replicateM length spaces
-         return $ GenPair lexInput []
-   in QC.oneof [standardDelimiter,spaceDelimiter]
+---- |Generate a VHDL specific decimal literal
+---- Arguments: range of unit string, range of optional decimal part, whether exponent used
+---- > decimal_literal ::= integer [ . integer ] [ exponent ]
+--genDecimal :: (Int,Int) -> Maybe (Int,Int) -> Bool -> QC.Gen String
+--genDecimal (unitsFrom,unitsTo) decimalRange includeExponent = do
+--   intStr <- genInteger unitsFrom unitsTo
+--   decStr <- case decimalRange of
+--               Just (decsFrom,decsTo) -> do
+--                  baseDecStr <- genInteger decsFrom decsTo
+--                  return $ "." ++ baseDecStr
+--               Nothing -> return ""
+--   expStr <- if includeExponent then genExponent else return ""
+--   return $ intStr ++ decStr ++ expStr
+--
+---- |Generate a VHDL keyword
+--genKeyword :: QC.Gen (GenPair Token)
+--genKeyword = do
+--   keyword <- QC.elements keywords
+--   let keywordLowerStr = show keyword & \(first:others) -> (toLower first:others)
+--       genBool = QC.elements [True,False]
+--   keywordBools <- replicateM (length keywordLowerStr) genBool
+--   let lexInput = map chooseCase $ zip keywordBools keywordLowerStr
+--   return $ GenPair lexInput $ Keyword keyword
+--   where chooseCase (True,chr) = toUpper chr
+--         chooseCase (False,chr) = chr
+--         keywords =
+--            [ Abs
+--            , Access
+--            , After
+--            , Alias
+--            , All
+--            , And
+--            , Architecture
+--            , Array
+--            , Assert
+--            , Attribute
+--            , Begin
+--            , Block
+--            , Body
+--            , Buffer
+--            , Bus
+--            , Case
+--            , Component
+--            , Configuration
+--            , Constant
+--            , Disconnect
+--            , Downto
+--            , Else
+--            , Elsif
+--            , End
+--            , Entity
+--            , Exit
+--            , File
+--            , For
+--            , Function
+--            , Generate
+--            , Generic
+--            , Guarded
+--            , If
+--            , In
+--            , Inout
+--            , Is
+--            , Label
+--            , Library
+--            , Linkage
+--            , Loop
+--            , Map
+--            , Mod
+--            , Nand
+--            , New
+--            , Next
+--            , Nor
+--            , Not
+--            , Null
+--            , Of
+--            , On
+--            , Open
+--            , Or
+--            , Others
+--            , Out
+--            , Package
+--            , Port
+--            , Procedure
+--            , Process
+--            , Range
+--            , Record
+--            , Register
+--            , Rem
+--            , Report
+--            , Return
+--            , Select
+--            , Severity
+--            , Signal
+--            , Subtype
+--            , Then
+--            , To
+--            , Transport
+--            , Type
+--            , Units
+--            , Until
+--            , Use
+--            , Variable
+--            , Wait
+--            , When
+--            , While
+--            , With
+--            , Xor
+--            ]
+--
+--genDelimiter :: QC.Gen (GenPair [Token])
+--genDelimiter =
+--   let standardDelimiter = do
+--         op <- QC.elements
+--            [ Arrow
+--            , DoubleStar
+--            , VarAssign
+--            , Inequality
+--            , GreaterThanOrEqual
+--            , SignAssign
+--            , Box
+--            , Ampersand
+--            , Apostrophe
+--            , LeftParen
+--            , RightParen
+--            , Star
+--            , Plus
+--            , Comma
+--            , Hyphen
+--            , Period
+--            , Slash
+--            , Colon
+--            , Semicolon
+--            , LessThan
+--            , Equal
+--            , GreaterThan
+--            , Bar
+--            ]
+--         return $ GenPair (show op) [Operator op]
+--       spaceDelimiter = do
+--         length <- QC.choose (1,5)
+--         let spaces = QC.elements "\t\n "
+--         lexInput <- replicateM length spaces
+--         return $ GenPair lexInput []
+--   in QC.oneof [standardDelimiter,spaceDelimiter]

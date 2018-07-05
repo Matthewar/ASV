@@ -8,25 +8,50 @@ import Test.Tasty
 import qualified Test.Tasty.QuickCheck as QC
 
 import Data.Either (isLeft)
+import Data.Maybe (isNothing)
 import Text.Parsec (parse)
 import Text.Parsec.String (Parser)
+import Text.Regex
+         ( matchRegex
+         , mkRegexWithOpts
+         )
 
 import Parser.Combinators.Lex
 import Parser.Combinators.Lex.Internal
+import Parser.Types.Token (mkUpperString)
 
 import Types (ExpectedOutput(..))
+import Spec.Generators.LexElements (genIdentifier)
 
 -- |All tests for the module "Parser.Combinators.Lex"
 -- Includes tests for "Parser.Combinators.Lex.Internal"
 tests :: TestTree
 tests = testGroup "Lexical element combinator tests"
-   --[ identifiers
+   [ identifiers
    --, abstractLiterals
    --, characters
    --, strings
    --, bitStrings
-   [ internals
+   , internals
    ]
+
+-- |Tests for identifiers
+identifiers :: TestTree
+identifiers = testGroup "Identifiers"
+   [ validIdentifiers
+   , invalidIdentifiers
+   ]
+
+-- |Valid identifier tests
+validIdentifiers :: TestTree
+validIdentifiers = QC.testProperty "Valid identifiers" $
+   QC.forAll (genIdentifier 1 200) $ \iden -> (parse identifier "TEST" iden) == Right (mkUpperString iden)
+
+-- |Invalid identifier tests
+invalidIdentifiers :: TestTree
+invalidIdentifiers = QC.testProperty "Invalid identifiers" $
+   QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ \notIden -> isLeft $ parse identifier "TEST" notIden
+   where checkInvalid = isNothing . (matchRegex $ mkRegexWithOpts "^[a-zA-Z](_?[a-zA-Z0-9])*" True True)
 
 -- |Tests for internal functions from "Parser.Combinators.Lex.Internal"
 internals :: TestTree
