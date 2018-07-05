@@ -23,6 +23,7 @@ import Parser.Combinators.ReservedWords.Internal
 import Types (ExpectedOutput(..))
 
 -- |All tests for the module "Parser.Combinators.ReservedWords"
+-- Includes tests for "Parser.Combinators.ReservedWords.Internal"
 tests :: TestTree
 tests = testGroup "Reserved words"
    [ validReservedWords

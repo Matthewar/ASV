@@ -125,6 +125,7 @@ test-suite ASV-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   other-modules:       Spec.Parser.Types.Token
+                     , Spec.Parser.Combinators.Lex
                      , Spec.Parser.Combinators.ReservedWords
                      , Types
   --other-modules:       Lexer.Spec

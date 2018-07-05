@@ -105,7 +105,7 @@ spaceCharacter = char ' '
 -- |Parse a format effector
 -- Returns parsed character
 formatEffector :: Parser Char
-formatEffector = space
+formatEffector = oneOf ['\t','\v','\r','\n','\f']
 
 -- |Parse a lower case letter
 -- Returns parsed character
