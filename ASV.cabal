@@ -140,7 +140,7 @@ test-suite ASV-test
                      , tasty
                      , tasty-hunit
                      , tasty-quickcheck
-                     --, containers
+                     , containers
                      --, split
                      , bytestring
                      --, mtl

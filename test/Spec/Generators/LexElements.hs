@@ -8,23 +8,33 @@ module Spec.Generators.LexElements
    --, genInteger
    --, genExponent
    --, genBasedStr
-   --, genBitStr
-   ( genIdentifier
+   ( genBitStr
+   , genIdentifier
    --, genDecimal
    --, genKeyword
    --, genDelimiter
    ) where
 
 import qualified Test.Tasty.QuickCheck as QC
+
 --import Data.Function ((&))
---import qualified Data.Map.Strict as MapS
---import qualified Data.ByteString.Char8 as ByteString
+import qualified Data.Map.Strict as MapS
+import qualified Data.ByteString.Lazy.Char8 as B
 --import Data.Char
 --         ( toLower
 --         , toUpper
 --         )
 import Control.Monad
 
+import Types
+         ( ExpectedOutput(..)
+         , ParserExpectedOutput
+         )
+
+import Parser.Types.Token
+         ( BitString
+         , mkBitString
+         )
 --import Lexer.Types.Token
 --         ( Token(..)
 --         , ReservedWord(..)
@@ -143,74 +153,115 @@ import Control.Monad
 --            , ['0'..'9'] ++ ['a'..'e'] ++ ['A'..'E']
 --            , ['0'..'9'] ++ ['a'..'f'] ++ ['A'..'F']
 --            ]
---
----- |Generate a VHDL specific bit string literal
----- @
-----    bit_string_literal ::= base_specifier " bit_value "
-----    bit_value ::= extended_digit { [ underline ] extended_digit }
-----    base_specified ::= B | O | X
----- @
----- Note: B, O, X are case insensitive.
-----       \\'%\\' can be used as a container instead of \\'\\"\\'
----- Implemented as:
----- @
-----    'genBitStr' ::= base_specifier base_container 'genExtendedStr' base_container
-----    base_specifier ::= B | b | O | o | X | x
-----    base_container ::= " | %
-----    'genExtendedStr' ::= extended_digit { 'genUnderscoreExtendedChar' }
-----    extended_digit ::= REGEX( [0-9a-fA-F] )
----- @
----- Note: Base containers must match
-----       Relevant base restricts range of regex (only full range for hex/base16)
---genBitStr :: Char -> QC.Gen (GenPair Token)
---genBitStr container = do
---   base <- QC.elements [BinBased,OctBased,HexBased]
---   baseChar <- QC.elements $ baseCharMap MapS.! base
---   bitStr <- genExtendedStr base
---   let expectedToken = Literal $ BitStr base $ ByteString.pack $ filter ((/=) '_') bitStr
---       lexInput = [baseChar,container] ++ bitStr ++ [container]
---   return $ GenPair lexInput $ expectedToken
---   where baseCharMap =
---            [ (BinBased,"Bb")
---            , (OctBased,"Oo")
---            , (HexBased,"Xx")
---            ]
---            & MapS.fromList
---         genExtendedStr :: LiteralBase -> QC.Gen String
---         genExtendedStr base = do
---            let allowedChars = charMap MapS.! base
---            firstChar <- QC.elements allowedChars
---            lengthStr <- QC.elements [0..100]
---            otherChars <- replicateM lengthStr $ genUnderscoreExtendedChar allowedChars
---            return $ [firstChar] ++ (concat otherChars)
---         charMap =
---            [ (BinBased,"01")
---            , (OctBased,['0'..'7'])
---            , (HexBased,['0'..'9']++['A'..'F']++['a'..'f'])
---            ]
---            & MapS.fromList
---
----- |Generate latter part of VHDL specific bit_value (or based_integer)
----- Part of VHDL bit string literal
----- @
-----    bit_value ::= extended_digit { [ underline ] extended_digit }
-----    based_integer ::=
-----       extended_digit { [ underline ] extended_digit }
----- @
----- Implemented as:
----- @
-----    'genUnderscoreExtendedChar' ::= [ _ ] extended_digit
-----    extended_digit ::= REGEX( [0-9a-fA-F] )
----- @
----- Note: Relevant base restricts range of regex (only full range for hex/base16)
-----       Regex range is actually passed into this function
---genUnderscoreExtendedChar :: [Char] -> QC.Gen String
---genUnderscoreExtendedChar allowedChars = do
---   optionalUnderscore <- QC.elements [True,False]
---   otherChar <- QC.elements allowedChars
---   return $
---      if optionalUnderscore then ['_',otherChar]
---      else [otherChar]
+
+-- |Potential bit string bases
+data Base =
+   -- |Binary base bit string
+   Base_B
+   -- |Octal base bit string
+   | Base_O
+   -- |Hexadecimal base bit string
+   | Base_X
+   deriving (Eq,Ord)
+
+instance QC.Arbitrary Base where
+   arbitrary = QC.elements [Base_B,Base_O,Base_X]
+
+-- |Generate a VHDL specific bit string literal
+-- @
+--    bit_string_literal ::= base_specifier " bit_value "
+--    bit_value ::= extended_digit { [ underline ] extended_digit }
+--    base_specified ::= B | O | X
+-- @
+-- Note: B, O, X are case insensitive.
+--       \\'%\\' can be used as a container instead of \\'\\"\\'
+-- Implemented as:
+-- @
+--    'genBitStr' ::= base_specifier base_container 'genExtendedStr' base_container
+--    base_specifier ::= B | b | O | o | X | x
+--    base_container ::= " | %
+--    'genExtendedStr' ::= extended_digit { 'genUnderscoreExtendedChar' }
+--    extended_digit ::= REGEX( [0-9a-fA-F] )
+-- @
+-- Note: Base containers must match
+--       Relevant base restricts range of regex (only full range for hex/base16)
+genBitStr :: QC.Gen (ParserExpectedOutput BitString)
+genBitStr = do
+   container <- QC.elements ['"','%']
+   base <- QC.arbitrary
+   baseChar <- QC.elements $ baseCharMap MapS.! base
+   bitStr <- genExtendedStr base
+   let expectedOutput = mkBitString $ concat $ map (convertToBitString base) bitStr
+       parseInput = [baseChar,container] ++ bitStr ++ [container]
+   return $ ExpectedOutput parseInput expectedOutput
+   where baseCharMap = MapS.fromList
+            [ (Base_B,"Bb")
+            , (Base_O,"Oo")
+            , (Base_X,"Xx")
+            ]
+         genExtendedStr :: Base -> QC.Gen String
+         genExtendedStr base = do
+            let allowedChars = charMap MapS.! base
+            firstChar <- QC.elements allowedChars
+            lengthStr <- QC.elements [0..100]
+            otherChars <- replicateM lengthStr $ genUnderscoreExtendedChar allowedChars
+            return $ [firstChar] ++ (concat otherChars)
+         charMap = MapS.fromList
+            [ (Base_B,"01")
+            , (Base_O,['0'..'7'])
+            , (Base_X,['0'..'9']++['A'..'F']++['a'..'f'])
+            ]
+         convertToBitString :: Base -> Char -> String
+         convertToBitString _ '_' = ""
+         convertToBitString Base_B '0' = "0"
+         convertToBitString Base_B '1' = "1"
+         convertToBitString Base_O '0' = "000"
+         convertToBitString Base_O '1' = "001"
+         convertToBitString Base_O '2' = "010"
+         convertToBitString Base_O '3' = "011"
+         convertToBitString Base_O '4' = "100"
+         convertToBitString Base_O '5' = "101"
+         convertToBitString Base_O '6' = "110"
+         convertToBitString Base_O '7' = "111"
+         convertToBitString Base_X '0' = "0000"
+         convertToBitString Base_X '1' = "0001"
+         convertToBitString Base_X '2' = "0010"
+         convertToBitString Base_X '3' = "0011"
+         convertToBitString Base_X '4' = "0100"
+         convertToBitString Base_X '5' = "0101"
+         convertToBitString Base_X '6' = "0110"
+         convertToBitString Base_X '7' = "0111"
+         convertToBitString Base_X '8' = "1000"
+         convertToBitString Base_X '9' = "1001"
+         convertToBitString Base_X chr
+            | elem chr "Aa" = "1010"
+            | elem chr "Bb" = "1011"
+            | elem chr "Cc" = "1100"
+            | elem chr "Dd" = "1101"
+            | elem chr "Ee" = "1110"
+            | elem chr "Ff" = "1111"
+
+-- |Generate latter part of VHDL specific bit_value (or based_integer)
+-- Part of VHDL bit string literal
+-- @
+--    bit_value ::= extended_digit { [ underline ] extended_digit }
+--    based_integer ::=
+--       extended_digit { [ underline ] extended_digit }
+-- @
+-- Implemented as:
+-- @
+--    'genUnderscoreExtendedChar' ::= [ _ ] extended_digit
+--    extended_digit ::= REGEX( [0-9a-fA-F] )
+-- @
+-- Note: Relevant base restricts range of regex (only full range for hex/base16)
+--       Regex range is actually passed into this function
+genUnderscoreExtendedChar :: [Char] -> QC.Gen String
+genUnderscoreExtendedChar allowedChars = do
+   optionalUnderscore <- QC.elements [True,False]
+   otherChar <- QC.elements allowedChars
+   return $
+      if optionalUnderscore then ['_',otherChar]
+      else [otherChar]
 
 -- |Generate a VHDL specific identifier
 -- > identifier ::= letter { [ underline ] letter_or_digit }

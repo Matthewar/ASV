@@ -306,7 +306,7 @@ stringLiteral =
 -- - Extended digit is case insensitive
 bitStringLiteral :: Parser BitString
 bitStringLiteral =
-   bitStringLiteral' '"'
+   try (bitStringLiteral' '"')
    <|> bitStringLiteral' '%'
    where bitStringLiteral' :: Char -> Parser BitString
          bitStringLiteral' container =
@@ -341,11 +341,11 @@ bitStringLiteral =
          hexDigitMap '9' = "1001"
          hexDigitMap chr
             | elem chr "Aa" = "1010"
-            | elem chr "Bb" = "0011"
-            | elem chr "Cc" = "0100"
-            | elem chr "Dd" = "0101"
-            | elem chr "Ee" = "0110"
-            | elem chr "Ff" = "0111"
+            | elem chr "Bb" = "1011"
+            | elem chr "Cc" = "1100"
+            | elem chr "Dd" = "1101"
+            | elem chr "Ee" = "1110"
+            | elem chr "Ff" = "1111"
          baseString :: Parser Char -> Parser Char -> (Char -> String) -> Char -> Parser BitString
          baseString baseChar extendedDigit digitToBinary container =
             (mkBitString . concat . (map digitToBinary))

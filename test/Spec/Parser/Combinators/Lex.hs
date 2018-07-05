@@ -25,7 +25,10 @@ import Types
          ( ExpectedOutput(..)
          , ParserExpectedOutput
          )
-import Spec.Generators.LexElements (genIdentifier)
+import Spec.Generators.LexElements
+         ( genBitStr
+         , genIdentifier
+         )
 
 -- |All tests for the module "Parser.Combinators.Lex"
 -- Includes tests for "Parser.Combinators.Lex.Internal"
@@ -35,7 +38,7 @@ tests = testGroup "Lexical element combinator tests"
    --, abstractLiterals
    , characters
    , strings
-   --, bitStrings
+   , bitStrings
    , internals
    ]
 
@@ -111,6 +114,18 @@ invalidStrings = QC.testProperty "Invalid string literals" $
             | elem chr allGraphicCharacters = checkString container rest
             | otherwise = True
          checkString _ [] = True
+
+-- |Test for bit string literals
+bitStrings :: TestTree
+bitStrings = testGroup "Bit string literals"
+   [ validBitStrings
+   --, invalidBitStrings
+   ]
+
+-- |Tests for valid bit string literals
+validBitStrings :: TestTree
+validBitStrings = QC.testProperty "Valid bit string literals" $
+   QC.forAll genBitStr $ \(ExpectedOutput input expectedOutput) -> (parse bitStringLiteral "TEST" input) == Right expectedOutput
 
 -- |Tests for internal functions from "Parser.Combinators.Lex.Internal"
 internals :: TestTree
