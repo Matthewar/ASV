@@ -15,72 +15,78 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lexer.Lexer
+  exposed-modules:     Parser.Combinators.Lex
+                     , Parser.Combinators.ReservedWords
+                     , Parser.Types.Token
+                     , Parser.Types.Token.Internal
+                     , Parser.Types.Tree
+                     --, Parser.Functions.Tree
+
+  --exposed-modules:     Lexer.Lexer
                      , Lexer.Alex.Types
-                     , Lexer.Alex.Functions
+                     --, Lexer.Alex.Functions
                      , Lexer.Types.Token
-                     , Lexer.Types.Monad
+                     --, Lexer.Types.Monad
                      , Lexer.Types.PositionWrapper
-                     , Lexer.Types.Error
-                     , Lexer.Functions.Lex
-                     , Lexer.Functions.PositionWrapper
-                     --, Parser.Parser
-                     , Parser.Types.Monad
-                     , Parser.Functions.Monad
-                     , Parser.Types.Expressions
-                     , Parser.Functions.Expressions
-                     , Parser.Functions.IdentifyToken
-                     , Parser.Functions.IdentifyName
-                     , Parser.Functions.Parse.DesignFile
-                     , Parser.Functions.Parse.Context
-                     , Parser.Functions.Parse.Library
-                     , Parser.Functions.Parse.Package
-                     , Parser.Functions.Parse.Entity
-                     , Parser.Functions.Parse.Architecture
-                     , Parser.Functions.Parse.Type
-                     , Parser.Functions.Parse.Subtype
-                     , Parser.Functions.Parse.Expression
-                     , Parser.Functions.Parse.Objects
-                     , Parser.Functions.Parse.Process
-                     , Parser.Functions.Parse.SequentialStatements
-                     , Parser.Functions.Convert.Scope
-                     , Parser.Netlist.Types.Representation
-                     , Parser.Netlist.Types.Stores
-                     , Parser.Netlist.Types.Scope
-                     , Parser.Netlist.Types.Operators
-                     , Parser.Netlist.Types.Monad
-                     , Parser.Netlist.Types.Error
-                     , Parser.Netlist.Functions.Representation
-                     , Parser.Netlist.Functions.Stores
-                     , Parser.Netlist.Builtin.Netlist
-                     , Parser.Netlist.Builtin.Standard
-                     --, Parser.Happy.Types
-                     --, Parser.Happy.Functions
-                     --, Parser.Happy.ParseFunctions
-                     , Sim.Functions.ConvertNames
-                     , Sim.Output.Top
-                     , Sim.Output.Control
-                     , Sim.Output.Components
-                     , Sim.Output.Entities
-                     , Sim.Output.Architectures
-                     , Sim.Output.Packages
-                     , Sim.Output.Imports
-                     , Sim.Output.Types
-                     , Sim.Output.Subtypes
-                     , Sim.Output.Constants
-                     , Sim.Output.Processes
-                     , Sim.Output.Cabal
-                     , Sim.Output.Names
-                     , Sim.Types.Error
-                     , Sim.Builtin.STD.STANDARD
-                     , Sim.Builtin.ControlModule
-                     , Sim.Builtin.MainModule
-                     , Sim.Builtin.Stack
-                     , Sim.Builtin.Cabal
-                     , Manager.NewDesignUnit
+                     --, Lexer.Types.Error
+                     --, Lexer.Functions.Lex
+                     --, Lexer.Functions.PositionWrapper
+                     ----, Parser.Parser
+                     --, Parser.Types.Monad
+                     --, Parser.Functions.Monad
+                     --, Parser.Types.Expressions
+                     --, Parser.Functions.Expressions
+                     --, Parser.Functions.IdentifyToken
+                     --, Parser.Functions.IdentifyName
+                     --, Parser.Functions.Parse.DesignFile
+                     --, Parser.Functions.Parse.Context
+                     --, Parser.Functions.Parse.Library
+                     --, Parser.Functions.Parse.Package
+                     --, Parser.Functions.Parse.Entity
+                     --, Parser.Functions.Parse.Architecture
+                     --, Parser.Functions.Parse.Type
+                     --, Parser.Functions.Parse.Subtype
+                     --, Parser.Functions.Parse.Expression
+                     --, Parser.Functions.Parse.Objects
+                     --, Parser.Functions.Parse.Process
+                     --, Parser.Functions.Parse.SequentialStatements
+                     --, Parser.Functions.Convert.Scope
+                     --, Parser.Netlist.Types.Representation
+                     --, Parser.Netlist.Types.Stores
+                     --, Parser.Netlist.Types.Scope
+                     --, Parser.Netlist.Types.Operators
+                     --, Parser.Netlist.Types.Monad
+                     --, Parser.Netlist.Types.Error
+                     --, Parser.Netlist.Functions.Representation
+                     --, Parser.Netlist.Functions.Stores
+                     --, Parser.Netlist.Builtin.Netlist
+                     --, Parser.Netlist.Builtin.Standard
+
+                     --, Sim.Functions.ConvertNames
+                     --, Sim.Output.Top
+                     --, Sim.Output.Control
+                     --, Sim.Output.Components
+                     --, Sim.Output.Entities
+                     --, Sim.Output.Architectures
+                     --, Sim.Output.Packages
+                     --, Sim.Output.Imports
+                     --, Sim.Output.Types
+                     --, Sim.Output.Subtypes
+                     --, Sim.Output.Constants
+                     --, Sim.Output.Processes
+                     --, Sim.Output.Cabal
+                     --, Sim.Output.Names
+                     --, Sim.Types.Error
+                     --, Sim.Builtin.STD.STANDARD
+                     --, Sim.Builtin.ControlModule
+                     --, Sim.Builtin.MainModule
+                     --, Sim.Builtin.Stack
+                     --, Sim.Builtin.Cabal
+                     --, Manager.NewDesignUnit
                      , Manager.Args
-                     , Manager.Filing
-                     , Manager.Types.Error
+                     --, Manager.Filing
+                     --, Manager.Types.Error
+
                      --, Netlister.ParseTree
                      --, Netlister.Parse.Objects
   build-depends:       base >= 4.7 && < 5
@@ -95,42 +101,48 @@ library
                      , bimap
                      , filepath
                      , text
+                     , parsec
   build-tools:         alex
   default-language:    Haskell2010
 
-executable asv
-  hs-source-dirs:      app
-  main-is:             Main.hs
---  other-modules:       
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       base
-                     , ASV
-                     , array
-                     , split
-                     , optparse-applicative
-  default-language:    Haskell2010
+--executable asv
+--  hs-source-dirs:      app
+--  main-is:             Main.hs
+----  other-modules:       
+--  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+--  build-depends:       base
+--                     , ASV
+--                     , array
+--                     , split
+--                     , optparse-applicative
+--                     , parsec
+--  default-language:    Haskell2010
 
 test-suite ASV-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       Lexer.Spec
-                     , Lexer.Functions
-                     , Lexer.SingleWords
-                     , Lexer.Sentences
-                     , Generators.LexElements
-                     , Parser.Spec
+  other-modules:       Spec.Parser.Types.Token
+                     , Spec.Parser.Combinators.ReservedWords
+                     , Types
+  --other-modules:       Lexer.Spec
+  --                   , Lexer.Functions
+  --                   , Lexer.SingleWords
+  --                   , Lexer.Sentences
+  --                   , Generators.LexElements
+  --                   , Parser.Spec
                      --, Generators.ParseElements
   build-depends:       base
                      , ASV
                      , tasty
                      , tasty-hunit
                      , tasty-quickcheck
-                     , containers
-                     , split
+                     --, containers
+                     --, split
                      , bytestring
-                     , mtl
-                     , transformers
+                     --, mtl
+                     --, transformers
+                     , parsec
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 

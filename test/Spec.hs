@@ -2,8 +2,8 @@ module Main (main) where
 
 import Test.Tasty
 
-import qualified Lexer.Spec
-import qualified Parser.Spec
+import qualified Spec.Parser.Types.Token
+import qualified Spec.Parser.Combinators.ReservedWords
 
 main :: IO ()
 main = defaultMain tests
@@ -11,6 +11,12 @@ main = defaultMain tests
 -- |Top level test group
 tests :: TestTree
 tests = testGroup "Top level test group"
-   [ Lexer.Spec.tests
-   , Parser.Spec.tests
+   [ parserTests
+   ]
+
+-- |Tests for the "Parser" module
+parserTests :: TestTree
+parserTests = testGroup "Parser tests"
+   [ Spec.Parser.Types.Token.tests
+   , Spec.Parser.Combinators.ReservedWords.tests
    ]

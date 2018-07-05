@@ -1,4 +1,8 @@
-module Parser.Happy.Types where
+{-|
+   Module      : Parser.Types.Tree
+   Description : Types for the parse tree nodes
+|-}
+module Parser.Types.Tree where
 
 import Data.Int (Int64)
 import Data.ByteString.Char8 (ByteString)

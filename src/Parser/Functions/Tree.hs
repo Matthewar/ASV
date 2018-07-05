@@ -1,8 +1,8 @@
 {-|
-   Module      : Parser.Happy.ParseFunctions
-   Description : Functions that Happy will use to generate nodes
+   Module      : Parser.Functions.Tree
+   Description : Functions that ASV uses to generate nodes
 |-}
-module Parser.Happy.ParseFunctions where
+module Parser.Functions.Tree where
 
 import Data.Int (Int64)
 import Data.ByteString.Char8 (ByteString)
@@ -10,7 +10,8 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Lexer.Types.Token as Tokens
 import Lexer.Types.Token (Token, WrappedToken)
 import Lexer.Types.PositionWrapper
-import Parser.Happy.Types
+import Lexer.Functions.PositionWrapper
+import Parser.Types.Tree
 
 ------------------------------------------
 -- Design Units
