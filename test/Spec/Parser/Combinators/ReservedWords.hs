@@ -177,7 +177,7 @@ validInsensitiveChar = QC.testProperty "Case insensitive characters with valid i
 -- |Tests for invalid insensitive character parsing
 invalidInsensitiveChar :: TestTree
 invalidInsensitiveChar = QC.testProperty "Case insensitive characters with incorrect input" $
-   QC.forAll (QC.suchThat QC.arbitrary (\a -> fst a /= snd a)) $ \(char1,char2) -> isLeft $ parse (caseInsensitiveChar char1) "TEST" [char2]
+   QC.forAll (QC.suchThat QC.arbitrary (\a -> (toLower $ fst a) /= (toLower $ snd a))) $ \(char1,char2) -> isLeft $ parse (caseInsensitiveChar char1) "TEST" [char2]
 
 -- |Tests for valid word parsing
 validkeywordParser :: TestTree
