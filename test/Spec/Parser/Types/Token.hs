@@ -16,11 +16,10 @@ import Data.Char (toUpper)
 import Parser.Types.Token
 import Parser.Types.Token.Internal
 
-import Types (ExpectedOutput(..))
-
--- |Parser expected output type
--- Input will always be 'String'
-type ParserExpectedOutput a = ExpectedOutput String a
+import Types
+         ( ExpectedOutput(..)
+         , ParserExpectedOutput
+         )
 
 -- |Tests for module "Parser.Types.Token"
 -- Uses internal components in "Parser.Types.Token.Internal"

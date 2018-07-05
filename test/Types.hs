@@ -4,6 +4,7 @@
 |-}
 module Types
    ( ExpectedOutput(..)
+   , ParserExpectedOutput
    ) where
 
 data (Show a) => ExpectedOutput a b =
@@ -14,3 +15,7 @@ data (Show a) => ExpectedOutput a b =
 
 instance Show a => Show (ExpectedOutput a b) where
    show (ExpectedOutput input _) = show input
+
+-- |Parser expected output type
+-- Input will always be 'String'
+type ParserExpectedOutput a = ExpectedOutput String a

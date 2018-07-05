@@ -7,6 +7,7 @@ module Spec.Parser.Combinators.Lex (tests) where
 import Test.Tasty
 import qualified Test.Tasty.QuickCheck as QC
 
+import Control.Monad (replicateM)
 import Data.Either (isLeft)
 import Data.Maybe (isNothing)
 import Text.Parsec (parse)
@@ -20,7 +21,10 @@ import Parser.Combinators.Lex
 import Parser.Combinators.Lex.Internal
 import Parser.Types.Token (mkUpperString)
 
-import Types (ExpectedOutput(..))
+import Types
+         ( ExpectedOutput(..)
+         , ParserExpectedOutput
+         )
 import Spec.Generators.LexElements (genIdentifier)
 
 -- |All tests for the module "Parser.Combinators.Lex"
@@ -71,6 +75,41 @@ invalidCharacters = QC.testProperty "Invalid character literals" $
    QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ \input -> isLeft $ parse characterLiteral "TEST" input
    where checkInvalid ('\'':char:'\'':_) = not $ elem char allGraphicCharacters
          checkInvalid _ = True
+
+-- |String literal tests
+strings :: TestTree
+strings = testGroup "String literals"
+   [ validStrings
+   , invalidStrings
+   ]
+
+-- |Valid string literal tests
+validStrings :: TestTree
+validStrings = QC.testProperty "Valid string literals" $
+   QC.forAll genString $ \(ExpectedOutput input expectedOutput) -> (parse stringLiteral "TEST" input) == Right expectedOutput
+   where genString :: QC.Gen (ParserExpectedOutput String)
+         genString = do
+            container <- QC.elements ['"','%']
+            stringLength <- QC.choose (1,200)
+            expectedOutput <- replicateM stringLength $ QC.elements allGraphicCharacters
+            let sanitiseString chr
+                  | chr == container = replicate 2 container
+                  | otherwise = replicate 2 chr
+                input = container : (concat $ map sanitiseString expectedOutput) ++ [container]
+            return $ ExpectedOutput input expectedOutput
+
+-- |Invalid string literal tests
+invalidStrings :: TestTree
+invalidStrings = QC.testProperty "Invalid string literals" $
+   QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ \input -> isLeft $ parse stringLiteral "TEST" input
+   where checkInvalid ('%':rest) = checkString '%' rest
+         checkInvalid ('"':rest) = checkString '"' rest
+         checkInvalid [] = False
+         checkString container (chr:rest)
+            | chr == container = False
+            | elem chr allGraphicCharacters = checkString container rest
+            | otherwise = True
+         checkString _ [] = True
 
 -- |Tests for internal functions from "Parser.Combinators.Lex.Internal"
 internals :: TestTree
