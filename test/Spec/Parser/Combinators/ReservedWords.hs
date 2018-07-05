@@ -190,4 +190,8 @@ validkeywordParser = QC.testProperty "Test keyword parser for valid inputs" $
 -- |Tests for failing word parsing
 invalidkeywordParser :: TestTree
 invalidkeywordParser = QC.testProperty "Test keyword parser for invalid inputs" $
-   QC.forAll (QC.suchThat QC.arbitrary $ \a -> not $ null $ fst a) $ \(str1,str2) -> isLeft $ parse (keywordParser str1) "TEST" str2
+   QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ \(str1,str2) -> isLeft $ parse (keywordParser str1) "TEST" str2
+   where checkInvalid ([],_) = False
+         checkInvalid (a,b) =
+            let fixedCase = map toLower
+            in fixedCase a /= fixedCase b
