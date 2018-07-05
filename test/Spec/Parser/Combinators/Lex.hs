@@ -119,13 +119,19 @@ invalidStrings = QC.testProperty "Invalid string literals" $
 bitStrings :: TestTree
 bitStrings = testGroup "Bit string literals"
    [ validBitStrings
-   --, invalidBitStrings
+   , invalidBitStrings
    ]
 
 -- |Tests for valid bit string literals
 validBitStrings :: TestTree
 validBitStrings = QC.testProperty "Valid bit string literals" $
    QC.forAll genBitStr $ \(ExpectedOutput input expectedOutput) -> (parse bitStringLiteral "TEST" input) == Right expectedOutput
+
+invalidBitStrings :: TestTree
+invalidBitStrings = QC.testProperty "Invalid bit string literals" $
+   QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ \input -> isLeft $ parse bitStringLiteral "TEST" input
+   where checkInvalid = isNothing . (matchRegex $ mkRegexWithOpts regexString True True)
+         regexString = "^([Bb][\"][01](_?[01])*[\"]|[Bb]%[01](_?[01])*%|[Oo][\"][0-7](_?[0-7])*[\"]|[Oo]%[0-7](_?[0-7])*%|[Xx][\"][0-9a-fA-F](_?[0-9a-fA-F])*[\"]|[Xx]%[0-9a-fA-F](_?[0-9a-fA-F])*%)"
 
 -- |Tests for internal functions from "Parser.Combinators.Lex.Internal"
 internals :: TestTree
