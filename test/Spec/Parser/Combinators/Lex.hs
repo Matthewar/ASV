@@ -34,7 +34,7 @@ tests = testGroup "Lexical element combinator tests"
    [ identifiers
    --, abstractLiterals
    , characters
-   --, strings
+   , strings
    --, bitStrings
    , internals
    ]
@@ -94,7 +94,7 @@ validStrings = QC.testProperty "Valid string literals" $
             expectedOutput <- replicateM stringLength $ QC.elements allGraphicCharacters
             let sanitiseString chr
                   | chr == container = replicate 2 container
-                  | otherwise = replicate 2 chr
+                  | otherwise = [chr]
                 input = container : (concat $ map sanitiseString expectedOutput) ++ [container]
             return $ ExpectedOutput input expectedOutput
 
@@ -105,6 +105,7 @@ invalidStrings = QC.testProperty "Invalid string literals" $
    where checkInvalid ('%':rest) = checkString '%' rest
          checkInvalid ('"':rest) = checkString '"' rest
          checkInvalid [] = False
+         checkInvalid _ = True
          checkString container (chr:rest)
             | chr == container = False
             | elem chr allGraphicCharacters = checkString container rest

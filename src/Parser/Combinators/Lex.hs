@@ -233,7 +233,7 @@ stringLiteral =
    where stringLiteral' :: Char -> Parser String
          stringLiteral' container =
             char container
-            *> some (validGraphicChars container)
+            *> some (try $ validGraphicChars container)
             <* char container
          validGraphicChars container =
             (string (replicate 2 container) *> return container)
