@@ -29,7 +29,7 @@ tests :: TestTree
 tests = testGroup "Lexical element combinator tests"
    [ identifiers
    --, abstractLiterals
-   --, characters
+   , characters
    --, strings
    --, bitStrings
    , internals
@@ -53,6 +53,25 @@ invalidIdentifiers = QC.testProperty "Invalid identifiers" $
    QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ \notIden -> isLeft $ parse identifier "TEST" notIden
    where checkInvalid = isNothing . (matchRegex $ mkRegexWithOpts "^[a-zA-Z](_?[a-zA-Z0-9])*" True True)
 
+-- |Character literal tests
+characters :: TestTree
+characters = testGroup "Character literals" $
+   [ validCharacters
+   , invalidCharacters
+   ]
+
+-- |Valid character literal tests
+validCharacters :: TestTree
+validCharacters = QC.testProperty "Valid character literals" $
+   QC.forAll (QC.elements allGraphicCharacters) $ \char -> (parse characterLiteral "TEST" ['\'',char,'\'']) == Right char
+
+-- |Invalid character literal tests
+invalidCharacters :: TestTree
+invalidCharacters = QC.testProperty "Invalid character literals" $
+   QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ \input -> isLeft $ parse characterLiteral "TEST" input
+   where checkInvalid ('\'':char:'\'':_) = not $ elem char allGraphicCharacters
+         checkInvalid _ = True
+
 -- |Tests for internal functions from "Parser.Combinators.Lex.Internal"
 internals :: TestTree
 internals = testGroup "Internal module tests"
@@ -68,12 +87,17 @@ internals = testGroup "Internal module tests"
    ]
 
 -- |Tests for graphical characters
+-- See 'allGraphicCharacters'
+graphicCharacters :: TestTree
+graphicCharacters = charTest allGraphicCharacters "Graphic characters" graphicCharacter
+
+-- |All valid graphic characters
 -- Graphics characters include:
 -- - 'allBasicGraphicCharacters'
 -- - 'allLowerCase'
 -- - 'allOtherSpecialCharacters'
-graphicCharacters :: TestTree
-graphicCharacters = charTest (allBasicGraphicCharacters ++ allLowerCase ++ allOtherSpecialCharacters) "Graphic characters" graphicCharacter
+allGraphicCharacters :: [Char]
+allGraphicCharacters = allBasicGraphicCharacters ++ allLowerCase ++ allOtherSpecialCharacters
 
 -- |Tests for basic graphical characters
 -- See 'allBasicGraphicCharacters'
