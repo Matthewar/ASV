@@ -11,12 +11,14 @@ import Control.Monad (replicateM)
 import Data.Char
          ( toUpper
          , toLower
+         , isAlphaNum
          )
 import Data.Either (isLeft)
 import Text.Parsec (parse)
 import Text.Parsec.String (Parser)
 
 import Parser.Combinators.ReservedWords
+import Parser.Combinators.ReservedWords.Internal
 
 import Types (ExpectedOutput(..))
 
@@ -25,6 +27,7 @@ tests :: TestTree
 tests = testGroup "Reserved words"
    [ validReservedWords
    , invalidReservedWords
+   , internalFunctions
    ]
 
 -- |Tests for all reserved words
@@ -154,3 +157,36 @@ genCaseInsensitiveWord word = do
    return lexInput
    where chooseCase (True,chr) = toUpper chr
          chooseCase (False,chr) = toLower chr
+
+-- |Tests for internal reserved word parsing functions
+-- "Parser.Combinators.ReservedWords.Internal"
+internalFunctions :: TestTree
+internalFunctions = testGroup "Internal functions"
+   [ validInsensitiveChar
+   , invalidInsensitiveChar
+   , validkeywordParser
+   , invalidkeywordParser
+   ]
+
+-- |Tests for valid insensitive character parsing
+validInsensitiveChar :: TestTree
+validInsensitiveChar = QC.testProperty "Case insensitive characters with valid input" $
+   QC.forAll QC.arbitrary $ \char -> (parse (caseInsensitiveChar char) "TEST" [char]) == Right (toUpper char)
+
+-- |Tests for invalid insensitive character parsing
+invalidInsensitiveChar :: TestTree
+invalidInsensitiveChar = QC.testProperty "Case insensitive characters with incorrect input" $
+   QC.forAll (QC.suchThat QC.arbitrary (\a -> fst a /= snd a)) $ \(char1,char2) -> isLeft $ parse (caseInsensitiveChar char1) "TEST" [char2]
+
+-- |Tests for valid word parsing
+validkeywordParser :: TestTree
+validkeywordParser = QC.testProperty "Test keyword parser for valid inputs" $
+   QC.forAll (QC.suchThat QC.arbitrary constraint) $ \(str1,str2) -> (parse (keywordParser str1) "TEST" (str1 ++ str2)) == Right ()
+   where constraint (_:_,a:_) = not (isAlphaNum a || a == '_')
+         constraint ([],_) = False
+         constraint _ = True
+
+-- |Tests for failing word parsing
+invalidkeywordParser :: TestTree
+invalidkeywordParser = QC.testProperty "Test keyword parser for invalid inputs" $
+   QC.forAll (QC.suchThat QC.arbitrary $ \a -> not $ null $ fst a) $ \(str1,str2) -> isLeft $ parse (keywordParser str1) "TEST" str2

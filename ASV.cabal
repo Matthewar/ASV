@@ -16,7 +16,9 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Parser.Combinators.Lex
+                     , Parser.Combinators.Lex.Internal
                      , Parser.Combinators.ReservedWords
+                     , Parser.Combinators.ReservedWords.Internal
                      , Parser.Types.Token
                      , Parser.Types.Token.Internal
                      , Parser.Types.Tree
