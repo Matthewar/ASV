@@ -13,8 +13,13 @@ data (Show a) => ExpectedOutput a b =
       , expectedOutput :: b
       }
 
-instance Show a => Show (ExpectedOutput a b) where
-   show (ExpectedOutput input _) = show input
+instance (Show a,Show b) => Show (ExpectedOutput a b) where
+   show (ExpectedOutput input expectedOutput) =
+      "Input: \""
+      ++ show input
+      ++ "\"; Output: \""
+      ++ show expectedOutput
+      ++ "\""
 
 -- |Parser expected output type
 -- Input will always be 'String'
