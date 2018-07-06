@@ -91,13 +91,13 @@ basicDecimals = QC.testProperty "Basic integer decimal literals" $
 -- |Tests for valid decimal literals
 validDecimals :: TestTree
 validDecimals = testGroup "Valid decimal literals"
-   [ validIntegers
+   [ validDecimalIntegers
    --, validReals
    ]
 
 -- |Tests for decimal literals that parse to integers
-validIntegers :: TestTree
-validIntegers = QC.testProperty "Valid integer-kind decimal literals" $
+validDecimalIntegers :: TestTree
+validDecimalIntegers = QC.testProperty "Valid integer-kind decimal literals" $
    QC.forAll genInteger $ \(ExpectedOutput input expectedOutput) -> (parse abstractLiteral "TEST" input) == Right (UniversalInteger expectedOutput)
    where genInteger :: QC.Gen (ParserExpectedOutput Int64)
          genInteger = do
