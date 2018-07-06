@@ -75,7 +75,7 @@ abstractLiterals = testGroup "Abstract literals"
 decimalLiterals :: TestTree
 decimalLiterals = testGroup "Decimal literals"
    [ basicDecimals
-   --, validDecimals
+   , validDecimals
    --, invalidDecimals
    ]
 
@@ -87,6 +87,37 @@ basicDecimals = QC.testProperty "Basic integer decimal literals" $
       in if int > toInteger (maxBound :: Int64)
             then isLeft output
             else output == Right (UniversalInteger $ fromInteger int)
+
+-- |Tests for valid decimal literals
+validDecimals :: TestTree
+validDecimals = testGroup "Valid decimal literals"
+   [ validIntegers
+   --, validReals
+   ]
+
+-- |Tests for decimal literals that parse to integers
+validIntegers :: TestTree
+validIntegers = QC.testProperty "Valid integer-kind decimal literals" $
+   QC.forAll genInteger $ \(ExpectedOutput input expectedOutput) -> (parse abstractLiteral "TEST" input) == Right (UniversalInteger expectedOutput)
+   where genInteger :: QC.Gen (ParserExpectedOutput Int64)
+         genInteger = do
+            let maxValue = floor $ 2.0 ^^ 53 -- Max value with 1.0 integer precision
+            expectedOutput <- QC.suchThat QC.arbitrary (\val -> val >= 0 && val <= maxValue)
+            let valueStr = show expectedOutput
+                maxValueLength = length $ show maxValue
+                valueLength = length valueStr
+            exponentValue <- QC.suchThat QC.arbitrary (>= (valueLength - maxValueLength))
+            exponentChar <- QC.elements "Ee"
+            let initialStr = if exponentValue <= 0
+                              then valueStr ++ replicate (-exponentValue) '0'
+                              else shiftDown exponentValue $
+                                    ( if exponentValue >= length valueStr
+                                       then replicate (exponentValue + 1 - length valueStr) '0'
+                                       else ""
+                                    ) ++ valueStr
+                input = initialStr ++ [exponentChar] ++ show exponentValue
+            return $ ExpectedOutput input expectedOutput
+         shiftDown shiftValue = (\(a,b) -> reverse b ++ "." ++ reverse a) . (splitAt shiftValue) . reverse
 
 -- |Character literal tests
 characters :: TestTree

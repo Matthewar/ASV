@@ -101,20 +101,21 @@ letter =
 abstractLiteral :: Parser AbstractLiteral
 abstractLiteral =
    makeAbstractLiteral =<< integer
-   where makeAbstractLiteral :: Integer -> Parser AbstractLiteral
+   where makeAbstractLiteral :: String -> Parser AbstractLiteral
          makeAbstractLiteral fstInt =
             ( basedLiteral fstInt '#'
           <|> basedLiteral fstInt ':'
           <|> decimalLiteral fstInt
             )
-         basedLiteral :: Integer -> Char -> Parser AbstractLiteral
-         basedLiteral base container =
-            makeUniversalValue
-            =<< ( (makeBasedLiteral base)
-              <$> (char container *> many (basedInteger base))
-              <*> optional (char '.' *> many (basedInteger base))
-              <*> (char container *> optional exponent')
-                )
+         basedLiteral :: String -> Char -> Parser AbstractLiteral
+         basedLiteral baseStr container =
+            let base = read baseStr
+            in makeUniversalValue
+               =<< ( (makeBasedLiteral base)
+                 <$> (char container *> many (basedInteger base))
+                 <*> optional (char '.' *> many (basedInteger base))
+                 <*> (char container *> optional exponent')
+                   )
          basedInteger :: Integer -> Parser Char
          basedInteger 2 = oneOf "01"
          basedInteger 3 = oneOf "012"
@@ -149,23 +150,41 @@ abstractLiteral =
                 newVal = currentVal + (hexVal * baseMultiplier)
             in convertBasedValue base (modPos position) modPos rest newVal
          convertBasedValue _ _ _ [] finalVal = finalVal
-         decimalLiteral :: Integer -> Parser AbstractLiteral
+         decimalLiteral :: String -> Parser AbstractLiteral
          decimalLiteral unitInt =
-            makeUniversalValue
-            =<< ( (makeDecimalLiteral unitInt)
-              <$> optional (char '.' *> many digit)
-              <*> optional exponent'
-                )
-         makeDecimalLiteral :: Integer -> Maybe String -> Maybe Integer -> Double
-         makeDecimalLiteral units maybeDecimals maybeExponent =
-            ( fromInteger units
-            + case maybeDecimals of
-               Just decimals -> convertBasedValue 10 (-1) (\x -> x-1) decimals 0.0
-               Nothing -> 0.0
-            )
-            * case maybeExponent of
-               Just exponent -> 10 ^^ exponent
-               Nothing -> 1.0
+            makeDecimalLiteral
+            =<< (collateDecimalData unitInt)
+            <$> optional (char '.' *> integer)
+            <*> optional exponent'
+         makeDecimalLiteral :: (String,String,Double) -> Parser AbstractLiteral
+         makeDecimalLiteral (valStr,"",1.0) | read valStr < toInteger (maxBound :: Int64) = return $ UniversalInteger $ read valStr
+         makeDecimalLiteral (valStr,"",negExp) = makeUniversalValue $ fromIntegral (read valStr) * negExp
+         makeDecimalLiteral (unitStr,decStr,negExp) = makeUniversalValue $ read (unitStr ++ "." ++ decStr) * negExp
+         collateDecimalData :: String -> Maybe String -> Maybe Integer -> (String,String,Double)
+         collateDecimalData unshiftedUnits maybeDecimals maybeExponent =
+            let (positiveShift,initialNegativeShift) =
+                  case maybeExponent of
+                     Just exponent | exponent >= 0 -> (exponent,0)
+                     Just exponent -> (0,-exponent)
+                     Nothing -> (0,0)
+                unshiftedDecimals =
+                  case maybeDecimals of
+                     Just dec | length dec < fromInteger positiveShift -> dec ++ replicate (fromInteger positiveShift - length dec) '0'
+                     Just dec -> dec
+                     Nothing | positiveShift > 0 -> replicate (fromInteger positiveShift) '0'
+                     Nothing -> ""
+                (negativeShift,negativeExponent)
+                  | fromInteger initialNegativeShift > length unshiftedUnits = (length unshiftedUnits,10.0 ^^ (length unshiftedUnits - fromInteger initialNegativeShift))
+                  | otherwise = (fromInteger initialNegativeShift,1.0)
+                (shiftedUnits,shiftedDecimals) =
+                  if negativeShift > 0
+                     then case splitAt negativeShift $ reverse unshiftedUnits of
+                           (newDecs,"") | all (=='0') $ newDecs ++ unshiftedDecimals -> ("0","")
+                           (newDecs,unitStr) | all (=='0') $ newDecs ++ unshiftedDecimals -> (reverse unitStr,"")
+                           (newDecs,"") -> ("0",reverse newDecs ++ unshiftedDecimals)
+                           (newDecs,unitStr) -> (reverse unitStr,reverse newDecs ++ unshiftedDecimals)
+                     else case splitAt (fromInteger positiveShift) unshiftedDecimals of (newUnits,decStr) -> (unshiftedUnits ++ newUnits,decStr)
+            in (shiftedUnits,shiftedDecimals,negativeExponent)
          makeUniversalValue :: Double -> Parser AbstractLiteral
          makeUniversalValue value
             | isInfinite value = unexpected "Real (floating point) value out of Double bounds (infinite)"
@@ -175,20 +194,18 @@ abstractLiteral =
             | otherwise = return $ UniversalReal value
 
 -- |Parses an integer
--- Returns the 'Integer' value
+-- Returns the 'String' of the integer
 -- @
 --    integer ::= digit { [ underline ] digit }
 -- @
-integer :: Parser Integer
+integer :: Parser String
 integer =
-   makeInteger
+   (:)
    <$> digit
    <*> many
        ( optional (char '_')
       *> digit
        )
-   where makeInteger :: Char -> String -> Integer
-         makeInteger chr str = read $ chr : str
 
 -- |Parses an exponent
 -- Returns the 'Integer' exponent value
@@ -202,10 +219,10 @@ exponent' =
    makeExponent
    <$> (oneOf "Ee" *> optional (char '+' <|> char '-'))
    <*> integer
-   where makeExponent :: Maybe Char -> Integer -> Integer
-         makeExponent (Just '+') int = int
-         makeExponent (Just '-') int = - int
-         makeExponent Nothing int = int
+   where makeExponent :: Maybe Char -> String -> Integer
+         makeExponent (Just '+') = read
+         makeExponent (Just '-') = (0-) . read
+         makeExponent Nothing = read
 
 -- |Parses a character literal
 -- Returns the 'Char' literal (without the containing ''' characters)
