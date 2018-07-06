@@ -146,7 +146,7 @@ genKeyword = genCaseInsensitiveWord
 -- |Generates anything but keyword
 -- When passed a valid keyword as a lower case 'String' input, generates randomised string that doesn't parse as this keyword.
 genNonKeyword :: String -> QC.Gen String
-genNonKeyword keyword = QC.suchThat (genCaseInsensitiveWord =<< QC.arbitrary) $ \word -> (map toLower word) /= keyword
+genNonKeyword keyword = QC.suchThat (genCaseInsensitiveWord =<< QC.arbitrary) $ \word -> checkInvalidStringPair (keyword,word)
 
 -- |Generates a case insensitive word
 -- When passed a 'String' word, generates randomised case form of it.
@@ -190,8 +190,22 @@ validkeywordParser = QC.testProperty "Test keyword parser for valid inputs" $
 -- |Tests for failing word parsing
 invalidkeywordParser :: TestTree
 invalidkeywordParser = QC.testProperty "Test keyword parser for invalid inputs" $
-   QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ \(str1,str2) -> isLeft $ parse (keywordParser str1) "TEST" str2
-   where checkInvalid ([],_) = False
-         checkInvalid (a,b) =
-            let fixedCase = map toLower
-            in fixedCase a /= fixedCase b
+   QC.forAll (QC.suchThat QC.arbitrary checkInvalidStringPair) $ \(str1,str2) -> isLeft $ parse (keywordParser str1) "TEST" str2
+
+-- |Check for invalid string pair
+-- Assumes that tuple:
+-- - fst is parse string
+-- - snd is string to be tested in parser
+-- Validates that the second string will fail to parse through the second string
+-- - According to rules of word parsing 'Parser.Combinators.ReservedWords.Internal.keywordParser'
+checkInvalidStringPair :: (String,String) -> Bool
+checkInvalidStringPair ([],_) = False
+checkInvalidStringPair (a,b) =
+   let fixedCase = map toLower
+       compareChar (fstA:restA) (fstB:restB)
+         | fstA /= fstB = True
+         | otherwise = compareChar restA restB
+       compareChar [] (fstB:_) = isAlphaNum fstB || fstB == '_'
+       compareChar (_:_) [] = True
+       compareChar [] [] = False
+   in compareChar (fixedCase a) (fixedCase b)
