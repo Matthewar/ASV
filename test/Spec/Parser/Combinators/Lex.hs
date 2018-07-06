@@ -10,6 +10,7 @@ import qualified Test.Tasty.QuickCheck as QC
 import Control.Monad (replicateM)
 import Data.Either (isLeft)
 import Data.Maybe (isNothing)
+import Data.Int (Int64)
 import Text.Parsec (parse)
 import Text.Parsec.String (Parser)
 import Text.Regex
@@ -19,7 +20,10 @@ import Text.Regex
 
 import Parser.Combinators.Lex
 import Parser.Combinators.Lex.Internal
-import Parser.Types.Token (mkUpperString)
+import Parser.Types.Token
+         ( mkUpperString
+         , AbstractLiteral(..)
+         )
 
 import Types
          ( ExpectedOutput(..)
@@ -35,7 +39,7 @@ import Spec.Generators.LexElements
 tests :: TestTree
 tests = testGroup "Lexical element combinator tests"
    [ identifiers
-   --, abstractLiterals
+   , abstractLiterals
    , characters
    , strings
    , bitStrings
@@ -59,6 +63,30 @@ invalidIdentifiers :: TestTree
 invalidIdentifiers = QC.testProperty "Invalid identifiers" $
    QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ \notIden -> isLeft $ parse identifier "TEST" notIden
    where checkInvalid = isNothing . (matchRegex $ mkRegexWithOpts "^[a-zA-Z](_?[a-zA-Z0-9])*" True True)
+
+-- |Tests for abstract literals
+abstractLiterals :: TestTree
+abstractLiterals = testGroup "Abstract literals"
+   [ decimalLiterals
+   --, basedLiterals
+   ]
+
+-- |Tests for decimal literals
+decimalLiterals :: TestTree
+decimalLiterals = testGroup "Decimal literals"
+   [ basicDecimals
+   --, validDecimals
+   --, invalidDecimals
+   ]
+
+-- |Tests for integer decimal values (with no exponent or fractional part)
+basicDecimals :: TestTree
+basicDecimals = QC.testProperty "Basic integer decimal literals" $
+   QC.forAll (QC.suchThat QC.arbitrary (>= 0)) $ \int -> 
+      let output = parse abstractLiteral "TEST" $ show int
+      in if int > toInteger (maxBound :: Int64)
+            then isLeft output
+            else output == Right (UniversalInteger $ fromInteger int)
 
 -- |Character literal tests
 characters :: TestTree
@@ -127,6 +155,7 @@ validBitStrings :: TestTree
 validBitStrings = QC.testProperty "Valid bit string literals" $
    QC.forAll genBitStr $ \(ExpectedOutput input expectedOutput) -> (parse bitStringLiteral "TEST" input) == Right expectedOutput
 
+-- |Tests for invalid bit string literals
 invalidBitStrings :: TestTree
 invalidBitStrings = QC.testProperty "Invalid bit string literals" $
    QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ \input -> isLeft $ parse bitStringLiteral "TEST" input

@@ -29,6 +29,7 @@ mkUpperString = UpperString . B.pack . (map toUpper)
 data AbstractLiteral =
    UniversalInteger Int64
    | UniversalReal Double
+   deriving (Eq)
 
 -- |Bit string constructor
 -- Forces string to contain '0' and '1' and packs it into a bytestring
