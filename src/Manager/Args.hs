@@ -8,28 +8,28 @@ import Options.Applicative
 import Data.Semigroup ((<>))
 
 -- |All data collated from command line arguments
-data Options = Options
-   -- |Work directory argument
-   -- Where the VHDL WORK library files are stored
-   -- Arg: "--work-dir"
-   -- Default: "work/"
-   { workDir :: FilePath
-   -- |IEEE directory argument
-   -- Where the VHDL IEEE library files are stored
-   -- Arg: "--ieee-dir"
-   -- Default: "ieee/"
-   , ieeeDir :: FilePath
-   -- |Build directory argument
-   -- Where the tool outputs simulation files to
-   -- Arg: "--build-dir"
-   -- Default: "build/"
-   , buildDir :: FilePath
-   -- |Top module argument
-   -- The name of the top level VHDL design entity
-   -- Arg: "--top"
-   -- Default: N/A
-   , topModule :: String
-   }
+data Options = Options {
+      -- |Work directory argument
+      -- Where the VHDL WORK library files are stored
+      -- Arg: "--work-dir"
+      -- Default: "work/"
+      workDir :: FilePath,
+      -- |IEEE directory argument
+      -- Where the VHDL IEEE library files are stored
+      -- Arg: "--ieee-dir"
+      -- Default: "ieee/"
+      ieeeDir :: FilePath,
+      -- |Build directory argument
+      -- Where the tool outputs simulation files to
+      -- Arg: "--build-dir"
+      -- Default: "build/"
+      buildDir :: FilePath,
+      -- |Top module argument
+      -- The name of the top level VHDL design entity
+      -- Arg: "--top"
+      -- Default: N/A
+      topModule :: String
+      }
 
 -- |Command line argument parser
 -- For details of the argument data stored, see type 'Options'
