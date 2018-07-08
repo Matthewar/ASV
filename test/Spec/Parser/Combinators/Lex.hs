@@ -45,6 +45,7 @@ import Types
          )
 import Spec.Generators.LexElements
          ( genInteger
+         , genExponent
          , genBitStr
          , genIdentifier
          )
@@ -270,7 +271,7 @@ internals = testGroup "Internal module tests"
    , letterOrDigits
    , letters
    , integers
-   --, exponents
+   , exponents
    ]
 
 -- |Tests for graphical characters
@@ -429,6 +430,27 @@ invalidIntegers :: TestTree
 invalidIntegers = QC.testProperty "Invalid integers" $
    QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ isLeft . (parse integer "TEST")
    where checkInvalid = isNothing . (matchRegex $ mkRegexWithOpts "^[0-9](_?[0-9])*" True True)
+
+-- |Tests for exponents
+-- @
+--    exponent ::= E [ + ] integer | E [ - ] integer
+-- @
+exponents :: TestTree
+exponents = testGroup "Exponents"
+   [ validExponents
+   , invalidExponents
+   ]
+
+-- |Tests for valid exponents
+validExponents :: TestTree
+validExponents = QC.testProperty "Valid exponents" $
+   QC.forAll genExponent $ \(ExpectedOutput input expectedOutput) -> parse exponent' "TEST" input == Right expectedOutput
+
+-- |Tests for invalid exponents
+invalidExponents :: TestTree
+invalidExponents = QC.testProperty "Invalid exponents" $
+   QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ isLeft . (parse exponent' "TEST")
+   where checkInvalid = isNothing . (matchRegex $ mkRegexWithOpts "^[Ee][+-]?[0-9](_?[0-9])*" True True)
 
 -- |Tester for character parsers
 charTest :: [Char] -> String -> Parser Char -> TestTree

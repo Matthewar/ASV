@@ -93,7 +93,9 @@ genExponent = do
    expChar <- QC.elements "Ee"
    expSign <- QC.elements ["+","-",""]
    (ExpectedOutput expVal readableExpVal) <- genInteger 0 200
-   let expectedOutput = read $ expSign ++ readableExpVal
+   let expectedOutput = read $ case expSign of
+                                 "-" -> expSign ++ readableExpVal
+                                 _ -> readableExpVal
        input = (expChar:expSign) ++ expVal
    return $ ExpectedOutput input expectedOutput
 
