@@ -267,7 +267,7 @@ internals = testGroup "Internal module tests"
    , lowerCaseLetters
    , otherSpecialCharacters
    , letterOrDigits
-   --, letters
+   , letters
    --, integers
    --, exponents
    ]
@@ -396,6 +396,13 @@ allOtherSpecialCharacters =
 -- - 'allUpperCase'
 letterOrDigits :: TestTree
 letterOrDigits = charTest (allLowerCase++allUpperCase++['0'..'9']) "Letters or digits" letterOrDigit
+
+-- |Tests for letters
+-- Either:
+-- - 'allLowerCase'
+-- - 'allUpperCase'
+letters :: TestTree
+letters = charTest (allLowerCase++allUpperCase) "Letters" letter
 
 -- |Tester for character parsers
 charTest :: [Char] -> String -> Parser Char -> TestTree
