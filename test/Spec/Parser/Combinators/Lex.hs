@@ -10,7 +10,16 @@ import qualified Test.Tasty.QuickCheck as QC
 import Control.Monad (replicateM)
 import Data.Either (isLeft)
 import Data.Maybe (isNothing)
-import Data.Int (Int64)
+import Data.Int
+         ( Int8
+         , Int16
+         , Int64
+         )
+import Numeric
+         ( showFFloat
+         , showEFloat
+         , showFFloatAlt
+         )
 import Text.Parsec (parse)
 import Text.Parsec.String (Parser)
 import Text.Regex
@@ -74,54 +83,72 @@ abstractLiterals = testGroup "Abstract literals"
 -- |Tests for decimal literals
 decimalLiterals :: TestTree
 decimalLiterals = testGroup "Decimal literals"
-   [ basicDecimals
-   , validDecimals
+   [ validDecimals
    --, invalidDecimals
    ]
 
--- |Tests for integer decimal values (with no exponent or fractional part)
-basicDecimals :: TestTree
-basicDecimals = QC.testProperty "Basic integer decimal literals" $
-   QC.forAll (QC.suchThat QC.arbitrary (>= 0)) $ \int -> 
-      let output = parse abstractLiteral "TEST" $ show int
-      in if int > toInteger (maxBound :: Int64)
-            then isLeft output
-            else output == Right (UniversalInteger $ fromInteger int)
-
 -- |Tests for valid decimal literals
+-- In this case valid is taken to not only include values that successfully parse, but values that successfully parse without rounding
 validDecimals :: TestTree
 validDecimals = testGroup "Valid decimal literals"
    [ validDecimalIntegers
-   --, validReals
+   , validDecimalReals
    ]
 
 -- |Tests for decimal literals that parse to integers
+-- Any decimal without a decimal point
 validDecimalIntegers :: TestTree
 validDecimalIntegers = QC.testProperty "Valid integer-kind decimal literals" $
    QC.forAll genInteger $ \(ExpectedOutput input expectedOutput) -> (parse abstractLiteral "TEST" input) == Right (UniversalInteger expectedOutput)
    where genInteger :: QC.Gen (ParserExpectedOutput Int64)
-         genInteger = do
-            let maxValue = floor $ 2.0 ^^ 53 -- Max value with 1.0 integer precision
-            expectedOutput <- QC.suchThat QC.arbitrary (\val -> val >= 0 && val <= maxValue)
-            let valueStr = show expectedOutput
-                maxValueLength = length $ show maxValue
-                valueLength = length valueStr
-            exponentValue <- QC.suchThat QC.arbitrary (>= (valueLength - maxValueLength))
+         genInteger = QC.oneof
+                        [ noExponent
+                        , positiveExponent
+                        , negativeExponent
+                        ]
+         genInt :: (QC.Arbitrary a,Integral a) => QC.Gen a
+         genInt = QC.suchThat QC.arbitrary (>= 0)
+         noExponent :: QC.Gen (ParserExpectedOutput Int64)
+         noExponent =
+            let gen value = ExpectedOutput (show value) value
+            in gen <$> genInt
+         positiveExponent :: QC.Gen (ParserExpectedOutput Int64)
+         positiveExponent = do
+            let genMulTen :: QC.Gen (Integer,Int8)
+                genMulTen = (\baseVal exponent -> (toInteger baseVal * 10 ^ exponent,exponent))
+                            <$> (genInt :: QC.Gen Int16)
+                            <*> genInt
+            (expectedOutput,exponent) <- (\(a,b) -> (fromInteger a,b))
+                                         <$> QC.suchThat genMulTen ((\val -> val >= 0 && val <= toInteger (maxBound :: Int64)) . fst)
+            actualExponent <- QC.choose (0,exponent)
             exponentChar <- QC.elements "Ee"
-            let initialStr = if exponentValue <= 0
-                              then valueStr ++ replicate (-exponentValue) '0'
-                              else shiftDown exponentValue $
-                                    ( if exponentValue >= length valueStr
-                                       then replicate (exponentValue + 1 - length valueStr) '0'
-                                       else ""
-                                    ) ++ valueStr
-                input = initialStr ++ [exponentChar] ++ show exponentValue
+            let input = show (floor $ fromIntegral expectedOutput / 10.0 ^^ actualExponent) ++ [exponentChar] ++ show actualExponent
             return $ ExpectedOutput input expectedOutput
-         shiftDown shiftValue = (\(a,b) -> reverse b ++ "." ++ reverse a) . (splitAt shiftValue) . reverse
+         negativeExponent :: QC.Gen (ParserExpectedOutput Int64)
+         negativeExponent = do
+            expectedOutput <- genInt
+            shiftVal <- genInt
+            exponentChar <- QC.elements "Ee"
+            let input = show expectedOutput ++ replicate shiftVal '0' ++ [exponentChar] ++ show (-shiftVal)
+            return $ ExpectedOutput input expectedOutput
+
+-- |Tests for decimal literals that parse to reals
+validDecimalReals :: TestTree
+validDecimalReals = QC.testProperty "Valid real-kind decimal literals" $
+   --QC.forAll genReal $ \(ExpectedOutput input expectedOutput) -> (parse abstractLiteral "TEST" input) == Right (UniversalReal expectedOutput)
+   QC.forAll (QC.choose ((2.0 + 2.0 ^^ 53,(2.0 - (2.0 ^^ (-52))) * (2.0 ^^ 1023)) :: (Double,Double))) $ \input -> not $ isLeft $ parse abstractLiteral "TEST" $ show input
+   -- (QC.suchThat genReal $ \(ExpectedOutput input expectedOutput) -> read input == expectedOutput)
+   where genReal :: QC.Gen (ParserExpectedOutput Double)
+         genReal = do
+            let minValue = 2.0 ^^ 53 -- Maximum value with 1.0 integer precision
+            expectedOutput <- QC.suchThat QC.arbitrary (>minValue)
+            showFunction <- QC.elements [showEFloat,showFFloat,showFFloatAlt]
+            let input = (showFunction Nothing expectedOutput) ""
+            return $ ExpectedOutput input expectedOutput
 
 -- |Character literal tests
 characters :: TestTree
-characters = testGroup "Character literals" $
+characters = testGroup "Character literals"
    [ validCharacters
    , invalidCharacters
    ]

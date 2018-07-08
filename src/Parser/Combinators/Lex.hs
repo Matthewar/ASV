@@ -2,7 +2,7 @@
    Module      : Parser.Combinators.Lex
    Description : Combinators for the lexical elements of VHDL.
 |-}
-module Parser.Combinators.Lex 
+module Parser.Combinators.Lex
    ( identifier
    , abstractLiteral
    , characterLiteral
@@ -11,9 +11,11 @@ module Parser.Combinators.Lex
    ) where
 
 import Control.Applicative
-import Numeric (readHex)
+import Numeric (readInt)
+import qualified Data.Map.Strict as MapS
 import Data.List (delete)
 import Data.Int (Int64)
+import Data.Char (toUpper)
 import Text.Parsec
          ( unexpected
          , try
@@ -30,6 +32,10 @@ import Text.Parsec.Char
          , endOfLine
          )
 import Text.Parsec.Combinator (manyTill)
+import Text.Parsec.Prim
+         ( unexpected
+         , (<?>)
+         )
 
 import Parser.Types.Token
          ( UpperString
@@ -110,88 +116,104 @@ abstractLiteral =
          basedLiteral :: String -> Char -> Parser AbstractLiteral
          basedLiteral baseStr container =
             let base = read baseStr
-            in makeUniversalValue
-               =<< ( (makeBasedLiteral base)
-                 <$> (char container *> many (basedInteger base))
-                 <*> optional (char '.' *> many (basedInteger base))
-                 <*> (char container *> optional exponent')
-                   )
-         basedInteger :: Integer -> Parser Char
-         basedInteger 2 = oneOf "01"
-         basedInteger 3 = oneOf "012"
-         basedInteger 4 = oneOf ['0'..'3']
-         basedInteger 5 = oneOf ['0'..'4']
-         basedInteger 6 = oneOf ['0'..'5']
-         basedInteger 7 = oneOf ['0'..'6']
-         basedInteger 8 = octDigit
-         basedInteger 9 = oneOf ['0'..'8']
-         basedInteger 10 = oneOf ['0'..'9']
-         basedInteger 11 = oneOf $ ['0'..'9'] ++ ['a','A']
-         basedInteger 12 = oneOf $ ['0'..'9'] ++ ['a','b'] ++ ['A','B']
-         basedInteger 13 = oneOf $ ['0'..'9'] ++ ['a'..'c'] ++ ['A'..'C']
-         basedInteger 14 = oneOf $ ['0'..'9'] ++ ['a'..'d'] ++ ['A'..'D']
-         basedInteger 15 = oneOf $ ['0'..'9'] ++ ['a'..'e'] ++ ['A'..'E']
-         basedInteger 16 = hexDigit
-         basedInteger int = unexpected $ "based integer for base " ++ show int
-         makeBasedLiteral :: Integer -> String -> Maybe String -> Maybe Integer -> Double
-         makeBasedLiteral base units maybeDecimals maybeExponent =
-            ( (convertBasedValue (fromInteger base) 0 (+1) (reverse units) 0.0)
-            + case maybeDecimals of
-               Just decimals -> convertBasedValue (fromInteger base) (-1) (\x -> x-1) decimals 0.0
-               Nothing -> 0.0
-            )
-            * case maybeExponent of
-               Just exponent -> (fromInteger base) ^^ exponent
-               Nothing -> 1.0
-         convertBasedValue :: Int -> Int -> (Int -> Int) -> String -> Double -> Double
-         convertBasedValue base position modPos (chr:rest) currentVal =
-            let baseMultiplier = (fromIntegral base) ^^ position
-                hexVal = fst $ head $ readHex [chr]
-                newVal = currentVal + (hexVal * baseMultiplier)
-            in convertBasedValue base (modPos position) modPos rest newVal
-         convertBasedValue _ _ _ [] finalVal = finalVal
+            in (makeBasedLiteral $ fromInteger base)
+               =<< (\a b c -> (a,b,c))
+               <$> (char container *> basedInteger base)
+               <*> optional (char '.' *> basedInteger base)
+               <*> (char container *> optional exponent')
+         basedInteger :: Integer -> Parser String
+         basedInteger base =
+            (:)
+            <$> extendedDigit base
+            <*> many (optional (char '_') *> extendedDigit base)
+         digitMap :: Integer -> [Char]
+         digitMap = (MapS.!) $ MapS.fromList
+            [ (2,"01")
+            , (3,"012")
+            , (4,['0'..'3'])
+            , (5,['0'..'4'])
+            , (6,['0'..'5'])
+            , (7,['0'..'6'])
+            , (8,['0'..'7'])
+            , (9,['0'..'8'])
+            , (10,['0'..'9'])
+            , (11,['0'..'9'] ++ ['a','A'])
+            , (12,['0'..'9'] ++ ['a','b'] ++ ['A','B'])
+            , (13,['0'..'9'] ++ ['a'..'c'] ++ ['A'..'C'])
+            , (14,['0'..'9'] ++ ['a'..'d'] ++ ['A'..'D'])
+            , (15,['0'..'9'] ++ ['a'..'e'] ++ ['A'..'E'])
+            , (16,['0'..'9'] ++ ['a'..'f'] ++ ['A'..'F'])
+            ]
+         charConvert :: Char -> Int
+         charConvert '0' = 0
+         charConvert '1' = 1
+         charConvert '2' = 2
+         charConvert '3' = 3
+         charConvert '4' = 4
+         charConvert '5' = 5
+         charConvert '6' = 6
+         charConvert '7' = 7
+         charConvert '8' = 8
+         charConvert '9' = 9
+         charConvert 'A' = 10
+         charConvert 'B' = 11
+         charConvert 'C' = 12
+         charConvert 'D' = 13
+         charConvert 'E' = 14
+         charConvert 'F' = 15
+         extendedDigit :: Integer -> Parser Char
+         extendedDigit int | int < 2 || int > 16 = unexpected ("based integer for base " ++ show int)
+                                                   <?> "base between 2 and 16"
+         extendedDigit int = toUpper <$> oneOf (digitMap int)
+         makeBasedLiteral :: Integer -> (String,Maybe String,Maybe Integer) -> Parser AbstractLiteral
+         makeBasedLiteral base = let validChars chr = elem chr $ digitMap base
+                                     readFunc str = case (readInt (fromInteger base) validChars charConvert) str of [(val,"")] -> val
+                                     makeReal units decimals exponent = makeUniversalReal $
+                                                                        (*)
+                                                                        (readFunc $ units ++ decimals)
+                                                                        (fromInteger base ^^ (fromInteger exponent - length decimals))
+                                     makeLiteral (units,Just decimals,Nothing) = makeReal units decimals 0
+                                     makeLiteral (units,Just decimals,Just exponent) = makeReal units decimals exponent
+                                     makeLiteral (units,Nothing,exponent) = makeUniversalIntegerFromBase readFunc units exponent
+                                 in makeLiteral
          decimalLiteral :: String -> Parser AbstractLiteral
-         decimalLiteral unitInt =
-            makeDecimalLiteral
-            =<< (collateDecimalData unitInt)
+         decimalLiteral units =
+            (makeDecimalLiteral units)
+            =<< (\a b -> (a,b))
             <$> optional (char '.' *> integer)
             <*> optional exponent'
-         makeDecimalLiteral :: (String,String,Double) -> Parser AbstractLiteral
-         makeDecimalLiteral (valStr,"",1.0) | read valStr < toInteger (maxBound :: Int64) = return $ UniversalInteger $ read valStr
-         makeDecimalLiteral (valStr,"",negExp) = makeUniversalValue $ fromIntegral (read valStr) * negExp
-         makeDecimalLiteral (unitStr,decStr,negExp) = makeUniversalValue $ read (unitStr ++ "." ++ decStr) * negExp
-         collateDecimalData :: String -> Maybe String -> Maybe Integer -> (String,String,Double)
-         collateDecimalData unshiftedUnits maybeDecimals maybeExponent =
-            let (positiveShift,initialNegativeShift) =
-                  case maybeExponent of
-                     Just exponent | exponent >= 0 -> (exponent,0)
-                     Just exponent -> (0,-exponent)
-                     Nothing -> (0,0)
-                unshiftedDecimals =
-                  case maybeDecimals of
-                     Just dec | length dec < fromInteger positiveShift -> dec ++ replicate (fromInteger positiveShift - length dec) '0'
-                     Just dec -> dec
-                     Nothing | positiveShift > 0 -> replicate (fromInteger positiveShift) '0'
-                     Nothing -> ""
-                (negativeShift,negativeExponent)
-                  | fromInteger initialNegativeShift > length unshiftedUnits = (length unshiftedUnits,10.0 ^^ (length unshiftedUnits - fromInteger initialNegativeShift))
-                  | otherwise = (fromInteger initialNegativeShift,1.0)
-                (shiftedUnits,shiftedDecimals) =
-                  if negativeShift > 0
-                     then case splitAt negativeShift $ reverse unshiftedUnits of
-                           (newDecs,"") | all (=='0') $ newDecs ++ unshiftedDecimals -> ("0","")
-                           (newDecs,unitStr) | all (=='0') $ newDecs ++ unshiftedDecimals -> (reverse unitStr,"")
-                           (newDecs,"") -> ("0",reverse newDecs ++ unshiftedDecimals)
-                           (newDecs,unitStr) -> (reverse unitStr,reverse newDecs ++ unshiftedDecimals)
-                     else case splitAt (fromInteger positiveShift) unshiftedDecimals of (newUnits,decStr) -> (unshiftedUnits ++ newUnits,decStr)
-            in (shiftedUnits,shiftedDecimals,negativeExponent)
-         makeUniversalValue :: Double -> Parser AbstractLiteral
-         makeUniversalValue value
-            | isInfinite value = unexpected "Real (floating point) value out of Double bounds (infinite)"
-            | floor value == ceiling value && ((floor value) > (toInteger $ (maxBound :: Int64)) || (floor value) < (toInteger $ (minBound :: Int64))) =
-               unexpected "Integer value out of Int64 bounds"
-            | floor value == ceiling value = return $ UniversalInteger $ floor value
-            | otherwise = return $ UniversalReal value
+         makeDecimalLiteral :: String -> (Maybe String,Maybe Integer) -> Parser AbstractLiteral
+         makeDecimalLiteral units (Just decimals,Just 0) = makeUniversalReal $ read $ units ++ "." ++ decimals
+         makeDecimalLiteral units (Just decimals,Nothing) = makeUniversalReal $ read $ units ++ "." ++ decimals
+         makeDecimalLiteral units (Just decimals,Just exponent) = makeUniversalReal $ read $ units ++ "." ++ decimals ++ "e" ++ show exponent
+         makeDecimalLiteral units (Nothing,exponent) = makeUniversalIntegerFromBase read units exponent
+         makeUniversalIntegerFromBase :: (String -> Integer) -> String -> Maybe Integer -> Parser AbstractLiteral
+         makeUniversalIntegerFromBase readFunc units (Just exponent)
+            | exponent >= 0 = makeUniversalInteger $ readFunc $ units ++ replicate (fromInteger exponent) '0'
+            | otherwise = let shiftValue 0 finished = makeUniversalInteger $ readFunc $ reverse finished
+                              shiftValue shift ('0':rest) = shiftValue (shift-1) rest
+                              shiftValue shift valueStr = unexpected ( "floating point value "
+                                                                     ++ ( (\(a,b) -> reverse b ++ reverse a)
+                                                                        $ splitAt shift
+                                                                        $ valueStr
+                                                                        ++ if shift >= length valueStr
+                                                                              then replicate (shift + 1 - length valueStr) '0'
+                                                                              else ""
+                                                                        )
+                                                                     )
+                                                          <?> "integer value"
+                          in shiftValue (- (fromInteger exponent)) $ reverse units
+         makeUniversalIntegerFromBase readFunc units Nothing = makeUniversalInteger $ readFunc units
+         makeUniversalInteger :: Integer -> Parser AbstractLiteral
+         makeUniversalInteger val
+            | val > toInteger (maxBound :: Int64) = unexpected "integer value out of Int64 bounds"
+                                                    <?> "universal integer value"
+            | otherwise = return $ UniversalInteger $ fromInteger val
+         makeUniversalReal :: Double -> Parser AbstractLiteral
+         makeUniversalReal val
+            | isInfinite val = unexpected "real (floating point) value out of Double bounds (infinite)"
+                               <?> "universal real value"
+            | otherwise = return $ UniversalReal val
 
 -- |Parses an integer
 -- Returns the 'String' of the integer

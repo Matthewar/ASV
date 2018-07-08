@@ -23,21 +23,7 @@ When parsing an abstract value:
 - Decimals are parsed a string
 - Exponent is parsed as an integer
 
-To attempt to get maximum precision, the parser carries out pre-shifting of the units and decimals using the exponent before converting the components to a value:
-- Pre-shifting
-   - If exponent positive:
-      - Shifts decimals into units and adds trailing zeroes if necessary
-   - If exponent negative:
-      - Shifts any units into decimals, does not add following zeroes
-      - Calculates new negative exponent
-- If exponent and decimal components are `1.0` and `""` respectively
-   - Converts value to integer
-- Otherwise:
-   - Combines units and decimals
-   - Converts combined string to `Double`
-   - Evaluates exponent value (base ^ exponent)
-   - Adds values
-**NOTE**: Currently only occurs for decimal literals (base 10)
-
-This means that only values of +/- 2^53 are guaranteed to parse to an integer
-- 53 bits is the size of the `Double` mantissa
+According to [1076-1987](https://ieeexplore.ieee.org/document/26487/):
+- Any abstract literal containing a decimal point is a `Universal_Real` value
+- Otherwise the literal is a `Universal_Integer`
+- Exponent doesn't affect how the value is parsed
