@@ -21,6 +21,11 @@ import Numeric
          , showFFloatAlt
          )
 import Text.Parsec (parse)
+import Text.Parsec.Char (anyChar)
+import Text.Parsec.Combinator
+         ( eof
+         , manyTill
+         )
 import Text.Parsec.String (Parser)
 import Text.Regex
          ( matchRegex
@@ -52,6 +57,7 @@ tests = testGroup "Lexical element combinator tests"
    , characters
    , strings
    , bitStrings
+   , comments
    , internals
    ]
 
@@ -217,6 +223,30 @@ invalidBitStrings = QC.testProperty "Invalid bit string literals" $
    where checkInvalid = isNothing . (matchRegex $ mkRegexWithOpts regexString True True)
          regexString = "^([Bb][\"][01](_?[01])*[\"]|[Bb]%[01](_?[01])*%|[Oo][\"][0-7](_?[0-7])*[\"]|[Oo]%[0-7](_?[0-7])*%|[Xx][\"][0-9a-fA-F](_?[0-9a-fA-F])*[\"]|[Xx]%[0-9a-fA-F](_?[0-9a-fA-F])*%)"
 
+-- |Tests for comments
+comments :: TestTree
+comments = testGroup "Comments"
+   [ validComments
+   --, invalidComments
+   ]
+
+-- |Tests for valid comments
+validComments :: TestTree
+validComments = QC.testProperty "Valid comments" $
+   QC.forAll genComment $ \(ExpectedOutput input expectedRemainder) -> parseIncludeRemainder input == Right expectedRemainder
+   where parseIncludeRemainder = parse (comment *> manyTill anyChar eof) "TEST"
+         genComment :: QC.Gen (ParserExpectedOutput String)
+         genComment = do
+            randomString <- QC.arbitrary
+            let splitStringOnNewline = span (`notElem` "\r\n") randomString
+                (input,expectedOutput) =
+                  case splitStringOnNewline of
+                     (fst,snd@('\r':'\n':rest)) -> (fst++snd,rest)
+                     (fst,snd@('\r':rest)) -> (fst++"\r\n"++rest,rest)
+                     (fst,snd@('\n':rest)) -> (fst++snd,rest)
+                     (fst,[]) -> (fst,[])
+            return $ ExpectedOutput ("--" ++ input) expectedOutput
+
 -- |Tests for internal functions from "Parser.Combinators.Lex.Internal"
 internals :: TestTree
 internals = testGroup "Internal module tests"
@@ -229,6 +259,10 @@ internals = testGroup "Internal module tests"
    , formatEffectors
    , lowerCaseLetters
    , otherSpecialCharacters
+   --, letterOrDigits
+   --, letters
+   --, integers
+   --, exponents
    ]
 
 -- |Tests for graphical characters

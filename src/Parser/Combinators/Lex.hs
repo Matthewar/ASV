@@ -32,7 +32,10 @@ import Text.Parsec.Char
          , anyChar
          , endOfLine
          )
-import Text.Parsec.Combinator (manyTill)
+import Text.Parsec.Combinator
+         ( manyTill
+         , eof
+         )
 import Text.Parsec.Prim
          ( unexpected
          , (<?>)
@@ -353,6 +356,6 @@ bitStringLiteral =
 -- - Comments continue to the end of a line
 comment :: Parser ()
 comment =
-   string "--"
-   *> manyTill anyChar (try endOfLine)
+   try (string "--")
+   *> manyTill anyChar ((endOfLine *> return ()) <|> eof)
    *> return ()
