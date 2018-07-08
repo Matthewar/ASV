@@ -12,6 +12,10 @@ module Parser.Combinators.Lex.Internal
    , formatEffector
    , lowerCaseLetter
    , otherSpecialCharacter
+   , letterOrDigit
+   , letter
+   , integer
+   , exponent'
    ) where
 
 import Control.Applicative
@@ -138,3 +142,54 @@ otherSpecialCharacter = oneOf
    , '}'
    , '~'
    ]
+
+-- |Parses a letter or digit
+-- Returns parsed character
+-- @
+--    letter_or_digit ::= letter | digit
+-- @
+letterOrDigit :: Parser Char
+letterOrDigit =
+   letter
+   <|> digit
+
+-- |Parses a letter
+-- Returns parsed character
+-- @
+--    letter ::= upper_case_letter | lower_case_letter
+-- @
+letter :: Parser Char
+letter =
+   upperCaseLetter
+   <|> lowerCaseLetter
+
+-- |Parses an integer
+-- Returns the 'String' of the integer
+-- @
+--    integer ::= digit { [ underline ] digit }
+-- @
+integer :: Parser String
+integer =
+   (:)
+   <$> digit
+   <*> many
+       ( optional (char '_')
+      *> digit
+       )
+
+-- |Parses an exponent
+-- Returns the 'Integer' exponent value
+-- @
+--    exponent ::= E [ + ] integer | E - integer
+-- @
+-- NOTE:
+-- - Case insensitive E
+exponent' :: Parser Integer
+exponent' =
+   makeExponent
+   <$> (oneOf "Ee" *> optional (char '+' <|> char '-'))
+   <*> integer
+   where makeExponent :: Maybe Char -> String -> Integer
+         makeExponent (Just '+') = read
+         makeExponent (Just '-') = (0-) . read
+         makeExponent Nothing = read

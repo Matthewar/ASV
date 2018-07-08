@@ -8,6 +8,7 @@ module Parser.Combinators.Lex
    , characterLiteral
    , stringLiteral
    , bitStringLiteral
+   , comment
    ) where
 
 import Control.Applicative
@@ -69,26 +70,6 @@ identifier =
             mkUpperString
             $ fst
             : concat rest
-
--- |Parses a letter or digit
--- Returns parsed character
--- @
---    letter_or_digit ::= letter | digit
--- @
-letterOrDigit :: Parser Char
-letterOrDigit =
-   letter
-   <|> digit
-
--- |Parses a letter
--- Returns parsed character
--- @
---    letter ::= upper_case_letter | lower_case_letter
--- @
-letter :: Parser Char
-letter =
-   upperCaseLetter
-   <|> lowerCaseLetter
 
 -- |Parses an abstract literal
 -- Returns the parsed 'AbstractLiteral' value
@@ -214,37 +195,6 @@ abstractLiteral =
             | isInfinite val = unexpected "real (floating point) value out of Double bounds (infinite)"
                                <?> "universal real value"
             | otherwise = return $ UniversalReal val
-
--- |Parses an integer
--- Returns the 'String' of the integer
--- @
---    integer ::= digit { [ underline ] digit }
--- @
-integer :: Parser String
-integer =
-   (:)
-   <$> digit
-   <*> many
-       ( optional (char '_')
-      *> digit
-       )
-
--- |Parses an exponent
--- Returns the 'Integer' exponent value
--- @
---    exponent ::= E [ + ] integer | E - integer
--- @
--- NOTE:
--- - Case insensitive E
-exponent' :: Parser Integer
-exponent' =
-   makeExponent
-   <$> (oneOf "Ee" *> optional (char '+' <|> char '-'))
-   <*> integer
-   where makeExponent :: Maybe Char -> String -> Integer
-         makeExponent (Just '+') = read
-         makeExponent (Just '-') = (0-) . read
-         makeExponent Nothing = read
 
 -- |Parses a character literal
 -- Returns the 'Char' literal (without the containing ''' characters)
