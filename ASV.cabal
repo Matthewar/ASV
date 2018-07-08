@@ -21,15 +21,15 @@ library
                      , Parser.Combinators.ReservedWords.Internal
                      , Parser.Types.Token
                      , Parser.Types.Token.Internal
-                     , Parser.Types.Tree
+                     --, Parser.Types.Tree
                      --, Parser.Functions.Tree
 
   --exposed-modules:     Lexer.Lexer
-                     , Lexer.Alex.Types
+                     --, Lexer.Alex.Types
                      --, Lexer.Alex.Functions
-                     , Lexer.Types.Token
+                     --, Lexer.Types.Token
                      --, Lexer.Types.Monad
-                     , Lexer.Types.PositionWrapper
+                     --, Lexer.Types.PositionWrapper
                      --, Lexer.Types.Error
                      --, Lexer.Functions.Lex
                      --, Lexer.Functions.PositionWrapper
