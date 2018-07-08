@@ -135,13 +135,10 @@ validDecimalIntegers = QC.testProperty "Valid integer-kind decimal literals" $
 -- |Tests for decimal literals that parse to reals
 validDecimalReals :: TestTree
 validDecimalReals = QC.testProperty "Valid real-kind decimal literals" $
-   --QC.forAll genReal $ \(ExpectedOutput input expectedOutput) -> (parse abstractLiteral "TEST" input) == Right (UniversalReal expectedOutput)
-   QC.forAll (QC.choose ((2.0 + 2.0 ^^ 53,(2.0 - (2.0 ^^ (-52))) * (2.0 ^^ 1023)) :: (Double,Double))) $ \input -> not $ isLeft $ parse abstractLiteral "TEST" $ show input
-   -- (QC.suchThat genReal $ \(ExpectedOutput input expectedOutput) -> read input == expectedOutput)
+   QC.forAll genReal $ \(ExpectedOutput input expectedOutput) -> (parse abstractLiteral "TEST" input) == Right (UniversalReal expectedOutput)
    where genReal :: QC.Gen (ParserExpectedOutput Double)
          genReal = do
-            let minValue = 2.0 ^^ 53 -- Maximum value with 1.0 integer precision
-            expectedOutput <- QC.suchThat QC.arbitrary (>minValue)
+            expectedOutput <- QC.suchThat QC.arbitrary (>=0)
             showFunction <- QC.elements [showEFloat,showFFloat,showFFloatAlt]
             let input = (showFunction Nothing expectedOutput) ""
             return $ ExpectedOutput input expectedOutput
