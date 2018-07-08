@@ -268,7 +268,7 @@ internals = testGroup "Internal module tests"
    , otherSpecialCharacters
    , letterOrDigits
    , letters
-   --, integers
+   , integers
    --, exponents
    ]
 
@@ -292,7 +292,7 @@ basicGraphicCharacters = charTest allBasicGraphicCharacters "Basic graphic chara
 
 -- |All valid basic graphic characters
 allBasicGraphicCharacters :: [Char]
-allBasicGraphicCharacters = allUpperCase ++ ['0'..'9'] ++ allSpecialCharacters ++ " "
+allBasicGraphicCharacters = allUpperCase ++ allDigits ++ allSpecialCharacters ++ " "
 
 -- |Tests for basic graphical characters
 -- Basic characters include:
@@ -391,11 +391,15 @@ allOtherSpecialCharacters =
 
 -- |Tests for letters or digits
 -- Either:
--- - '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+-- - 'allDigits'
 -- - 'allLowerCase'
 -- - 'allUpperCase'
 letterOrDigits :: TestTree
-letterOrDigits = charTest (allLowerCase++allUpperCase++['0'..'9']) "Letters or digits" letterOrDigit
+letterOrDigits = charTest (allLowerCase++allUpperCase++allDigits) "Letters or digits" letterOrDigit
+
+-- |All digit characters
+allDigits :: [Char]
+allDigits = ['0'..'9']
 
 -- |Tests for letters
 -- Either:
@@ -403,6 +407,40 @@ letterOrDigits = charTest (allLowerCase++allUpperCase++['0'..'9']) "Letters or d
 -- - 'allUpperCase'
 letters :: TestTree
 letters = charTest (allLowerCase++allUpperCase) "Letters" letter
+
+-- |Tests for integer
+-- @
+--    integer ::= digit { [ underline ] digit }
+-- @
+integers :: TestTree
+integers = testGroup "Integers"
+   [ validIntegers
+   , invalidIntegers
+   ]
+
+-- |Tests for valid integers
+validIntegers :: TestTree
+validIntegers = QC.testProperty "Valid integers" $
+   QC.forAll genInteger $ \(ExpectedOutput input expectedOutput) -> parse integer "TEST" input == Right expectedOutput
+   where genInteger :: QC.Gen (ParserExpectedOutput String)
+         genInteger = do
+            let optionalUnderline True digit = ['_',digit]
+                optionalUnderline False digit = [digit]
+                genDigit = QC.elements allDigits
+                genUnderline = optionalUnderline
+                               <$> QC.arbitrary
+                               <*> genDigit
+            firstDigit <- genDigit
+            stringLength <- QC.choose (0,200)
+            restDigits <- concat <$> replicateM stringLength genUnderline
+            let input = (firstDigit:restDigits)
+            return $ ExpectedOutput input $ filter (/='_') input
+
+-- |Tests for invalid integers
+invalidIntegers :: TestTree
+invalidIntegers = QC.testProperty "Invalid integers" $
+   QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ isLeft . (parse integer "TEST")
+   where checkInvalid = isNothing . (matchRegex $ mkRegexWithOpts "^[0-9](_?[0-9])*" True True)
 
 -- |Tester for character parsers
 charTest :: [Char] -> String -> Parser Char -> TestTree
