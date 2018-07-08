@@ -5,10 +5,10 @@
 module Spec.Generators.LexElements 
    --( GenPair(..)
    --, combineGen
-   --, genInteger
-   --, genExponent
+   ( genInteger
+   , genExponent
    --, genBasedStr
-   ( genBitStr
+   , genBitStr
    , genIdentifier
    --, genDecimal
    --, genKeyword
@@ -55,44 +55,48 @@ import Parser.Types.Token
 --combineGen combineFunc (GenPair lexInput1 list1) (GenPair lexInput2 list2) =
 --   GenPair (lexInput1 ++ lexInput2) (combineFunc list1 list2)
 --
----- |Generate a VHDL specific integer
----- Two arguments: minimum and maximum additional length
----- Total length = randomly selected length within range + 1
-----
----- > integer ::= digit { [ underline ] digit }
----- Implemented as:
----- @
-----    'genInteger' ::= digit { 'genUnderscoreDigit' }
-----    'genUnderscoreDigit' ::= [ underline ] digit
----- @
---genInteger :: Int -> Int -> QC.Gen String
---genInteger fromLength toLength = do
---   firstInt <- QC.elements ['0'..'9']
---   lengthStr <- QC.elements [fromLength..toLength]
---   otherInts <- replicateM lengthStr genUnderscoreDigit
---   return $ [firstInt] ++ (concat otherInts)
---   where genUnderscoreDigit = do
---            optionalUnderscore <- QC.elements [True,False]
---            otherDigit <- QC.elements ['0'..'9']
---            return $
---               if optionalUnderscore then ['_',otherDigit]
---               else [otherDigit]
+-- |Generate a VHDL specific integer
+-- Two arguments: minimum and maximum additional length
+-- Total length = randomly selected length within range + 1
 --
----- |Generate a VHDL specific exponent
----- > exponent ::= E [ + ] integer  | E - integer
----- Note: case insensitive \\'E\\'
----- Implemented as:
----- @
-----    'genExponent' ::= exponent_marker [ exponent_sign ] 'genInteger'
-----    exponent_marker ::= E | e
-----    exponent_sign ::= + | -
----- @
---genExponent = do
---   expChar <- QC.elements "Ee"
---   expSign <- QC.elements ["+","-",""]
---   expVal <- genInteger 0 1
---   return $ (expChar:expSign) ++ expVal
---
+-- > integer ::= digit { [ underline ] digit }
+-- Implemented as:
+-- @
+--    'genInteger' ::= digit { 'genUnderscoreDigit' }
+--    'genUnderscoreDigit' ::= [ underline ] digit
+-- @
+genInteger :: Int -> Int -> QC.Gen (ParserExpectedOutput String)
+genInteger fromLength toLength = do
+   firstInt <- genDigit
+   lengthStr <- QC.choose (fromLength,toLength)
+   otherInts <- concat <$> replicateM lengthStr genUnderscoreDigit
+   let input = (firstInt:otherInts)
+   return $ ExpectedOutput input $ filter (/='_') input
+   where genDigit = QC.elements ['0'..'9']
+         optionalUnderscore True digit = ['_',digit]
+         optionalUnderscore False digit = [digit]
+         genUnderscoreDigit = optionalUnderscore
+                              <$> QC.arbitrary
+                              <*> genDigit
+
+-- |Generate a VHDL specific exponent
+-- > exponent ::= E [ + ] integer  | E - integer
+-- Note: case insensitive \\'E\\'
+-- Implemented as:
+-- @
+--    'genExponent' ::= exponent_marker [ exponent_sign ] 'genInteger'
+--    exponent_marker ::= E | e
+--    exponent_sign ::= + | -
+-- @
+genExponent :: QC.Gen (ParserExpectedOutput Integer)
+genExponent = do
+   expChar <- QC.elements "Ee"
+   expSign <- QC.elements ["+","-",""]
+   (ExpectedOutput expVal readableExpVal) <- genInteger 0 200
+   let expectedOutput = read $ expSign ++ readableExpVal
+       input = (expChar:expSign) ++ expVal
+   return $ ExpectedOutput input expectedOutput
+
 ---- |Generate a VHDL specific based literal
 ---- @
 ----    based_literal ::=

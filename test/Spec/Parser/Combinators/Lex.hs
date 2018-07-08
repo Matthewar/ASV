@@ -44,7 +44,8 @@ import Types
          , ParserExpectedOutput
          )
 import Spec.Generators.LexElements
-         ( genBitStr
+         ( genInteger
+         , genBitStr
          , genIdentifier
          )
 
@@ -421,20 +422,7 @@ integers = testGroup "Integers"
 -- |Tests for valid integers
 validIntegers :: TestTree
 validIntegers = QC.testProperty "Valid integers" $
-   QC.forAll genInteger $ \(ExpectedOutput input expectedOutput) -> parse integer "TEST" input == Right expectedOutput
-   where genInteger :: QC.Gen (ParserExpectedOutput String)
-         genInteger = do
-            let optionalUnderline True digit = ['_',digit]
-                optionalUnderline False digit = [digit]
-                genDigit = QC.elements allDigits
-                genUnderline = optionalUnderline
-                               <$> QC.arbitrary
-                               <*> genDigit
-            firstDigit <- genDigit
-            stringLength <- QC.choose (0,200)
-            restDigits <- concat <$> replicateM stringLength genUnderline
-            let input = (firstDigit:restDigits)
-            return $ ExpectedOutput input $ filter (/='_') input
+   QC.forAll (genInteger 0 200) $ \(ExpectedOutput input expectedOutput) -> parse integer "TEST" input == Right expectedOutput
 
 -- |Tests for invalid integers
 invalidIntegers :: TestTree
