@@ -12,6 +12,7 @@ import Data.Char
          ( toUpper
          , toLower
          , isAlphaNum
+         , isDigit
          )
 import Data.Either (isLeft)
 import Text.Parsec (parse)
@@ -205,7 +206,7 @@ checkInvalidStringPair (a,b) =
        compareChar (fstA:restA) (fstB:restB)
          | fstA /= fstB = True
          | otherwise = compareChar restA restB
-       compareChar [] (fstB:_) = isAlphaNum fstB || fstB == '_'
+       compareChar [] (fstB:_) = elem fstB (['a'..'z']++['A'..'Z']) || isDigit fstB || fstB == '_'
        compareChar (_:_) [] = True
        compareChar [] [] = False
    in compareChar (fixedCase a) (fixedCase b)
