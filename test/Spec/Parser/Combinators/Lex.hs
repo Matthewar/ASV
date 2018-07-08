@@ -227,7 +227,7 @@ invalidBitStrings = QC.testProperty "Invalid bit string literals" $
 comments :: TestTree
 comments = testGroup "Comments"
    [ validComments
-   --, invalidComments
+   , invalidComments
    ]
 
 -- |Tests for valid comments
@@ -246,6 +246,13 @@ validComments = QC.testProperty "Valid comments" $
                      (fst,snd@('\n':rest)) -> (fst++snd,rest)
                      (fst,[]) -> (fst,[])
             return $ ExpectedOutput ("--" ++ input) expectedOutput
+
+-- |Tests for invalid comments
+invalidComments :: TestTree
+invalidComments = QC.testProperty "Invalid comments" $
+   QC.forAll (QC.suchThat QC.arbitrary checkInvalid) $ \input -> isLeft $ parse comment "TEST" input
+   where checkInvalid ('-':'-':_) = False
+         checkInvalid _ = True
 
 -- |Tests for internal functions from "Parser.Combinators.Lex.Internal"
 internals :: TestTree
