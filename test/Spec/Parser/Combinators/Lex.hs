@@ -8,6 +8,7 @@ import Test.Tasty
 import qualified Test.Tasty.QuickCheck as QC
 
 import Control.Monad (replicateM)
+import Control.Applicative (liftA2)
 import Data.Either (isLeft)
 import Data.Maybe (isNothing)
 import Data.Int
@@ -151,6 +152,48 @@ validDecimalReals = QC.testProperty "Valid real-kind decimal literals" $
             showFunction <- QC.elements [showEFloat,showFFloat,showFFloatAlt]
             let input = (showFunction Nothing expectedOutput) ""
             return $ ExpectedOutput input expectedOutput
+
+-- |Tests for invalid decimal literals
+invalidDecimals :: TestTree
+invalidDecimals = testGroup "Invalid decimals"
+   --[ invalidDecimalRealAccuracy
+   [ invalidDecimalOutOfBounds
+   ]
+
+-- |Tests for decimal literals out of bounds
+-- Abstract (decimal) literals that are formatted correctly but are out of bounds
+invalidDecimalOutOfBounds :: TestTree
+invalidDecimalOutOfBounds = QC.testProperty "Decimal literal out of bounds" $
+   QC.forAll (QC.oneof [intOutOfBounds,realOutOfBounds]) $ isLeft . (parse abstractLiteral "TEST")
+   where intOutOfBounds = QC.oneof [intOutOfBoundsPositiveExp,intOutOfBoundsNegativeExp,intOutOfBoundsNoExp]
+         genPositive :: QC.Gen Integer
+         genPositive = QC.suchThat QC.arbitrary (>=0)
+         showValue (value,exponent,eChr) = show value ++ [eChr] ++ show exponent
+         intOutOfBoundsPositiveExp =
+            let value = (,,)
+                        <$> genPositive
+                        <*> genPositive
+                        <*> QC.elements "Ee"
+                checkValue (value,exponent,_) = (value * 10 ^ exponent) > toInteger (maxBound :: Int64)
+            in showValue <$> QC.suchThat value checkValue
+         intOutOfBoundsNegativeExp =
+            let value = (,,)
+                        <$> genPositive
+                        <*> QC.suchThat QC.arbitrary (<0)
+                        <*> QC.elements "Ee"
+                checkValue (value,exponent,_) = let double = fromInteger value * 10.0 ^^ fromInteger exponent
+                                                in double > fromIntegral (maxBound :: Int64) || double < 0.0
+            in showValue <$> QC.suchThat value checkValue
+         intOutOfBoundsNoExp = show <$> QC.suchThat QC.arbitrary (>toInteger (maxBound :: Int64))
+         realOutOfBounds =
+            let genReal :: QC.Gen (String,Char,String)
+                genReal = (,,)
+                          <$> ((\s -> s "") . (showFFloat Nothing) <$> (QC.arbitrary :: QC.Gen Double))
+                          <*> QC.elements "Ee"
+                          <*> (show <$> genPositive)
+                showReal (val,exp,expVal) = val ++ [exp] ++ expVal
+                checkReal (val,exp,expVal) = isInfinite $ (read (val ++ "e" ++ expVal) :: Double)
+            in showReal <$> QC.suchThat genReal checkReal
 
 -- |Tests for abstract literals with invalid formatting
 invalidAbstractFormatting :: TestTree
