@@ -91,7 +91,7 @@ library
 
                      --, Netlister.ParseTree
                      --, Netlister.Parse.Objects
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       base >= 4.11 && < 5
                      --, split
                      , bytestring
                      , containers
