@@ -49,6 +49,7 @@ import Spec.Generators.LexElements
          , genExponent
          , genBitStr
          , genIdentifier
+         , genComment
          )
 
 -- |All tests for the module "Parser.Combinators.Lex"
@@ -266,7 +267,7 @@ validStrings = QC.testProperty "Valid string literals" $
    where genString :: QC.Gen (ParserExpectedOutput String)
          genString = do
             container <- QC.elements ['"','%']
-            stringLength <- QC.choose (1,200)
+            stringLength <- QC.choose (0,200)
             expectedOutput <- replicateM stringLength $ QC.elements allGraphicCharacters
             let sanitiseString chr
                   | chr == container = replicate 2 container
@@ -319,17 +320,6 @@ validComments :: TestTree
 validComments = QC.testProperty "Valid comments" $
    QC.forAll genComment $ \(ExpectedOutput input expectedRemainder) -> parseIncludeRemainder input == Right expectedRemainder
    where parseIncludeRemainder = parse (comment *> manyTill anyChar eof) "TEST"
-         genComment :: QC.Gen (ParserExpectedOutput String)
-         genComment = do
-            randomString <- QC.arbitrary
-            let splitStringOnNewline = span (`notElem` "\r\n") randomString
-                (input,expectedOutput) =
-                  case splitStringOnNewline of
-                     (fst,snd@('\r':'\n':rest)) -> (fst++snd,rest)
-                     (fst,snd@('\r':rest)) -> (fst++"\r\n"++rest,rest)
-                     (fst,snd@('\n':rest)) -> (fst++snd,rest)
-                     (fst,[]) -> (fst,[])
-            return $ ExpectedOutput ("--" ++ input) expectedOutput
 
 -- |Tests for invalid comments
 invalidComments :: TestTree
@@ -505,7 +495,8 @@ integers = testGroup "Integers"
 -- |Tests for valid integers
 validIntegers :: TestTree
 validIntegers = QC.testProperty "Valid integers" $
-   QC.forAll (genInteger 0 200) $ \(ExpectedOutput input expectedOutput) -> parse integer "TEST" input == Right expectedOutput
+   QC.forAll (genInteger 0 $ toInteger (maxBound :: Int64)) $
+      \(ExpectedOutput input expectedValue) -> parse integer "TEST" input == Right (show expectedValue)
 
 -- |Tests for invalid integers
 invalidIntegers :: TestTree

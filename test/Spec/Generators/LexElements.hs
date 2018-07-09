@@ -11,20 +11,23 @@ module Spec.Generators.LexElements
    , genBitStr
    , genIdentifier
    --, genDecimal
-   --, genKeyword
+   , genKeyword
+   , genCaseInsensitiveWord
    --, genDelimiter
+   , genComment
    ) where
 
 import qualified Test.Tasty.QuickCheck as QC
 
---import Data.Function ((&))
+import Control.Monad
+import Data.Function ((&))
 import qualified Data.Map.Strict as MapS
 import qualified Data.ByteString.Lazy.Char8 as B
---import Data.Char
---         ( toLower
---         , toUpper
---         )
-import Control.Monad
+import Data.Char
+         ( toUpper
+         , toLower
+         )
+import Data.Functor ((<&>))
 
 import Types
          ( ExpectedOutput(..)
@@ -37,7 +40,6 @@ import Parser.Types.Token
          )
 --import Lexer.Types.Token
 --         ( Token(..)
---         , ReservedWord(..)
 --         , LiteralBase(..)
 --         , LitType(..)
 --         , OperatorType(..)
@@ -56,8 +58,7 @@ import Parser.Types.Token
 --   GenPair (lexInput1 ++ lexInput2) (combineFunc list1 list2)
 --
 -- |Generate a VHDL specific integer
--- Two arguments: minimum and maximum additional length
--- Total length = randomly selected length within range + 1
+-- Two arguments: minimum and maximum value
 --
 -- > integer ::= digit { [ underline ] digit }
 -- Implemented as:
@@ -65,19 +66,18 @@ import Parser.Types.Token
 --    'genInteger' ::= digit { 'genUnderscoreDigit' }
 --    'genUnderscoreDigit' ::= [ underline ] digit
 -- @
-genInteger :: Int -> Int -> QC.Gen (ParserExpectedOutput String)
-genInteger fromLength toLength = do
-   firstInt <- genDigit
-   lengthStr <- QC.choose (fromLength,toLength)
-   otherInts <- concat <$> replicateM lengthStr genUnderscoreDigit
-   let input = (firstInt:otherInts)
-   return $ ExpectedOutput input $ filter (/='_') input
-   where genDigit = QC.elements ['0'..'9']
-         optionalUnderscore True digit = ['_',digit]
-         optionalUnderscore False digit = [digit]
-         genUnderscoreDigit = optionalUnderscore
-                              <$> QC.arbitrary
-                              <*> genDigit
+genInteger :: Integer -> Integer -> QC.Gen (ParserExpectedOutput Integer)
+genInteger minimum maximum =
+   let genUnderscore char = QC.arbitrary
+                            <&> \includeUnderscore ->
+                                 if includeUnderscore
+                                    then ['_',char]
+                                    else [char]
+       addUnderscores (fst:rest) = ([fst]:) <$> mapM genUnderscore rest
+       addUnderscores [] = return []
+       input output = concat <$> (addUnderscores $ show $ output)
+       output val = input val <&> \input -> ExpectedOutput input val
+   in output =<< QC.choose (minimum,maximum)
 
 -- |Generate a VHDL specific exponent
 -- > exponent ::= E [ + ] integer  | E - integer
@@ -92,11 +92,11 @@ genExponent :: QC.Gen (ParserExpectedOutput Integer)
 genExponent = do
    expChar <- QC.elements "Ee"
    expSign <- QC.elements ["+","-",""]
-   (ExpectedOutput expVal readableExpVal) <- genInteger 0 200
-   let expectedOutput = read $ case expSign of
-                                 "-" -> expSign ++ readableExpVal
-                                 _ -> readableExpVal
-       input = (expChar:expSign) ++ expVal
+   (ExpectedOutput expStr expVal) <- genInteger 0 200
+   let expectedOutput = expVal & case expSign of
+                                    "-" -> (-) 0
+                                    _ -> id
+       input = (expChar:expSign) ++ expStr
    return $ ExpectedOutput input expectedOutput
 
 ---- |Generate a VHDL specific based literal
@@ -306,102 +306,24 @@ genIdentifier fromLength toLength = do
 --               Nothing -> return ""
 --   expStr <- if includeExponent then genExponent else return ""
 --   return $ intStr ++ decStr ++ expStr
---
----- |Generate a VHDL keyword
---genKeyword :: QC.Gen (GenPair Token)
---genKeyword = do
---   keyword <- QC.elements keywords
---   let keywordLowerStr = show keyword & \(first:others) -> (toLower first:others)
---       genBool = QC.elements [True,False]
---   keywordBools <- replicateM (length keywordLowerStr) genBool
---   let lexInput = map chooseCase $ zip keywordBools keywordLowerStr
---   return $ GenPair lexInput $ Keyword keyword
---   where chooseCase (True,chr) = toUpper chr
---         chooseCase (False,chr) = chr
---         keywords =
---            [ Abs
---            , Access
---            , After
---            , Alias
---            , All
---            , And
---            , Architecture
---            , Array
---            , Assert
---            , Attribute
---            , Begin
---            , Block
---            , Body
---            , Buffer
---            , Bus
---            , Case
---            , Component
---            , Configuration
---            , Constant
---            , Disconnect
---            , Downto
---            , Else
---            , Elsif
---            , End
---            , Entity
---            , Exit
---            , File
---            , For
---            , Function
---            , Generate
---            , Generic
---            , Guarded
---            , If
---            , In
---            , Inout
---            , Is
---            , Label
---            , Library
---            , Linkage
---            , Loop
---            , Map
---            , Mod
---            , Nand
---            , New
---            , Next
---            , Nor
---            , Not
---            , Null
---            , Of
---            , On
---            , Open
---            , Or
---            , Others
---            , Out
---            , Package
---            , Port
---            , Procedure
---            , Process
---            , Range
---            , Record
---            , Register
---            , Rem
---            , Report
---            , Return
---            , Select
---            , Severity
---            , Signal
---            , Subtype
---            , Then
---            , To
---            , Transport
---            , Type
---            , Units
---            , Until
---            , Use
---            , Variable
---            , Wait
---            , When
---            , While
---            , With
---            , Xor
---            ]
---
+
+-- |Generate valid keyword
+-- When passed valid keyword as 'String' input, generates randomised case form of it.
+-- E.g. Passed "and", returns 'QC.Gen' "ANd" or 'QC.Gen' "aNd", etc.
+genKeyword :: String -> QC.Gen String
+genKeyword = genCaseInsensitiveWord
+
+-- |Generates a case insensitive word
+-- When passed a 'String' word, generates randomised case form of it.
+genCaseInsensitiveWord :: String -> QC.Gen String
+genCaseInsensitiveWord word = do
+   let genBool = QC.elements [True,False]
+   wordBools <- replicateM (length word) genBool
+   let lexInput = map chooseCase $ zip wordBools word
+   return lexInput
+   where chooseCase (True,chr) = toUpper chr
+         chooseCase (False,chr) = toLower chr
+
 --genDelimiter :: QC.Gen (GenPair [Token])
 --genDelimiter =
 --   let standardDelimiter = do
@@ -437,3 +359,15 @@ genIdentifier fromLength toLength = do
 --         lexInput <- replicateM length spaces
 --         return $ GenPair lexInput []
 --   in QC.oneof [standardDelimiter,spaceDelimiter]
+
+genComment :: QC.Gen (ParserExpectedOutput String)
+genComment = do
+   randomString <- QC.arbitrary
+   let splitStringOnNewline = span (`notElem` "\r\n") randomString
+       (input,expectedOutput) =
+         case splitStringOnNewline of
+            (fst,snd@('\r':'\n':rest)) -> (fst++snd,rest)
+            (fst,snd@('\r':rest)) -> (fst++"\r\n"++rest,rest)
+            (fst,snd@('\n':rest)) -> (fst++snd,rest)
+            (fst,[]) -> (fst,[])
+   return $ ExpectedOutput ("--" ++ input) expectedOutput

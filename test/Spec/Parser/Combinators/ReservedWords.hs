@@ -22,6 +22,10 @@ import Parser.Combinators.ReservedWords
 import Parser.Combinators.ReservedWords.Internal
 
 import Types (ExpectedOutput(..))
+import Spec.Generators.LexElements
+         ( genKeyword
+         , genCaseInsensitiveWord
+         )
 
 -- |All tests for the module "Parser.Combinators.ReservedWords"
 -- Includes tests for "Parser.Combinators.ReservedWords.Internal"
@@ -138,27 +142,10 @@ invalidReservedWord :: String -> Parser () -> TestTree
 invalidReservedWord keyword parser = QC.testProperty ("Invalid reserved word " ++ keyword) $
    QC.forAll (genNonKeyword keyword) $ \input -> isLeft $ parse parser "TEST" input
 
--- |Generate valid keyword
--- When passed valid keyword as 'String' input, generates randomised case form of it.
--- E.g. Passed "and", returns 'QC.Gen' "ANd" or 'QC.Gen' "aNd", etc.
-genKeyword :: String -> QC.Gen String
-genKeyword = genCaseInsensitiveWord
-
 -- |Generates anything but keyword
 -- When passed a valid keyword as a lower case 'String' input, generates randomised string that doesn't parse as this keyword.
 genNonKeyword :: String -> QC.Gen String
 genNonKeyword keyword = QC.suchThat (genCaseInsensitiveWord =<< QC.arbitrary) $ \word -> checkInvalidStringPair (keyword,word)
-
--- |Generates a case insensitive word
--- When passed a 'String' word, generates randomised case form of it.
-genCaseInsensitiveWord :: String -> QC.Gen String
-genCaseInsensitiveWord word = do
-   let genBool = QC.elements [True,False]
-   wordBools <- replicateM (length word) genBool
-   let lexInput = map chooseCase $ zip wordBools word
-   return lexInput
-   where chooseCase (True,chr) = toUpper chr
-         chooseCase (False,chr) = toLower chr
 
 -- |Tests for internal reserved word parsing functions
 -- "Parser.Combinators.ReservedWords.Internal"
