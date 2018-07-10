@@ -2,7 +2,7 @@
    Module      : Spec.Generators.LexElements
    Description : Generators of basic lexical elements of VHDL
 -}
-module Spec.Generators.LexElements 
+module Spec.Generators.LexElements
    --( GenPair(..)
    --, combineGen
    ( genInteger
@@ -15,12 +15,14 @@ module Spec.Generators.LexElements
    , genCaseInsensitiveWord
    --, genDelimiter
    , genComment
+   , intersperseUnderscores
    ) where
 
 import qualified Test.Tasty.QuickCheck as QC
 
 import Control.Monad
 import Data.Function ((&))
+import Data.Int (Int64)
 import qualified Data.Map.Strict as MapS
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char
@@ -66,18 +68,17 @@ import Parser.Types.Token
 --    'genInteger' ::= digit { 'genUnderscoreDigit' }
 --    'genUnderscoreDigit' ::= [ underline ] digit
 -- @
-genInteger :: Integer -> Integer -> QC.Gen (ParserExpectedOutput Integer)
+genInteger :: Maybe Integer -> Maybe Integer -> QC.Gen (ParserExpectedOutput Integer)
 genInteger minimum maximum =
-   let genUnderscore char = QC.arbitrary
-                            <&> \includeUnderscore ->
-                                 if includeUnderscore
-                                    then ['_',char]
-                                    else [char]
-       addUnderscores (fst:rest) = ([fst]:) <$> mapM genUnderscore rest
-       addUnderscores [] = return []
-       input output = concat <$> (addUnderscores $ show $ output)
+   let input = (intersperseUnderscores . show)
        output val = input val <&> \input -> ExpectedOutput input val
-   in output =<< QC.choose (minimum,maximum)
+       maxInt64 = toInteger (maxBound :: Int64)
+   in output =<< QC.choose ( case (minimum,maximum) of
+                              (Just min,Just max) -> (min,max)
+                              (Just min,Nothing) -> (min,maxInt64)
+                              (Nothing,Just max) -> (0,max)
+                              (Nothing,Nothing) -> (0,maxInt64)
+                           )
 
 -- |Generate a VHDL specific exponent
 -- > exponent ::= E [ + ] integer  | E - integer
@@ -92,7 +93,7 @@ genExponent :: QC.Gen (ParserExpectedOutput Integer)
 genExponent = do
    expChar <- QC.elements "Ee"
    expSign <- QC.elements ["+","-",""]
-   (ExpectedOutput expStr expVal) <- genInteger 0 200
+   (ExpectedOutput expStr expVal) <- genInteger Nothing Nothing
    let expectedOutput = expVal & case expSign of
                                     "-" -> (-) 0
                                     _ -> id
@@ -280,18 +281,11 @@ genIdentifier :: Int -> Int -> QC.Gen String
 genIdentifier fromLength toLength = do
    letter <- QC.elements letters
    lengthStr <- QC.elements [fromLength..toLength]
-   otherLetters <- replicateM lengthStr genUnderscoreLetterOrDigit
-   let identifier = (letter:concat otherLetters)
-   return identifier
+   intersperseUnderscores
+      =<< (letter:)
+      <$> (replicateM lengthStr $ QC.elements letters_or_digits)
    where letters = ['a'..'z'] ++ ['A'..'Z']
          letters_or_digits = ['0'..'9'] ++ letters
-         genUnderscoreLetterOrDigit :: QC.Gen String
-         genUnderscoreLetterOrDigit = do
-            optionalUnderscore <- QC.elements [True,False]
-            letter_or_digit <- QC.elements letters_or_digits
-            return $
-               if optionalUnderscore then ['_',letter_or_digit]
-               else [letter_or_digit]
 
 ---- |Generate a VHDL specific decimal literal
 ---- Arguments: range of unit string, range of optional decimal part, whether exponent used
@@ -371,3 +365,15 @@ genComment = do
             (fst,snd@('\n':rest)) -> (fst++snd,rest)
             (fst,[]) -> (fst,[])
    return $ ExpectedOutput ("--" ++ input) expectedOutput
+
+-- |Intersperse a string with underscores
+-- Useful for many VHDL patterns including integer and identifiers
+intersperseUnderscores :: String -> QC.Gen String
+intersperseUnderscores (fst:rest) = concat . ([fst]:) <$> mapM genUnderscore rest
+   where genUnderscore char =
+            QC.arbitrary
+            <&> \includeUnderscore ->
+                  if includeUnderscore
+                     then ['_',char]
+                     else [char]
+intersperseUnderscores [] = return []

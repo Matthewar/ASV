@@ -12,8 +12,7 @@ import Control.Applicative (liftA2)
 import Data.Either (isLeft)
 import Data.Maybe (isNothing)
 import Data.Int
-         ( Int8
-         , Int16
+         ( Int16
          , Int64
          )
 import Numeric
@@ -50,6 +49,7 @@ import Spec.Generators.LexElements
          , genBitStr
          , genIdentifier
          , genComment
+         , intersperseUnderscores
          )
 
 -- |All tests for the module "Parser.Combinators.Lex"
@@ -110,38 +110,42 @@ validDecimals = testGroup "Valid decimal literals"
 -- Any decimal without a decimal point
 validDecimalIntegers :: TestTree
 validDecimalIntegers = QC.testProperty "Valid integer-kind decimal literals" $
-   QC.forAll genInteger $ \(ExpectedOutput input expectedOutput) -> (parse abstractLiteral "TEST" input) == Right (UniversalInteger expectedOutput)
-   where genInteger :: QC.Gen (ParserExpectedOutput Int64)
-         genInteger = QC.oneof
-                        [ noExponent
-                        , positiveExponent
-                        , negativeExponent
-                        ]
-         genInt :: (QC.Arbitrary a,Integral a) => QC.Gen a
-         genInt = QC.suchThat QC.arbitrary (>= 0)
+   QC.forAll genDecimalInteger $ \(ExpectedOutput input expectedOutput) -> (parse abstractLiteral "TEST" input) == Right (UniversalInteger expectedOutput)
+   where genDecimalInteger :: QC.Gen (ParserExpectedOutput Int64)
+         genDecimalInteger = QC.oneof
+                              [ noExponent
+                              , positiveExponent
+                              , negativeExponent
+                              ]
          noExponent :: QC.Gen (ParserExpectedOutput Int64)
-         noExponent =
-            let gen value = ExpectedOutput (show value) value
-            in gen <$> genInt
-         positiveExponent :: QC.Gen (ParserExpectedOutput Int64)
+         noExponent = let gen (ExpectedOutput input value) = ExpectedOutput input (fromIntegral value)
+                      in gen <$> genInteger Nothing Nothing
          positiveExponent = do
-            let genMulTen :: QC.Gen (Integer,Int8)
-                genMulTen = (\baseVal exponent -> (toInteger baseVal * 10 ^ exponent,exponent))
-                            <$> (genInt :: QC.Gen Int16)
-                            <*> genInt
-            (expectedOutput,exponent) <- (\(a,b) -> (fromInteger a,b))
-                                         <$> QC.suchThat genMulTen ((\val -> val >= 0 && val <= toInteger (maxBound :: Int64)) . fst)
-            actualExponent <- QC.choose (0,exponent)
+            (minValue,maxExponent) <- QC.suchThat 
+                                       ( (,)
+                                     <$> QC.choose (0,2^7)
+                                     <*> QC.choose (0,maxBound :: Int16)
+                                       )
+                                       $ \(baseVal,exp) -> (baseVal * 10 ^ exp) <= toInteger (maxBound :: Int64)
+            actualExponent <- QC.choose (0,maxExponent)
             exponentChar <- QC.elements "Ee"
-            let input = show (floor $ fromIntegral expectedOutput / 10.0 ^^ actualExponent) ++ [exponentChar] ++ show actualExponent
-            return $ ExpectedOutput input expectedOutput
+            valueStr <- intersperseUnderscores $ show $ minValue * 10 ^ (maxExponent - actualExponent)
+            exponentStr <- intersperseUnderscores $ show actualExponent
+            let inputStr = valueStr ++ [exponentChar] ++ exponentStr
+                expectedOutput = fromIntegral $ minValue * 10 ^ maxExponent
+            return $ ExpectedOutput inputStr expectedOutput
          negativeExponent :: QC.Gen (ParserExpectedOutput Int64)
          negativeExponent = do
-            expectedOutput <- genInt
-            shiftVal <- genInt
-            exponentChar <- QC.elements "Ee"
-            let input = show expectedOutput ++ replicate shiftVal '0' ++ [exponentChar] ++ show (-shiftVal)
-            return $ ExpectedOutput input expectedOutput
+            expectedValue <- QC.choose (0,maxBound :: Int64)
+            shiftVal <- QC.choose (0,2^7) -- Number of zeros on end of value
+            let actualValue = intersperseUnderscores $ show expectedValue ++ replicate shiftVal '0'
+            input <- (++)
+                     <$> actualValue
+                     <*> ( (\e val -> (e:'-':val))
+                       <$> QC.elements "Ee"
+                       <*> intersperseUnderscores (show shiftVal)
+                         )
+            return $ ExpectedOutput input expectedValue
 
 -- |Tests for decimal literals that parse to reals
 validDecimalReals :: TestTree
@@ -495,7 +499,7 @@ integers = testGroup "Integers"
 -- |Tests for valid integers
 validIntegers :: TestTree
 validIntegers = QC.testProperty "Valid integers" $
-   QC.forAll (genInteger 0 $ toInteger (maxBound :: Int64)) $
+   QC.forAll (genInteger Nothing Nothing) $
       \(ExpectedOutput input expectedValue) -> parse integer "TEST" input == Right (show expectedValue)
 
 -- |Tests for invalid integers
@@ -517,7 +521,7 @@ exponents = testGroup "Exponents"
 -- |Tests for valid exponents
 validExponents :: TestTree
 validExponents = QC.testProperty "Valid exponents" $
-   QC.forAll genExponent $ \(ExpectedOutput input expectedOutput) -> parse exponent' "TEST" input == Right expectedOutput
+   QC.forAll genExponent $ \(ExpectedOutput input expectedOutput) -> parse exponent' "TEST" input == Right (toInteger expectedOutput)
 
 -- |Tests for invalid exponents
 invalidExponents :: TestTree
