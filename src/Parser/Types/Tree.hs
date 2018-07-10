@@ -5,10 +5,12 @@
 module Parser.Types.Tree where
 
 import Data.Int (Int64)
-import Data.ByteString.Char8 (ByteString)
 
-import qualified Lexer.Types.Token as TokenTypes
-import Lexer.Types.PositionWrapper
+import Parser.Types.PositionWrapper
+import Parser.Types.Token
+         ( AbstractLiteral
+         , BitString
+         )
 
 ------------------------------------------
 -- Design Units
@@ -20,7 +22,7 @@ newtype DesignFile = DesignFile [WrappedDesignUnit]
                    deriving (Eq,Show)
 
 -- |Wrapped design unit
--- Contains 'DesignUnit' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'DesignUnit' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedDesignUnit = PosnWrapper DesignUnit
 
 -- |Design unit
@@ -29,7 +31,7 @@ data DesignUnit = DesignUnit ContextClause WrappedLibraryUnit
                 deriving (Eq,Show)
 
 -- |Wrapped library unit
--- Contains 'LibraryUnit' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'LibraryUnit' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedLibraryUnit = PosnWrapper LibraryUnit
 
 -- |Library unit
@@ -82,7 +84,7 @@ data SecondaryUnit =
    deriving(Eq,Show)
 
 -- |Wrapped library clause
--- Contains 'LibraryClause' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'LibraryClause' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedLibraryClause = PosnWrapper LibraryClause
 
 -- |Library clause
@@ -95,7 +97,7 @@ newtype LibraryClause = LibraryClause [WrappedSimpleName]
                       deriving (Eq,Show)
 
 -- |Wrapped use clause
--- Contains 'UseClause' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'UseClause' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedUseClause = PosnWrapper UseClause
 
 -- |Use clause
@@ -111,7 +113,7 @@ newtype UseClause = UseClause [WrappedSelectedName]
 type ContextClause = [WrappedContextItem]
 
 -- |Wrapped context item
--- Contains 'ContextItem' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ContextItem' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedContextItem = PosnWrapper ContextItem
 
 -- |Context item
@@ -134,7 +136,7 @@ data ContextItem =
 ------------------------------------------
 
 -- |Wrapped entity declaration
--- Contains 'EntityDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'EntityDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedEntityDeclaration = PosnWrapper EntityDeclaration
 
 -- |Entity Declaration
@@ -161,7 +163,7 @@ data EntityHeader = EntityHeader (Maybe WrappedGenericClause) (Maybe WrappedPort
                   deriving (Eq,Show)
 
 -- |Wrapped generic clause
--- Contains 'GenericClause' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'GenericClause' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedGenericClause = PosnWrapper GenericClause
 
 -- |Generic Clause
@@ -173,7 +175,7 @@ type WrappedGenericClause = PosnWrapper GenericClause
 type GenericClause = InterfaceList
 
 -- |Wrapped port clause
--- Contains 'PortClause' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'PortClause' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedPortClause = PosnWrapper PortClause
 
 -- |Port Clause
@@ -192,7 +194,7 @@ type PortClause = InterfaceList
 type EntityDeclarativePart = [WrappedEntityDeclarativeItem]
 
 -- |Wrapped entity declarative part
--- Contains 'EntityDeclartiveItem' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'EntityDeclartiveItem' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedEntityDeclarativeItem = PosnWrapper EntityDeclarativeItem
 
 -- |Entity declarative item
@@ -258,7 +260,7 @@ data EntityDeclarativeItem =
 type EntityStatementPart = [WrappedEntityStatement]
 
 -- |Wrapped entity statement
--- Contains 'EntityStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'EntityStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedEntityStatement = PosnWrapper EntityStatement
 
 -- |Entity statement
@@ -281,7 +283,7 @@ data EntityStatement =
    deriving(Eq,Show)
 
 -- |Wrapped architecture body
--- Contains 'ArchitectureBody' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ArchitectureBody' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedArchitectureBody = PosnWrapper ArchitectureBody
 
 -- |Architecture body
@@ -304,7 +306,7 @@ data ArchitectureBody = ArchitectureBody WrappedSimpleName WrappedName Architect
 type ArchitectureDeclarativePart = [WrappedBlockDeclarativeItem]
 
 -- |Wrapped block declarative item
--- Contains 'BlockDeclarativeItem' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'BlockDeclarativeItem' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedBlockDeclarativeItem = PosnWrapper BlockDeclarativeItem
 
 -- |Block declarative item
@@ -378,7 +380,7 @@ data BlockDeclarativeItem =
 type ArchitectureStatementPart = [WrappedConcurrentStatement]
 
 -- |Wrapped configuration declaration
--- Contains 'ConfigurationDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ConfigurationDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedConfigurationDeclaration = PosnWrapper ConfigurationDeclaration
 
 -- |Configuration declaration
@@ -400,7 +402,7 @@ data ConfigurationDeclaration = ConfigurationDeclaration WrappedSimpleName Wrapp
 type ConfigurationDeclarativePart = [WrappedConfigurationDeclarativeItem]
 
 -- |Wrapped configuration declarative item
--- Contains 'ConfigurationDeclarativeItem' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ConfigurationDeclarativeItem' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedConfigurationDeclarativeItem = PosnWrapper ConfigurationDeclarativeItem
 
 -- |Configuration declarative item
@@ -419,7 +421,7 @@ data ConfigurationDeclarativeItem =
    deriving(Eq,Show)
 
 -- |Wrapped block configuration
--- Contains 'BlockConfiguration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'BlockConfiguration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedBlockConfiguration = PosnWrapper BlockConfiguration
 
 -- |Block Configuration
@@ -434,7 +436,7 @@ data BlockConfiguration = BlockConfiguration WrappedBlockSpecification [WrappedU
                         deriving (Eq,Show)
 
 -- |Wrapped block specification
--- Contains 'BlockSpecification' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'BlockSpecification' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedBlockSpecification = PosnWrapper BlockSpecification
 
 -- |Block Specification
@@ -467,7 +469,7 @@ data BlockSpecification =
    deriving(Eq,Show)
 
 -- |Wrapped index specification
--- Contains 'IndexSpecification' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'IndexSpecification' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedIndexSpecification = PosnWrapper IndexSpecification
 
 -- |Index specification
@@ -486,7 +488,7 @@ data IndexSpecification =
    deriving(Eq,Show)
 
 -- |Wrapped configuration item
--- Contains 'ConfigurationItem' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ConfigurationItem' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedConfigurationItem = PosnWrapper ConfigurationItem
 
 -- |Configuration item
@@ -501,7 +503,7 @@ data ConfigurationItem =
    deriving(Eq,Show)
 
 -- |Wrapped component configuration
--- Contains 'ComponentConfiguration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ComponentConfiguration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedComponentConfiguration = PosnWrapper ComponentConfiguration
 
 -- |Component configuration
@@ -520,7 +522,7 @@ data ComponentConfiguration = ComponentConfiguration WrappedComponentSpecificati
 ------------------------------------------
 
 -- |Wrapped sequential statement
--- Contains 'SequentialStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SequentialStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSequentialStatement = PosnWrapper SequentialStatement
 
 -- |Sequential statement
@@ -590,7 +592,7 @@ data SequentialStatement =
 type SequenceOfStatements = [WrappedSequentialStatement]
 
 -- |Wrapped wait statement
--- Contains 'WaitStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'WaitStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedWaitStatement = PosnWrapper WaitStatement
 
 -- |Wait statement
@@ -610,7 +612,7 @@ data WaitStatement = WaitStatement (Maybe SensitivityList) (Maybe WrappedExpress
 type SensitivityList = [WrappedName]
 
 -- |Wrapped assertion statement
--- Contains 'AssertionStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'AssertionStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedAssertionStatement = PosnWrapper AssertionStatement
 
 -- |Assertion statement
@@ -625,7 +627,7 @@ data AssertionStatement = AssertionStatement WrappedExpression (Maybe WrappedExp
                         deriving (Eq,Show)
 
 -- |Wrapped signal assignment statement
--- Contains 'SignalAssignmentStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SignalAssignmentStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSignalAssignmentStatement = PosnWrapper SignalAssignmentStatement
 
 -- |Signal assignment statement
@@ -637,7 +639,7 @@ data SignalAssignmentStatement = SignalAssignmentStatement WrappedTarget (Maybe 
                                deriving (Eq,Show)
 
 -- |Wrapped target
--- Contains 'Target' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Target' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedTarget = PosnWrapper Target
 
 -- |Target
@@ -656,7 +658,7 @@ data Target =
    deriving(Eq,Show)
 
 -- |Wrapped signal assignment transport
--- Contains 'SignalAssignmentTransport' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SignalAssignmentTransport' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSignalAssignmentTransport = PosnWrapper SignalAssignmentTransport
 
 -- |Signal assignment transport
@@ -672,7 +674,7 @@ data SignalAssignmentTransport = SignalAssignmentTransport
 type Waveform = [WrappedWaveformElement]
 
 -- |Wrapped waveform element
--- Contains 'WaveformElement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'WaveformElement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedWaveformElement = PosnWrapper WaveformElement
 
 -- |Waveform element
@@ -686,7 +688,7 @@ data WaveformElement = Waveform_Expression WrappedExpression (Maybe WrappedExpre
                      deriving(Eq,Show)
 
 -- |Wrapped variable assignment statement
--- Contains 'VariableAssignmentStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'VariableAssignmentStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedVariableAssignmentStatement = PosnWrapper VariableAssignmentStatement
 
 -- |Variable assignment statement
@@ -698,7 +700,7 @@ data VariableAssignmentStatement = VariableAssignmentStatement WrappedTarget Wra
                                  deriving (Eq,Show)
 
 -- |Wrapped procedure call statement
--- Contains 'ProcedureCallStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ProcedureCallStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedProcedureCallStatement = PosnWrapper ProcedureCallStatement
 
 -- |Procedure call statement
@@ -710,7 +712,7 @@ data ProcedureCallStatement = ProcedureCallStatement WrappedName (Maybe ActualPa
                             deriving (Eq,Show)
 
 -- |Wrapped if statement
--- Contains 'IfStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'IfStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedIfStatement = PosnWrapper IfStatement
 
 -- |If statement
@@ -730,7 +732,7 @@ data IfStatement = IfStatement WrappedExpression SequenceOfStatements [WrappedEl
                  deriving (Eq,Show)
 
 -- |Wrapped elsif statement
--- Contains 'ElsifStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ElsifStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedElsifStatement = PosnWrapper ElsifStatement
 
 -- |Elsif statement
@@ -743,7 +745,7 @@ data ElsifStatement = ElsifStatement WrappedExpression SequenceOfStatements
                     deriving (Eq,Show)
 
 -- |Wrapped case statement
--- Contains 'CaseStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'CaseStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedCaseStatement = PosnWrapper CaseStatement
 
 -- |Case statement
@@ -758,7 +760,7 @@ data CaseStatement = CaseStatement WrappedExpression [WrappedCaseStatementAltern
                    deriving (Eq,Show)
 
 -- |Wrapped case statement alternative
--- Contains 'CaseStatementAlternative' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'CaseStatementAlternative' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedCaseStatementAlternative = PosnWrapper CaseStatementAlternative
 
 -- |Case statement alternative
@@ -771,7 +773,7 @@ data CaseStatementAlternative = CaseStatementAlternative Choices SequenceOfState
                               deriving (Eq,Show)
 
 -- |Wrapped loop statement
--- Contains 'LoopStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'LoopStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedLoopStatement = PosnWrapper LoopStatement
 
 -- |Loop statement
@@ -786,7 +788,7 @@ data LoopStatement = LoopStatement (Maybe WrappedSimpleName) (Maybe WrappedItera
                    deriving (Eq,Show)
 
 -- |Wrapped iteration scheme
--- Contains 'IterationScheme' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'IterationScheme' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedIterationScheme = PosnWrapper IterationScheme
 
 -- |Iteration scheme
@@ -802,7 +804,7 @@ data IterationScheme = IterationScheme_While WrappedExpression
                      deriving(Eq,Show)
 
 -- |Wrapped next statement
--- Contains 'NextStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'NextStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedNextStatement = PosnWrapper NextStatement
 
 -- |Next statement
@@ -814,7 +816,7 @@ data NextStatement = NextStatement (Maybe WrappedSimpleName) (Maybe WrappedExpre
                    deriving (Eq,Show)
 
 -- |Wrapped exit statement
--- Contains 'ExitStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ExitStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedExitStatement = PosnWrapper ExitStatement
 
 -- |Exit statement
@@ -826,7 +828,7 @@ data ExitStatement = ExitStatement (Maybe WrappedSimpleName) (Maybe WrappedExpre
                    deriving (Eq,Show)
 
 -- |Wrapped return statement
--- Contains 'ReturnStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ReturnStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedReturnStatement = PosnWrapper ReturnStatement
 
 -- |Return statement
@@ -842,7 +844,7 @@ newtype ReturnStatement = ReturnStatement (Maybe WrappedExpression)
 ------------------------------------------
 
 -- |Wrapped concurrent statement
--- Contains 'ConcurrentStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ConcurrentStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedConcurrentStatement = PosnWrapper ConcurrentStatement
 
 -- |Concurrent statement
@@ -881,7 +883,7 @@ data ConcurrentStatement =
    deriving(Eq,Show)
 
 -- |Wrapped block statement
--- Contains 'BlockStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'BlockStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedBlockStatement = PosnWrapper BlockStatement
 
 -- |Block statement
@@ -917,7 +919,7 @@ data BlockHeader = BlockHeader (Maybe WrappedBlockHeader_Generic) (Maybe Wrapped
                  deriving (Eq,Show)
 
 -- |Wrapped block header generic
--- Contains 'BlockHeader_Generic' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'BlockHeader_Generic' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedBlockHeader_Generic = PosnWrapper BlockHeader_Generic
 
 -- |Block header generic
@@ -930,7 +932,7 @@ data BlockHeader_Generic = BlockHeader_Generic WrappedGenericClause (Maybe Wrapp
                          deriving (Eq,Show)
 
 -- |Wrapped block header port
--- Contains 'BlockHeader_Port' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'BlockHeader_Port' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedBlockHeader_Port = PosnWrapper BlockHeader_Port
 
 -- |Block header port
@@ -957,7 +959,7 @@ type BlockDeclarativePart = [WrappedBlockDeclarativeItem]
 type BlockStatementPart = [WrappedConcurrentStatement]
 
 -- |Wrapped process statement
--- Contains 'ProcessStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ProcessStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedProcessStatement = PosnWrapper ProcessStatement
 
 -- |Process statement
@@ -982,7 +984,7 @@ data ProcessStatement = ProcessStatement (Maybe WrappedSimpleName) (Maybe Sensit
 type ProcessDeclarativePart = [WrappedProcessDeclarativeItem]
 
 -- |Wrapped process declarative item
--- Contains 'ProcessDeclarativeItem' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ProcessDeclarativeItem' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedProcessDeclarativeItem = PosnWrapper ProcessDeclarativeItem
 
 -- |Process declarative item
@@ -1044,7 +1046,7 @@ data ProcessDeclarativeItem =
 type ProcessStatementPart = [WrappedSequentialStatement]
 
 -- |Wrapped concurrent procedure call
--- Contains 'ConcurrentProcedureCall' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ConcurrentProcedureCall' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedConcurrentProcedureCall = PosnWrapper ConcurrentProcedureCall
 
 -- |Concurrent procedure call
@@ -1056,7 +1058,7 @@ data ConcurrentProcedureCall = ConcurrentProcedureCall (Maybe WrappedSimpleName)
                              deriving (Eq,Show)
 
 -- |Wrapped concurrent assertion statement
--- Contains 'ConcurrentAssertionStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ConcurrentAssertionStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedConcurrentAssertionStatement = PosnWrapper ConcurrentAssertionStatement
 
 -- |Concurrent assertion statement
@@ -1068,7 +1070,7 @@ data ConcurrentAssertionStatement = ConcurrentAssertionStatement (Maybe WrappedS
                                   deriving (Eq,Show)
 
 -- |Wrapped concurrent signal assignment statement
--- Contains 'ConcurrentSignalAssignmentStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ConcurrentSignalAssignmentStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedConcurrentSignalAssignmentStatement = PosnWrapper ConcurrentSignalAssignmentStatement
 
 -- | Concurrent signal assignment statement
@@ -1107,7 +1109,7 @@ data SignalAssignmentOptions = SignalAssignmentOptions (Maybe WrappedSignalAssig
                              deriving (Eq,Show)
 
 -- |Wrapped signal assignment guarded
--- Contains 'SignalAssignment_Guarded' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SignalAssignment_Guarded' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSignalAssignment_Guarded = PosnWrapper SignalAssignment_Guarded
 
 -- |Signal assignment option
@@ -1116,7 +1118,7 @@ data SignalAssignment_Guarded = SignalAssignment_Guarded
                               deriving (Eq,Show)
 
 -- |Wrapped signal assignment transport
--- Contains 'SignalAssignment_Transport' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SignalAssignment_Transport' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSignalAssignment_Transport = PosnWrapper SignalAssignment_Transport
 
 -- |Signal assignment option
@@ -1125,7 +1127,7 @@ data SignalAssignment_Transport = SignalAssignment_Transport
                                 deriving (Eq,Show)
 
 -- |Wrapped conditional waveform pair
--- Contains 'ConditionalWaveformPair' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ConditionalWaveformPair' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedConditionalWaveformPair = PosnWrapper ConditionalWaveformPair
 
 -- |Conditional waveform pair
@@ -1137,7 +1139,7 @@ data ConditionalWaveformPair = ConditionalWaveformPair Waveform WrappedExpressio
                              deriving (Eq,Show)
 
 -- |Wrapped selected waveform pair
--- Contains 'SelectedWaveformPair' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SelectedWaveformPair' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSelectedWaveformPair = PosnWrapper SelectedWaveformPair
 
 -- |Selected waveform pair
@@ -1149,7 +1151,7 @@ data SelectedWaveformPair = SelectedWaveformPair Waveform Choices
                           deriving (Eq,Show)
 
 -- |Wrapped component instantiation statement
--- Contains 'ComponentInstantiationStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ComponentInstantiationStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedComponentInstantiationStatement = PosnWrapper ComponentInstantiationStatement
 
 -- |Component instantiation statement
@@ -1164,7 +1166,7 @@ data ComponentInstantiationStatement = ComponentInstantiationStatement WrappedSi
                                      deriving (Eq,Show)
 
 -- |Wrapped generate statement
--- Contains 'GenerateStatement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'GenerateStatement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedGenerateStatement = PosnWrapper GenerateStatement
 
 -- |Generate statement
@@ -1180,7 +1182,7 @@ data GenerateStatement = GenerateStatement WrappedSimpleName WrappedGenerationSc
                        deriving (Eq,Show)
 
 -- |Wrapped generation scheme
--- Contains 'GenerationScheme' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'GenerationScheme' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedGenerationScheme = PosnWrapper GenerationScheme
 
 -- |Generation scheme
@@ -1210,7 +1212,7 @@ data GenerationScheme =
 ------------------------------------------
 
 -- |Wrapped subprogram declaration
--- Contains 'SubprogramDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SubprogramDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSubprogramDeclaration = PosnWrapper SubprogramDeclaration
 
 -- |Subprogram Declaration
@@ -1222,7 +1224,7 @@ newtype SubprogramDeclaration = SubprogramDeclaration SubprogramSpecification
                               deriving (Eq,Show)
 
 -- |Wrapped subprogram specification
--- Contains 'SubprogramSpecification' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SubprogramSpecification' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSubprogramSpecification = PosnWrapper SubprogramSpecification
 
 -- |Subprogram Specification
@@ -1253,7 +1255,7 @@ data SubprogramSpecification =
    deriving(Eq,Show)
 
 -- |Wrapped designator
--- Contains 'Designator' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Designator' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedDesignator = PosnWrapper Designator
 
 -- |Designator
@@ -1278,7 +1280,7 @@ data Designator =
 type FormalParameterList = InterfaceList
 
 -- |Wrapped subprogram body
--- Contains 'SubprogramBody' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SubprogramBody' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSubprogramBody = PosnWrapper SubprogramBody
 
 -- |Subprogram Body
@@ -1301,7 +1303,7 @@ data SubprogramBody = SubprogramBody WrappedSubprogramSpecification SubprogramDe
 type SubprogramDeclarativePart = [WrappedSubprogramDeclarativeItem]
 
 -- |Wrapped subprogram declarative item
--- Contains 'SubprogramDeclarativeItem' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SubprogramDeclarativeItem' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSubprogramDeclarativeItem = PosnWrapper SubprogramDeclarativeItem
 
 -- |Subprogram declarative item
@@ -1363,7 +1365,7 @@ data SubprogramDeclarativeItem =
 type SubprogramStatementPart = [WrappedSequentialStatement]
 
 -- |Wrapped package declaration
--- Contains 'PackageDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'PackageDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedPackageDeclaration = PosnWrapper PackageDeclaration
 
 -- |Package declaration
@@ -1384,7 +1386,7 @@ data PackageDeclaration = PackageDeclaration WrappedSimpleName PackageDeclarativ
 type PackageDeclarativePart = [WrappedPackageDeclarativeItem]
 
 -- |Wrapped package declarative item
--- Contains 'PackageDeclarativeItem' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'PackageDeclarativeItem' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedPackageDeclarativeItem = PosnWrapper PackageDeclarativeItem
 
 -- |Package declarative item
@@ -1443,7 +1445,7 @@ data PackageDeclarativeItem =
    deriving(Eq,Show)
 
 -- |Wrapped package body
--- Contains 'PackageBody' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'PackageBody' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedPackageBody = PosnWrapper PackageBody
 
 -- |Package body
@@ -1464,7 +1466,7 @@ data PackageBody = PackageBody WrappedSimpleName PackageBodyDeclarativePart (May
 type PackageBodyDeclarativePart = [WrappedPackageBodyDeclarativeItem]
 
 -- |Wrapped package body declarative item
--- Contains 'PackageBodyDeclarativeItem' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'PackageBodyDeclarativeItem' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedPackageBodyDeclarativeItem = PosnWrapper PackageBodyDeclarativeItem
 
 -- |Package body declarative item
@@ -1511,7 +1513,7 @@ data PackageBodyDeclarativeItem =
 ------------------------------------------
 
 -- |Wrapped name
--- Contains 'Name' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Name' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedName = PosnWrapper Name
 
 -- |Name type
@@ -1540,7 +1542,7 @@ data Name =
    deriving(Eq,Show)
 
 -- |Wrapped simple name
--- Contains 'SimpleName' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SimpleName' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSimpleName = PosnWrapper SimpleName
 
 -- |Simple name type
@@ -1557,7 +1559,7 @@ type SimpleName = String
 type OperatorSymbol  = StringLiteral
 
 -- |Wrapped selected name
--- Contains 'SelectedName' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SelectedName' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSelectedName = PosnWrapper SelectedName
 
 -- |Selected name typ
@@ -1586,7 +1588,7 @@ data SliceName = SliceName WrappedPrefix WrappedDiscreteRange
                deriving (Eq,Show)
 
 -- |Wrapped attribute name
--- Contains 'AttributeName' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'AttributeName' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedAttributeName = PosnWrapper AttributeName
 
 -- |Attribute name type
@@ -1599,7 +1601,7 @@ data AttributeName = AttributeName WrappedPrefix WrappedSimpleName (Maybe Wrappe
                    deriving (Eq,Show)
 
 -- |Wrapped prefix
--- Contains 'Prefix' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Prefix' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedPrefix = PosnWrapper Prefix
 
 -- |Prefix
@@ -1630,7 +1632,7 @@ data Prefix =
    deriving(Eq,Show)
 
 -- |Wrapped suffix
--- Contains 'Suffix' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Suffix' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSuffix = PosnWrapper Suffix
 
 -- |Suffix
@@ -1653,7 +1655,7 @@ data Suffix =
    deriving(Eq,Show)
 
 -- |Wrapped function call
--- Contains 'FunctionCall' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'FunctionCall' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedFunctionCall = PosnWrapper FunctionCall
 
 -- |Function Call
@@ -1674,7 +1676,7 @@ data FunctionCall = FunctionCall WrappedName ActualParameterPart
 type ActualParameterPart = AssociationList
 
 -- |Wrapped expression
--- Contains 'Expression' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Expression' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedExpression = PosnWrapper Expression
 
 -- |Expression
@@ -1708,7 +1710,7 @@ data Expression =
    deriving(Eq,Show)
 
 -- |Wrapped relation
--- Contains 'Relation' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Relation' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedRelation = PosnWrapper Relation
 
 -- |Relation
@@ -1726,7 +1728,7 @@ data Relation =
    deriving(Eq,Show)
 
 -- |Wrapped simple expression
--- Contains 'SimpleExpression' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SimpleExpression' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSimpleExpression = PosnWrapper SimpleExpression
 
 -- |Simple expression
@@ -1744,7 +1746,7 @@ data SimpleExpression = SimpleExpression (Maybe WrappedSign) WrappedTerm [Wrappe
                       deriving (Eq,Show)
 
 -- |Wrapped relational operator
--- Contains 'RelationalOperator' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'RelationalOperator' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedRelationalOperator = PosnWrapper RelationalOperator
 
 -- |Relational operator
@@ -1771,7 +1773,7 @@ data RelationalOperator =
    deriving(Eq,Show)
 
 -- |Wrapped sign
--- Contains 'Sign' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Sign' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSign = PosnWrapper Sign
 
 -- |Sign
@@ -1786,7 +1788,7 @@ data Sign =
    deriving(Eq,Show)
 
 -- |Wrapped term
--- Contains 'Term' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Term' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedTerm = PosnWrapper Term
 
 -- |Term
@@ -1804,7 +1806,7 @@ data Term = Term WrappedFactor [WrappedMultiplyingOperation]
           deriving (Eq,Show)
 
 -- |Wrapped adding operation
--- Contains 'AddingOperation' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'AddingOperation' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedAddingOperation = PosnWrapper AddingOperation
 
 -- |Adding operation
@@ -1813,7 +1815,7 @@ data AddingOperation = AddingOperation WrappedAddingOperator WrappedTerm
                      deriving (Eq,Show)
 
 -- |Wrapped adding operator
--- Contains 'AddingOperator' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'AddingOperator' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedAddingOperator = PosnWrapper AddingOperator
 
 -- |Adding operator
@@ -1831,7 +1833,7 @@ data AddingOperator =
    deriving(Eq,Show)
 
 -- |Wrapped multiplying operation
--- Contains 'MultiplyingOperation' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'MultiplyingOperation' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedMultiplyingOperation = PosnWrapper MultiplyingOperation
 
 -- |Multipying operation
@@ -1840,7 +1842,7 @@ data MultiplyingOperation = MultiplyingOperation WrappedMultiplyingOperator Wrap
                           deriving (Eq,Show)
 
 -- |Wrapped multiplying operator
--- Contains 'MultiplyingOperator' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'MultiplyingOperator' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedMultiplyingOperator = PosnWrapper MultiplyingOperator
 
 -- |Multiplying operator
@@ -1861,7 +1863,7 @@ data MultiplyingOperator =
    deriving(Eq,Show)
 
 -- |Wrapped Factor
--- Contains 'Factor' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Factor' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedFactor = PosnWrapper Factor
 
 -- |Factor
@@ -1887,7 +1889,7 @@ data Factor =
    deriving(Eq,Show)
 
 -- |Wrapped Primary
--- Contains 'Primary' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Primary' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedPrimary = PosnWrapper Primary
 
 -- |Primary
@@ -1949,7 +1951,7 @@ data Primary =
 type Aggregate = [WrappedElementAssociation]
 
 -- |Wrapped qualified expression
--- Contains 'QualifiedExpression' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'QualifiedExpression' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedQualifiedExpression = PosnWrapper QualifiedExpression
 
 -- |Qualified expression
@@ -1976,7 +1978,7 @@ data TypeConversion = TypeConversion WrappedName WrappedExpression
                     deriving (Eq,Show)
 
 -- |Wrapped allocator
--- Contains 'Allocator' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Allocator' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedAllocator = PosnWrapper Allocator
 
 -- |Allocator
@@ -1999,7 +2001,7 @@ data Allocator =
 type IndexConstraint = [WrappedDiscreteRange]
 
 -- |Wrapped range constraint
--- Contains 'RangeConstraint' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'RangeConstraint' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedRangeConstraint = PosnWrapper RangeConstraint
 
 -- |Range Constraint
@@ -2008,7 +2010,7 @@ newtype RangeConstraint = RangeConstraint WrappedRange
                         deriving (Eq,Show)
 
 -- |Wrapped range definition
--- Contains 'Range' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Range' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedRange = PosnWrapper Range
 
 -- |Range definition
@@ -2027,7 +2029,7 @@ data Range =
    deriving(Eq,Show)
 
 -- |Wrapped direction
--- Contains 'Direction' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Direction' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedDirection = PosnWrapper Direction
 
 -- |Direction
@@ -2042,7 +2044,7 @@ data Direction =
    deriving(Eq,Show)
 
 -- |Wrapped discrete range
--- Contains 'DiscreteRange' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'DiscreteRange' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedDiscreteRange = PosnWrapper DiscreteRange
 
 -- |Discrete range
@@ -2056,7 +2058,7 @@ data DiscreteRange = DiscreteRange_SubtypeIndication SubtypeIndication
                    deriving(Eq,Show)
 
 -- |Wrapped element association
--- Contains 'ElementAssociation' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ElementAssociation' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedElementAssociation = PosnWrapper ElementAssociation
 
 -- |Element association
@@ -2072,7 +2074,7 @@ data ElementAssociation = ElementAssociation (Maybe Choices) WrappedExpression
 type Choices = [WrappedChoice]
 
 -- |Wrapped choice
--- Contains 'Choice' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Choice' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedChoice = PosnWrapper Choice
 
 -- |Choice
@@ -2095,7 +2097,7 @@ data Choice =
 ------------------------------------------
 
 -- |Wrapped type declaration
--- Contains 'TypeDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'TypeDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedTypeDeclaration = PosnWrapper TypeDeclaration
 
 -- |Type declaration
@@ -2126,7 +2128,7 @@ data TypeDeclaration =
    deriving(Eq,Show)
 
 -- |Wrapped subtype declaration
--- Contains 'SubtypeDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SubtypeDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSubtypeDeclaration = PosnWrapper SubtypeDeclaration
 
 -- |Subtype declaration
@@ -2138,7 +2140,7 @@ data SubtypeDeclaration = SubtypeDeclaration WrappedSimpleName WrappedSubtypeInd
                         deriving (Eq,Show)
 
 -- |Wrapped subtype indication
--- Contains 'SubtypeIndication' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SubtypeIndication' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSubtypeIndication = PosnWrapper SubtypeIndication
 
 -- |Subtype Indication
@@ -2153,7 +2155,7 @@ data SubtypeIndication = SubtypeIndication (Maybe WrappedName) WrappedName (Mayb
                        deriving (Eq,Show)
 
 -- |Wrapped constraint
--- Contains 'Constraint' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Constraint' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedConstraint = PosnWrapper Constraint
 
 -- |Constraint
@@ -2172,7 +2174,7 @@ data Constraint =
    deriving(Eq,Show)
 
 -- |Wrapped constant declaration
--- Contains 'ConstantDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ConstantDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedConstantDeclaration = PosnWrapper ConstantDeclaration
 
 -- |Constant declaration
@@ -2184,7 +2186,7 @@ data ConstantDeclaration = ConstantDeclaration [WrappedSimpleName] WrappedSubtyp
                          deriving (Eq,Show)
 
 -- |Wrapped signal declaration
--- Contains 'SignalDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SignalDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSignalDeclaration = PosnWrapper SignalDeclaration
 
 -- |Signal declaration
@@ -2196,7 +2198,7 @@ data SignalDeclaration = SignalDeclaration [WrappedSimpleName] WrappedSubtypeInd
                        deriving (Eq,Show)
 
 -- |Wrapped signal kind
--- Contains 'SignalKind' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SignalKind' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSignalKind = PosnWrapper SignalKind
 
 -- |Signal kind
@@ -2211,7 +2213,7 @@ data SignalKind =
    deriving(Eq,Show)
 
 -- |Wrapped variable declaration
--- Contains 'VariableDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'VariableDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedVariableDeclaration = PosnWrapper VariableDeclaration
 
 -- |Variable declaration
@@ -2223,7 +2225,7 @@ data VariableDeclaration = VariableDeclaration [WrappedSimpleName] WrappedSubtyp
                          deriving (Eq,Show)
 
 -- |Wrapped file declaration
--- Contains 'FileDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'FileDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedFileDeclaration = PosnWrapper FileDeclaration
 
 -- |File declaration
@@ -2236,7 +2238,7 @@ data FileDeclaration = FileDeclaration WrappedSimpleName WrappedSubtypeIndicatio
                      deriving (Eq,Show)
 
 -- |Wrapped interface declaration
--- Contains 'InterfaceDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'InterfaceDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedInterfaceDeclaration = PosnWrapper InterfaceDeclaration
 
 -- |Interface declaration
@@ -2256,7 +2258,7 @@ data InterfaceDeclaration = InterfaceDeclaration (Maybe WrappedInterfaceType) [W
                           deriving (Eq,Show)
 
 -- |Wrapped interface type
--- Contains 'InterfaceType' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'InterfaceType' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedInterfaceType = PosnWrapper InterfaceType
 
 -- |Interface types
@@ -2268,7 +2270,7 @@ data InterfaceType =
    deriving(Eq,Show)
 
 -- |Wrapped mode
--- Contains 'Mode' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Mode' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedMode = PosnWrapper Mode
 
 -- |Mode
@@ -2306,7 +2308,7 @@ type InterfaceList = [WrappedInterfaceDeclaration]
 type AssociationList = [WrappedAssociationElement]
 
 -- |Wrapped association element
--- Contains 'AssociationElement' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'AssociationElement' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedAssociationElement = PosnWrapper AssociationElement
 
 -- |Association element
@@ -2317,7 +2319,7 @@ data AssociationElement = AssociationElement (Maybe WrappedFormalPart) WrappedAc
                         deriving (Eq,Show)
 
 -- |Wrapped formal part
--- Contains 'FormalPart' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'FormalPart' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedFormalPart = PosnWrapper FormalPart
 
 -- |Formal part
@@ -2344,7 +2346,7 @@ data FormalPart =
    deriving(Eq,Show)
 
 -- |Wrapped actual part
--- Contains 'ActualPart' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ActualPart' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedActualPart = PosnWrapper ActualPart
 
 -- |Actual part
@@ -2367,7 +2369,7 @@ data ActualPart =
    deriving(Eq,Show)
 
 -- |Wrapped designator
--- Contains 'ActualDesignator' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ActualDesignator' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedActualDesignator = PosnWrapper ActualDesignator
 
 -- |Actual designator
@@ -2394,7 +2396,7 @@ data ActualDesignator =
    deriving(Eq,Show)
 
 -- |Wrapped alias declaration
--- Contains 'AliasDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'AliasDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedAliasDeclaration = PosnWrapper AliasDeclaration
 
 -- |Alias declaration
@@ -2406,7 +2408,7 @@ data AliasDeclaration = AliasDeclaration WrappedSimpleName WrappedSubtypeIndicat
                       deriving (Eq,Show)
 
 -- |Wrapped attribute declaration
--- Contains 'AttributeDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'AttributeDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedAttributeDeclaration = PosnWrapper AttributeDeclaration
 
 -- |Attribute declaration
@@ -2418,7 +2420,7 @@ data AttributeDeclaration = AttributeDeclaration WrappedSimpleName WrappedName
                           deriving (Eq,Show)
 
 -- |Wrapped component declaration
--- Contains 'ComponentDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ComponentDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedComponentDeclaration = PosnWrapper ComponentDeclaration
 
 -- |Component declaration
@@ -2437,7 +2439,7 @@ data ComponentDeclaration = ComponentDeclaration WrappedSimpleName (Maybe Wrappe
 ------------------------------------------
 
 -- |Wrapped attribute specification
--- Contains 'AttributeSpecification' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'AttributeSpecification' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedAttributeSpecification = PosnWrapper AttributeSpecification
 
 -- |Attribute specification
@@ -2452,7 +2454,7 @@ data AttributeSpecification = AttributeSpecification WrappedSimpleName WrappedEn
                             deriving (Eq,Show)
 
 -- |Wrapped entity name list
--- Contains 'EntityNameList' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'EntityNameList' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedEntityNameList = PosnWrapper EntityNameList
 
 -- |Entity name list
@@ -2484,7 +2486,7 @@ data EntityNameList =
    deriving(Eq,Show)
 
 -- |Wrapped entity class
--- Contains 'EntityClass' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'EntityClass' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedEntityClass = PosnWrapper EntityClass
 
 -- |Entity class
@@ -2547,7 +2549,7 @@ data EntityClass =
    deriving(Eq,Show)
 
 -- |Wrapped entity designator
--- Contains 'EntityDesignator' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'EntityDesignator' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedEntityDesignator = PosnWrapper EntityDesignator
 
 -- |Entity designator
@@ -2558,7 +2560,7 @@ data EntityDesignator =
    deriving(Eq,Show)
 
 -- |Wrapped configuration specification
--- Contains 'ConfigurationSpecification' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ConfigurationSpecification' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedConfigurationSpecification = PosnWrapper ConfigurationSpecification
 
 -- |Configuration specification
@@ -2570,7 +2572,7 @@ data ConfigurationSpecification = ConfigurationSpecification WrappedComponentSpe
                                 deriving (Eq,Show)
 
 -- |Wrapped component specification
--- Contains 'ComponentSpecification' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ComponentSpecification' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedComponentSpecification = PosnWrapper ComponentSpecification
 
 -- |Component specification
@@ -2582,7 +2584,7 @@ data ComponentSpecification = ComponentSpecification WrappedInstantiationList Wr
                             deriving (Eq,Show)
 
 -- |Wrapped instantiation list
--- Contains 'InstantiationList' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'InstantiationList' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedInstantiationList = PosnWrapper InstantiationList
 
 -- |Instantiation list
@@ -2605,7 +2607,7 @@ data InstantiationList =
    deriving(Eq,Show)
 
 -- |Wrapped binding indication
--- Contains 'BindingIndication' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'BindingIndication' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedBindingIndication = PosnWrapper BindingIndication
 
 -- |Binding indication
@@ -2619,7 +2621,7 @@ data BindingIndication = BindingIndication WrappedEntityAspect (Maybe Associatio
                        deriving (Eq,Show)
 
 -- |Wrapped entity aspect
--- Contains 'EntityAspect' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'EntityAspect' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedEntityAspect = PosnWrapper EntityAspect
 
 -- |Entity aspect
@@ -2642,7 +2644,7 @@ data EntityAspect =
    deriving(Eq,Show)
 
 -- |Wrapped generic map aspect
--- Contains 'GenericMapAspect' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'GenericMapAspect' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedGenericMapAspect = PosnWrapper GenericMapAspect
 
 -- |Generic map aspect
@@ -2653,7 +2655,7 @@ type WrappedGenericMapAspect = PosnWrapper GenericMapAspect
 type GenericMapAspect = AssociationList
 
 -- |Wrapped port map aspect
--- Contains 'PortMapAspect' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'PortMapAspect' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedPortMapAspect = PosnWrapper PortMapAspect
 
 -- |Port map aspect
@@ -2664,7 +2666,7 @@ type WrappedPortMapAspect = PosnWrapper PortMapAspect
 type PortMapAspect = AssociationList
 
 -- |Wrapped disconnection specification
--- Contains 'DisconnectionSpecification' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'DisconnectionSpecification' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedDisconnectionSpecification = PosnWrapper DisconnectionSpecification
 
 -- |Disconnection specification
@@ -2678,7 +2680,7 @@ data DisconnectionSpecification = DisconnectionSpecification WrappedGuardedSigna
                                 deriving (Eq,Show)
 
 -- |Wrapped guarded signal list
--- Contains 'GuardedSignalList' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'GuardedSignalList' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedGuardedSignalList = PosnWrapper GuardedSignalList
 
 -- |Guarded signal list
@@ -2698,7 +2700,7 @@ data GuardedSignalList = GuardedSignal_List [WrappedName]
 ------------------------------------------
 
 -- |Wrapped type definition
--- Contains 'TypeDefinition' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'TypeDefinition' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedTypeDefinition = PosnWrapper TypeDefinition
 
 -- |Type definition
@@ -2851,7 +2853,7 @@ data TypeDefinition =
    deriving(Eq,Show)
 
 -- |Wrapped secondary unit declaration
--- Contains 'SecondaryUnitDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'SecondaryUnitDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedSecondaryUnitDeclaration = PosnWrapper SecondaryUnitDeclaration
 
 -- |Secondary unit declaration
@@ -2860,7 +2862,7 @@ data SecondaryUnitDeclaration = SecondaryUnitDeclaration WrappedSimpleName Wrapp
                               deriving (Eq,Show)
 
 -- |Wrapped element declaration
--- Contains 'ElementDeclaration' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'ElementDeclaration' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedElementDeclaration = PosnWrapper ElementDeclaration
 
 -- |Element declaration
@@ -2878,7 +2880,7 @@ data ElementDeclaration = ElementDeclaration [WrappedSimpleName] WrappedSubtypeI
 ------------------------------------------
 
 -- |Wrapped literal type
--- Contains 'Literal' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'Literal' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedLiteral = PosnWrapper Literal
 
 -- |Literal type
@@ -2898,7 +2900,7 @@ data Literal =
    -- |String literal type
    | Literal_String StringLiteral
    -- |Bit string literal type
-   | Literal_BitStr BitStrLiteral
+   | Literal_BitStr BitString
    -- |Represents *null* keyword
    | Literal_Null
    deriving(Eq,Show)
@@ -2917,7 +2919,7 @@ data NumericLiteral =
    deriving(Eq,Show)
 
 -- |Wrapped enumeration literal type
--- Contains 'EnumerationLiteral' (enumeration literal) and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'EnumerationLiteral' (enumeration literal) and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedEnumerationLiteral = PosnWrapper EnumerationLiteral
 
 -- |Enumeration literal type
@@ -2935,40 +2937,12 @@ data EnumerationLiteral =
 -- Contains 'String' (with no quotation marks)
 type StringLiteral = String
 
--- |Bit string literal type
--- Contains:
--- * Literal base 'TokenTypes.LiteralBase'
--- * Literal string 'ByteString'
-data BitStrLiteral = BitStrLiteral TokenTypes.LiteralBase ByteString
-                   deriving (Eq,Show)
-
 -- |Wrapped universal type literal
--- Contains 'AbstractLiteral' (universal type) and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'AbstractLiteral' (universal type) and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedAbstractLiteral = PosnWrapper AbstractLiteral
 
--- |Literals that contain abstract values
--- @
---    abstract_literal ::= decimal_literal | based_literal
--- @
--- = NOTE
--- Lexed output does not match tree specification
--- There are two acceptable types of this literal
--- * Decimal Literals
--- * Based Literals
--- The lexer converts both of these to their representative value:
--- * Integer value
--- * Real - Floating point value
-data AbstractLiteral =
-   -- |Universal integer type value
-   -- Implemented with Haskell 'Data.Int.Int64' type
-   UniversalInteger Int64
-   -- |Universal real type value
-   -- Implemented with Haskell 'Double' type
-   | UniversalReal Double
-   deriving(Eq,Show)
-
 -- |Wrapped physical type literal
--- Contains 'PhysicalLiteral' and 'Parser.Alex.BaseTypes.AlexPosn' (position)
+-- Contains 'PhysicalLiteral' and 'Text.Parsec.Pos.SourcePos' (position)
 type WrappedPhysicalLiteral = PosnWrapper PhysicalLiteral
 
 -- |Physical literal type

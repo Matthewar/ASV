@@ -25,11 +25,25 @@ mkUpperString :: String -> UpperString
 mkUpperString = UpperString . B.pack . (map toUpper)
 
 -- |Abstract literal value
--- Abstract literals convert to either integer or floating point value
+-- @
+--    abstract_literal ::= decimal_literal | based_literal
+-- @
+-- = NOTE
+-- Lexed output does not match tree specification
+-- There are two acceptable types of this literal
+-- * Decimal Literals
+-- * Based Literals
+-- The lexer converts both of these to their representative value:
+-- * Integer value
+-- * Real - Floating point value
 data AbstractLiteral =
+   -- |Universal integer type value
+   -- Implemented with Haskell 'Data.Int.Int64' type
    UniversalInteger Int64
+   -- |Universal real type value
+   -- Implemented with Haskell 'Double' type
    | UniversalReal Double
-   deriving (Eq,Show)
+   deriving(Eq,Show)
 
 -- |Bit string constructor
 -- Forces string to contain '0' and '1' and packs it into a bytestring
