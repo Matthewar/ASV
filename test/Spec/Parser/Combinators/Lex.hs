@@ -165,6 +165,13 @@ invalidDecimals = testGroup "Invalid decimals"
    [ invalidDecimalOutOfBounds
    ]
 
+--invalidDecimalRealAccuracy :: TestTree
+--invalidDecimalRealAccuracy = QC.testProperty "Non-accurate decimal (real-kind) literal (double rounding)" $
+--   QC.forAll genReal $ \(ExpectedOutput input expectedOutput) -> parse abstractLiteral "TEST" input == Right expectedOutput
+--   where genReal :: QC.Gen (ParserExpectedOutput Double)
+--         genReal = do
+--            closestValue <- QC.choose (2.0^53,(1.0 + (1.0 - 2.0 ^ -52)) * 2.0 ^ 1023)
+
 -- |Tests for decimal literals out of bounds
 -- Abstract (decimal) literals that are formatted correctly but are out of bounds
 invalidDecimalOutOfBounds :: TestTree
