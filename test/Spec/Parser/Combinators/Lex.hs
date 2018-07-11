@@ -170,7 +170,21 @@ invalidDecimals = testGroup "Invalid decimals"
 --   QC.forAll genReal $ \(ExpectedOutput input expectedOutput) -> parse abstractLiteral "TEST" input == Right expectedOutput
 --   where genReal :: QC.Gen (ParserExpectedOutput Double)
 --         genReal = do
---            closestValue <- QC.choose (2.0^53,(1.0 + (1.0 - 2.0 ^ -52)) * 2.0 ^ 1023)
+--            integerDifference <- QC.choose (0,2.0^53 - 1)
+--            exponentValue <- QC.choose (1,970)
+--            showFunction <- QC.elements [showEFloat,showFFloat,showFFloatAlt]
+--            let showValue value = (showFunction Nothing $ value * 2.0 ^ exponentValue) ""
+--                value1 = showValue integerDifference
+--                value2 = showValue $ integerDifference + 1.0
+--                findDifference ('.':restA) ('.':restB)
+--                findDifference (fstA:restA) (fstB:restB)
+--                findDifference' ('e':restA) ('e':restB)
+--                findDifference' (fstA:restA) (fstB:restB)
+--                findDifference'' (fstA:restA) (fstB:restB)
+--                findDifference'' [] []
+--
+--            exponentChar <- QC.elements "Ee"
+--            --closestValue <- QC.choose (2.0^53,(1.0 + (1.0 - 2.0 ^ -52)) * 2.0 ^ 1023)
 
 -- |Tests for decimal literals out of bounds
 -- Abstract (decimal) literals that are formatted correctly but are out of bounds
