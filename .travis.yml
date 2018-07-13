@@ -1,12 +1,6 @@
-# This is the simple Travis configuration, which is intended for use
-# on applications which do not require cross-platform and
-# multiple-GHC-version support. For more information and other
-# options, see:
-#
+# Adapted from Stack "simple Travis configuration"
+# More information and other options at:
 # https://docs.haskellstack.org/en/stable/travis_ci/
-#
-# Copy these contents into the root directory of your Github project in a file
-# named .travis.yml
 
 # Use new container infrastructure to enable caching
 sudo: false
@@ -25,16 +19,29 @@ addons:
     packages:
       - libgmp-dev
 
+# Before installation
+# For installing additional dependencies required for the project
 before_install:
 # Download and unpack the stack executable
 - mkdir -p ~/.local/bin
 - export PATH=$HOME/.local/bin:$PATH
 - travis_retry curl -L https://get.haskellstack.org/stable/linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
 
+# Install any dependencies required
 install:
 # Build dependencies
 - stack --no-terminal --install-ghc test --only-dependencies
 
+# Run the build script
 script:
 # Build the package, its tests, and its docs and run the tests
 - stack --no-terminal test --haddock --no-haddock-deps
+
+# Deploy Haddock docs
+deploy:
+   provider: pages
+   skip-cleanup: true
+   github-token: $GITHUB_TOKEN
+   local-dir: stack path --local-doc-root
+#   on:
+#      branch: master
