@@ -75,6 +75,4 @@ The following information is useful for replicating the bug, in order to test it
 - (If the bug occurred when parsing a design) Any files used by the simulator IE contents of library directories
 
 ## Licensing
-While this repository is private, there is no license.
-
-Once published either the MIT or GPLv3 license will apply.
+Currently the GPLv3 license applies to this project.
