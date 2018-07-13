@@ -43,5 +43,8 @@ deploy:
    skip-cleanup: true
    github-token: $GITHUB_TOKEN
    local-dir: stack path --local-doc-root
+   on:
+      branch: feature/parser/refactor
+
 #   on:
 #      branch: master
