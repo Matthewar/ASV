@@ -1,4 +1,7 @@
 # ASV Simulates VHDL
+__NOTE: Major refactor in progress, see [Travis](https://travis-ci.com/Matthewar/ASV) for up to date information on this__
+
+
 Read the [documentation](docs/README.md) before contributing, or for further details about the project.
 
 See the issues for potential contributions to be made.
