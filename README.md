@@ -1,3 +1,5 @@
+[![Travis](https://img.shields.io/travis/Matthewar/ASV.svg)](https://travis-ci.com/Matthewar/ASV)
+
 # ASV Simulates VHDL
 Read the [documentation](docs/README.md) before contributing, or for further details about the project.
 
