@@ -18,6 +18,7 @@ addons:
   apt:
     packages:
       - libgmp-dev
+      - coreutils
 
 # Before installation
 # For installing additional dependencies required for the project
