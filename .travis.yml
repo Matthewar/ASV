@@ -42,7 +42,7 @@ deploy:
    provider: pages
    skip-cleanup: true
    github-token: $GITHUB_TOKEN
-   local-dir: $(python -c 'import os; import subprocess; import sys; sys.stdout.write(os.path.relpath(subprocess.check_output(["stack","path","--local-doc-root"]).strip("\n\r\f"),os.getcwd())); sys.stdout.flush();')
+   local-dir: $(./scripts/deploy.py)
    on:
       branch: feature/parser/refactor
 
