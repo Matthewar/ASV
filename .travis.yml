@@ -18,7 +18,6 @@ addons:
   apt:
     packages:
       - libgmp-dev
-      - realpath
 
 # Before installation
 # For installing additional dependencies required for the project
@@ -43,7 +42,7 @@ deploy:
    provider: pages
    skip-cleanup: true
    github-token: $GITHUB_TOKEN
-   local-dir: $(realpath --relative-to=$PWD $(stack path --local-doc-root))
+   local-dir: $(python -c 'import os; import subprocess; import sys; sys.stdout.write(os.path.relpath(subprocess.check_output(["stack","path","--local-doc-root"]),os.getcwd())); sys.stdout.flush()')
    on:
       branch: feature/parser/refactor
 
