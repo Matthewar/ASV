@@ -37,6 +37,11 @@ script:
 # Build the package, its tests, and its docs and run the tests
 - stack --no-terminal test --haddock --no-haddock-deps
 
+# Get coverage for Coveralls
+after_script:
+- travis_retry curl -L https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.4.0/shc-linux-x64-8.0.1.tar.bz2 | tar -xj
+- ./shc ASV ASV-test
+
 # Deploy Haddock docs
 deploy:
    provider: pages
