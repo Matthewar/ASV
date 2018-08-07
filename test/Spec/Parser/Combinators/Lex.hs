@@ -162,7 +162,7 @@ validDecimalReals = QC.testProperty "Valid real-kind decimal literals" $
 invalidDecimals :: TestTree
 invalidDecimals = testGroup "Invalid decimals"
    [ invalidDecimalRealAccuracy
-   --, invalidDecimalOutOfBounds
+   , invalidDecimalOutOfBounds
    ]
 
 -- |Tests for inaccurate decimal literals
@@ -214,10 +214,11 @@ invalidDecimalRealAccuracy = QC.testProperty "Non-accurate decimal (real-kind) l
 -- Abstract (decimal) literals that are formatted correctly but are out of bounds
 invalidDecimalOutOfBounds :: TestTree
 invalidDecimalOutOfBounds = QC.testProperty "Decimal literal out of bounds" $
-   QC.forAll (QC.oneof [intOutOfBounds,realOutOfBounds]) $ isLeft . (parse abstractLiteral "TEST")
-   where intOutOfBounds = QC.oneof [intOutOfBoundsPositiveExp,intOutOfBoundsNegativeExp,intOutOfBoundsNoExp]
+   QC.forAll decimalOutOfBounds $ isLeft . (parse abstractLiteral "TEST")
+   where decimalOutOfBounds = QC.oneof [intOutOfBounds] --,realOutOfBounds]
+         intOutOfBounds = QC.oneof [intOutOfBoundsPositiveExp] --,intOutOfBoundsNegativeExp,intOutOfBoundsNoExp]
          genPositive :: QC.Gen Integer
-         genPositive = QC.suchThat QC.arbitrary (>=0)
+         genPositive = abs <$> QC.arbitrary
          showValue (value,exponent,eChr) = show value ++ [eChr] ++ show exponent
          intOutOfBoundsPositiveExp =
             let value = (,,)
