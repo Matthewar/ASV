@@ -216,7 +216,7 @@ invalidDecimalOutOfBounds :: TestTree
 invalidDecimalOutOfBounds = QC.testProperty "Decimal literal out of bounds" $
    QC.forAll decimalOutOfBounds $ isLeft . (parse abstractLiteral "TEST")
    where decimalOutOfBounds = QC.oneof [intOutOfBounds] --,realOutOfBounds]
-         intOutOfBounds = QC.oneof [intOutOfBoundsPositiveExp,intOutOfBoundsNegativeExp] --,intOutOfBoundsNoExp]
+         intOutOfBounds = QC.oneof [intOutOfBoundsPositiveExp,intOutOfBoundsNegativeExp,intOutOfBoundsNoExp]
          genPositive :: QC.Gen Integer
          genPositive = abs <$> QC.arbitrary
          showValue (value,exponent,eChr) = show value ++ [eChr] ++ show exponent
@@ -239,7 +239,7 @@ invalidDecimalOutOfBounds = QC.testProperty "Decimal literal out of bounds" $
                             )
                         <*> QC.elements "Ee"
             in showValue <$> value
-         intOutOfBoundsNoExp = show <$> QC.suchThat QC.arbitrary (>toInteger (maxBound :: Int64))
+         intOutOfBoundsNoExp = (show . (+ toInteger (maxBound :: Int64))) <$> genPositive
          realOutOfBounds =
             let genReal :: QC.Gen (String,Char,String)
                 genReal = (,,)
