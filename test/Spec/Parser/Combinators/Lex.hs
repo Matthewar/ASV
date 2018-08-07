@@ -95,7 +95,7 @@ abstractLiterals = testGroup "Abstract literals"
 decimalLiterals :: TestTree
 decimalLiterals = testGroup "Decimal literals"
    [ validDecimals
-   --, invalidDecimals
+   , invalidDecimals
    ]
 
 -- |Tests for valid decimal literals
@@ -161,30 +161,54 @@ validDecimalReals = QC.testProperty "Valid real-kind decimal literals" $
 -- |Tests for invalid decimal literals
 invalidDecimals :: TestTree
 invalidDecimals = testGroup "Invalid decimals"
-   --[ invalidDecimalRealAccuracy
-   [ invalidDecimalOutOfBounds
+   [ invalidDecimalRealAccuracy
+   --, invalidDecimalOutOfBounds
    ]
 
---invalidDecimalRealAccuracy :: TestTree
---invalidDecimalRealAccuracy = QC.testProperty "Non-accurate decimal (real-kind) literal (double rounding)" $
---   QC.forAll genReal $ \(ExpectedOutput input expectedOutput) -> parse abstractLiteral "TEST" input == Right expectedOutput
---   where genReal :: QC.Gen (ParserExpectedOutput Double)
---         genReal = do
---            integerDifference <- QC.choose (0,2.0^53 - 1)
---            exponentValue <- QC.choose (1,970)
---            showFunction <- QC.elements [showEFloat,showFFloat,showFFloatAlt]
---            let showValue value = (showFunction Nothing $ value * 2.0 ^ exponentValue) ""
---                value1 = showValue integerDifference
---                value2 = showValue $ integerDifference + 1.0
---                findDifference ('.':restA) ('.':restB)
---                findDifference (fstA:restA) (fstB:restB)
---                findDifference' ('e':restA) ('e':restB)
---                findDifference' (fstA:restA) (fstB:restB)
---                findDifference'' (fstA:restA) (fstB:restB)
---                findDifference'' [] []
---
---            exponentChar <- QC.elements "Ee"
---            --closestValue <- QC.choose (2.0^53,(1.0 + (1.0 - 2.0 ^ -52)) * 2.0 ^ 1023)
+-- |Tests for inaccurate decimal literals
+-- Abstract (decimal) literals that are between two valid double values but have no corresponding double value of their own
+-- Expected to round to one of the two double values that bound them
+invalidDecimalRealAccuracy :: TestTree
+invalidDecimalRealAccuracy = QC.testProperty "Non-accurate decimal (real-kind) literal (double rounding)" $
+   QC.forAll genReal $ \(ExpectedOutput input (val1,val2)) -> parse abstractLiteral "TEST" input == Right val1 || parse abstractLiteral "TEST" input == Right val2
+   where genReal :: QC.Gen (ParserExpectedOutput (AbstractLiteral,AbstractLiteral))
+         genReal = do
+            integerDifference <- QC.choose (2.0^52,2.0^53 - 1)
+            exponentValue <- QC.choose (1,970) :: QC.Gen Int16
+            showFunction <- QC.elements [showEFloat,showFFloatAlt]
+            let makeValue = (*) (2.0 ^ exponentValue)
+                showValue value = (showFunction Nothing value) ""
+                value1 = makeValue integerDifference
+                value2 = makeValue $ integerDifference + 1.0
+                value1Str = showValue value1
+                value2Str = showValue value2
+                findDifference :: String -> String -> String -> String -> Int -> (String,String,Int,String,String)
+                findDifference ('.':restA) ('.':restB) valueA valueB count = findDifference' restA restB valueA valueB count
+                findDifference (fstA:restA) (fstB:restB) valueA valueB count = findDifference restA restB (fstA:valueA) (fstB:valueB) (count+1)
+                findDifference' :: String -> String -> String -> String -> Int -> (String,String,Int,String,String)
+                findDifference' ('e':restA) ('e':restB) valueA valueB count = (valueA,valueB,count,restA,restB)
+                findDifference' ('e':restA) (fstB:restB) valueA valueB count = findDifference' ('e':restA) restB ('0':valueA) (fstB:valueB) count
+                findDifference' (fstA:restA) ('e':restB) valueA valueB count = findDifference' restA ('e':restB) (fstA:valueA) ('0':valueB) count
+                findDifference' (fstA:restA) (fstB:restB) valueA valueB count = findDifference' restA restB (fstA:valueA) (fstB:valueB) count
+                findDifference' [] (fstB:restB) valueA valueB count = findDifference' [] restB ('0':valueA) (fstB:valueB) count
+                findDifference' (fstA:restA) [] valueA valueB count = findDifference' restA [] (fstA:valueA) ('0':valueB) count
+                findDifference' [] [] valueA valueB count = (valueA,valueB,count,"","")
+                (revValue1,revValue2,shiftVal,expValue1,expValue2) = findDifference value1Str value2Str [] [] 0
+                convertToInt = read . reverse :: String -> Integer
+            preExpValue <- QC.choose (convertToInt revValue1,convertToInt revValue2)
+            expValue <- case (expValue1,expValue2) of
+               ([],[]) -> return Nothing
+               (expValue1,expValue2) -> Just <$> QC.choose (read expValue1,read expValue2) :: QC.Gen (Maybe Integer)
+            let makeValueStr (fst:rest) (Just 0) output = makeValueStr rest Nothing (fst:'.':output)
+                makeValueStr (fst:rest) (Just val) output = makeValueStr rest (Just $ val-1) (fst:output)
+                makeValueStr (fst:rest) Nothing output = makeValueStr rest Nothing (fst:output)
+                makeValueStr [] Nothing output = reverse output
+                preExpValueStr = makeValueStr (show preExpValue) (Just shiftVal) []
+            exponentChar <- QC.elements "Ee"
+            let input = case expValue of
+                           Just val -> preExpValueStr ++ [exponentChar] ++ show val
+                           Nothing -> preExpValueStr
+            return $ ExpectedOutput input (UniversalReal value1,UniversalReal value2)
 
 -- |Tests for decimal literals out of bounds
 -- Abstract (decimal) literals that are formatted correctly but are out of bounds
