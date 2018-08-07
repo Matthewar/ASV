@@ -216,7 +216,7 @@ invalidDecimalOutOfBounds :: TestTree
 invalidDecimalOutOfBounds = QC.testProperty "Decimal literal out of bounds" $
    QC.forAll decimalOutOfBounds $ isLeft . (parse abstractLiteral "TEST")
    where decimalOutOfBounds = QC.oneof [intOutOfBounds] --,realOutOfBounds]
-         intOutOfBounds = QC.oneof [intOutOfBoundsPositiveExp] --,intOutOfBoundsNegativeExp,intOutOfBoundsNoExp]
+         intOutOfBounds = QC.oneof [intOutOfBoundsPositiveExp,intOutOfBoundsNegativeExp] --,intOutOfBoundsNoExp]
          genPositive :: QC.Gen Integer
          genPositive = abs <$> QC.arbitrary
          showValue (value,exponent,eChr) = show value ++ [eChr] ++ show exponent
@@ -227,14 +227,18 @@ invalidDecimalOutOfBounds = QC.testProperty "Decimal literal out of bounds" $
                         <*> QC.elements "Ee"
                 checkValue (value,exponent,_) = (value * 10 ^ exponent) > toInteger (maxBound :: Int64)
             in showValue <$> QC.suchThat value checkValue
+         -- |Generate an integer value greater than max bound of 'Int64' or lower than 0
          intOutOfBoundsNegativeExp =
-            let value = (,,)
-                        <$> genPositive
-                        <*> QC.suchThat QC.arbitrary (<0)
+            let value = (\(int,exp) expChar -> (int,-exp,expChar))
+                        <$> ( (\exponent -> (\val -> (val,exponent))
+                                            <$> QC.oneof [ QC.choose (1,(10^exponent)-1)
+                                                         , (\val -> val * toInteger (maxBound :: Int64) * (10 ^ exponent) + 1) <$> genPositive
+                                                         ]
+                              )
+                          =<< QC.suchThat genPositive (/=0)
+                            )
                         <*> QC.elements "Ee"
-                checkValue (value,exponent,_) = let double = fromInteger value * 10.0 ^^ fromInteger exponent
-                                                in double > fromIntegral (maxBound :: Int64) || double < 0.0
-            in showValue <$> QC.suchThat value checkValue
+            in showValue <$> value
          intOutOfBoundsNoExp = show <$> QC.suchThat QC.arbitrary (>toInteger (maxBound :: Int64))
          realOutOfBounds =
             let genReal :: QC.Gen (String,Char,String)
