@@ -1,12 +1,10 @@
 module Lexer.Types.Error
-( 
-   ParserError(..)
+   ( ParserError(..)
    , WrappedParserError
    , printParserError
    , getFloatBound
    , getLineAndColErrStr
-)
-where
+   ) where
 
 import Data.Char as Char
 import Data.Int (Int64)
@@ -596,6 +594,8 @@ instance (Show ParserError) where
       "Expected continuation of if statement (elsif, else, or end keywords), but got "
       ++ show token
 
+-- ?? NOTE: Function has been copied into test/Spec/Parser/Combinators/Lex
+-- When refactoring this file, it should be imported from here
 -- | Find largest (and by extension smallest) possible value of double
 getFloatBound :: RealFloat a => a -> a
 getFloatBound val =

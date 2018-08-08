@@ -215,7 +215,7 @@ invalidDecimalRealAccuracy = QC.testProperty "Non-accurate decimal (real-kind) l
 invalidDecimalOutOfBounds :: TestTree
 invalidDecimalOutOfBounds = QC.testProperty "Decimal literal out of bounds" $
    QC.forAll decimalOutOfBounds $ isLeft . (parse abstractLiteral "TEST")
-   where decimalOutOfBounds = QC.oneof [intOutOfBounds] --,realOutOfBounds]
+   where decimalOutOfBounds = QC.oneof [intOutOfBounds,realOutOfBounds]
          intOutOfBounds = QC.oneof [intOutOfBoundsPositiveExp,intOutOfBoundsNegativeExp,intOutOfBoundsNoExp]
          genPositive :: QC.Gen Integer
          genPositive = abs <$> QC.arbitrary
@@ -239,15 +239,28 @@ invalidDecimalOutOfBounds = QC.testProperty "Decimal literal out of bounds" $
                             )
                         <*> QC.elements "Ee"
             in showValue <$> value
-         intOutOfBoundsNoExp = (show . (+ toInteger (maxBound :: Int64))) <$> genPositive
+         intOutOfBoundsNoExp = (show . (+ toInteger (maxBound :: Int64))) <$> (QC.suchThat genPositive (/=0))
          realOutOfBounds =
-            let genReal :: QC.Gen (String,Char,String)
-                genReal = (,,)
-                          <$> ((\s -> s "") . (showFFloat Nothing) <$> (QC.arbitrary :: QC.Gen Double))
+            let genReal :: QC.Gen (Double,Char,Int64)
+                genReal = (\(val,exp) chr -> (val,chr,exp))
+                          <$> ( (\val -> (\exponent -> (val,exponent))
+                                         <$> QC.choose (ceiling $ log (getFloatBound (0.0 :: Double)) - log val,maxBound)
+                                )
+                              =<< (abs <$> QC.arbitrary)
+                              )
                           <*> QC.elements "Ee"
-                          <*> (show <$> genPositive)
-                showReal (val,exp,expVal) = val ++ [exp] ++ expVal
-                checkReal (val,exp,expVal) = isInfinite $ (read (val ++ "e" ++ expVal) :: Double)
+                showReal (val,exp,expVal) = (showFFloatAlt Nothing val) "" ++ [exp] ++ show expVal
+                checkReal (val,exp,expVal) = isInfinite $ val * 10.0 ^^ expVal
+                -- ?? Copied from src/Old/Lexer/Types/Error, should move to import after refactoring
+                -- | Find largest (and by extension smallest) possible value of double
+                getFloatBound :: RealFloat a => a -> a
+                getFloatBound val =
+                  let radix = floatRadix val
+                      maxExp = snd $ floatRange val
+                      numBitsSig = floatDigits val
+                      mantissa = (radix ^ numBitsSig) - 1
+                      exp = maxExp - numBitsSig
+                  in encodeFloat mantissa exp
             in showReal <$> QC.suchThat genReal checkReal
 
 -- |Tests for abstract literals with invalid formatting
