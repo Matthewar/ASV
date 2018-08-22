@@ -1,5 +1,5 @@
-[![Travis](https://img.shields.io/travis/Matthewar/ASV.svg)](https://travis-ci.com/Matthewar/ASV)
-[![Coveralls github](https://img.shields.io/coveralls/github/Matthewar/ASV.svg)](https://coveralls.io/github/Matthewar/ASV)
+[![Travis](https://travis-ci.com/Matthewar/ASV.svg?branch=feature%2Fparser%2Frefactor)](https://travis-ci.com/Matthewar/ASV)
+[![Coveralls](https://coveralls.io/repos/github/Matthewar/ASV/badge.svg?branch=feature%2Fparser%2Frefactor)](https://coveralls.io/github/Matthewar/ASV?branch=feature%2Fparser%2Frefactor)
 
 # ASV Simulates VHDL
 Read the [documentation](docs/README.md) before contributing, or for further details about the project.
