@@ -273,7 +273,7 @@ invalidDecimalOutOfBounds = QC.testProperty "Decimal literal out of bounds" $
 basedLiterals :: TestTree
 basedLiterals = testGroup "Based literals"
    [ validBasedLiterals
-   --, invalidBasedLiterals
+   , invalidBasedLiterals
    ]
 
 -- |Tests for valid based literals
@@ -338,6 +338,38 @@ validBasedZeros = QC.testProperty "Valid based literals that evaluate to zero" $
                               UniversalInteger _ -> printZeros
             let input = show base ++ [container] ++ unwrappedVal ++ [container]
             return $ ExpectedOutput input expectedOutput
+
+-- |Tests for invalid based literals
+invalidBasedLiterals :: TestTree
+invalidBasedLiterals = testGroup "Invalid based literals"
+   [ invalidBasedIntegers
+   --, invalidBasedReals
+   ]
+
+-- |Tests for invalid based integer literals
+invalidBasedIntegers :: TestTree
+invalidBasedIntegers = testGroup "Invalid integer-kind based literals" $
+   --[ invalidBasedIntegersOutOfBounds
+   [ invalidBasedIntegersNegativeExponent
+   ]
+
+-- |Tests for integer-kind based literals that evaluate to reals
+-- This occurs when the exponent is negative and its magnitude is greater than logBase value
+invalidBasedIntegersNegativeExponent :: TestTree
+invalidBasedIntegersNegativeExponent = QC.testProperty "Integer based literals that evaluate to reals" $
+   QC.forAll genInvalidBased $ \input -> isLeft $ parse abstractLiteral "TEST" input
+   where genInvalidBased = do
+            container <- QC.elements ['#',':']
+            base <- QC.choose (2,16)
+            expChar <- QC.elements "Ee"
+            value <- abs <$> QC.suchThat QC.arbitrary (/=0)
+            let maxExponent = - basicLog base value 0
+            exponent <- show <$> QC.choose (minBound,maxExponent)
+            return $ [container] ++ show base ++ show value ++ [container,expChar] ++ exponent
+         basicLog :: Int -> Int -> Int -> Int
+         basicLog base input logVal = case input `divMod` base of
+                                       (newVal,0) -> basicLog base newVal (logVal+1)
+                                       _ -> logVal
 
 -- |Tests for abstract literals with invalid formatting
 invalidAbstractFormatting :: TestTree
