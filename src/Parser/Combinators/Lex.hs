@@ -313,14 +313,7 @@ bitStringLiteral =
          hexString :: Char -> Parser BitString
          hexString = baseString (oneOf "Xx") hexDigit hexDigitMap
          octDigitMap :: Char -> String
-         octDigitMap '0' = "000"
-         octDigitMap '1' = "001"
-         octDigitMap '2' = "010"
-         octDigitMap '3' = "011"
-         octDigitMap '4' = "100"
-         octDigitMap '5' = "101"
-         octDigitMap '6' = "110"
-         octDigitMap '7' = "111"
+         octDigitMap = tail . hexDigitMap
          hexDigitMap :: Char -> String
          hexDigitMap '0' = "0000"
          hexDigitMap '1' = "0001"
