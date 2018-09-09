@@ -9,6 +9,10 @@ import qualified Test.Tasty.QuickCheck as QC
 
 import Control.Monad (replicateM)
 import Control.Applicative (liftA2)
+import Data.Char
+         ( toUpper
+         , intToDigit
+         )
 import Data.Either (isLeft)
 import Data.Maybe (isNothing)
 import Data.Int
@@ -19,6 +23,7 @@ import Numeric
          ( showFFloat
          , showEFloat
          , showFFloatAlt
+         , showIntAtBase
          )
 import Text.Parsec (parse)
 import Text.Parsec.Char (anyChar)
@@ -87,7 +92,7 @@ invalidIdentifiers = QC.testProperty "Invalid identifiers" $
 abstractLiterals :: TestTree
 abstractLiterals = testGroup "Abstract literals"
    [ decimalLiterals
-   --, basedLiterals
+   , basedLiterals
    , invalidAbstractFormatting
    ]
 
@@ -262,6 +267,50 @@ invalidDecimalOutOfBounds = QC.testProperty "Decimal literal out of bounds" $
                       exp = maxExp - numBitsSig
                   in encodeFloat mantissa exp
             in showReal <$> QC.suchThat genReal checkReal
+
+-- |Tests for based literals
+basedLiterals :: TestTree
+basedLiterals = testGroup "Based literals"
+   [ validBasedLiterals
+   --, invalidBasedLiterals
+   ]
+
+-- |Tests for valid based literals
+-- In this case valid is taken to not only include values that successfully parse, but values that successfully parse without rounding
+validBasedLiterals :: TestTree
+validBasedLiterals = testGroup "Valid based literals"
+   [ validBasedIntegers
+   --, validBasedReals
+   ]
+
+-- |Tests for based literals that parse to integers
+-- Any based abstract literal without a decimal point
+validBasedIntegers :: TestTree
+validBasedIntegers = QC.testProperty "Valid integer-kind based literals" $
+   QC.forAll genBasedInteger $ \(ExpectedOutput input expectedOutput) -> (parse abstractLiteral "TEST" input) == Right (UniversalInteger expectedOutput)
+   where genBasedInteger = do
+            container <- QC.elements ['#',':']
+            base <- QC.choose (2,16)
+            expChar <- QC.elements "Ee"
+            nonExponentInt <- abs <$> QC.arbitrary :: QC.Gen Int64
+            let log = logBase (fromIntegral base)
+                expValueBound = floor $ logBase (fromIntegral base) $ fromIntegral (maxBound :: Int64) / fromIntegral nonExponentInt
+            potentialExponentValue <- QC.choose (-expValueBound,expValueBound)
+            includeExponent <- QC.elements [True,False]
+            let (exponentValue,exponentStr) = if includeExponent
+                                                then (potentialExponentValue,expChar:show exponentValue)
+                                                else (0,"")
+            let lowerUpper char = QC.elements [id,toUpper] <*> return char
+            unitBasedStr <- mapM lowerUpper $ (showIntAtBase base intToDigit nonExponentInt) ""
+                            ++ if exponentValue < 0
+                                 then replicate (-exponentValue) '0'
+                                 else ""
+            let input = show base ++ [container] ++ unitBasedStr ++ [container] ++ exponentStr
+                expectedOutput = nonExponentInt
+                                 * if exponentValue < 0
+                                    then 1
+                                    else base ^ exponentValue
+            return $ ExpectedOutput input expectedOutput
 
 -- |Tests for abstract literals with invalid formatting
 invalidAbstractFormatting :: TestTree
