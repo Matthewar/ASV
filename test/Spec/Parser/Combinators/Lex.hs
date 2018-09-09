@@ -433,7 +433,10 @@ comments = testGroup "Comments"
 -- |Tests for valid comments
 validComments :: TestTree
 validComments = QC.testProperty "Valid comments" $
-   QC.forAll genComment $ \(ExpectedOutput input expectedRemainder) -> parseIncludeRemainder input == Right expectedRemainder
+   QC.forAll genComment $ \(ExpectedOutput input expectedRemainder) ->
+      QC.classify (length input > 2) "non-empty comments"
+      $ QC.classify (elem '\n' input || elem '\r' input) "comments with newline"
+      $ parseIncludeRemainder input == Right expectedRemainder
    where parseIncludeRemainder = parse (comment *> manyTill anyChar eof) "TEST"
 
 -- |Tests for invalid comments
