@@ -176,6 +176,7 @@ abstractLiteral =
             | exponent >= 0 = makeUniversalInteger $ readFunc $ units ++ replicate (fromInteger exponent) '0'
             | otherwise = let shiftValue 0 finished = makeUniversalInteger $ readFunc $ reverse finished
                               shiftValue shift ('0':rest) = shiftValue (shift-1) rest
+                              shiftValue shift [] = makeUniversalInteger 0
                               shiftValue shift valueStr = unexpected ( "floating point value "
                                                                      ++ ( (\(a,b) -> reverse b ++ reverse a)
                                                                         $ splitAt shift

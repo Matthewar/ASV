@@ -293,8 +293,7 @@ validBasedIntegers = QC.testProperty "Valid integer-kind based literals" $
             base <- QC.choose (2,16)
             expChar <- QC.elements "Ee"
             nonExponentInt <- abs <$> QC.arbitrary :: QC.Gen Int64
-            let log = logBase (fromIntegral base)
-                expValueBound = floor $ logBase (fromIntegral base) $ fromIntegral (maxBound :: Int64) / fromIntegral nonExponentInt
+            let expValueBound = floor $ logBase (fromIntegral base) $ fromIntegral (maxBound :: Int64) / fromIntegral nonExponentInt
             potentialExponentValue <- QC.choose (-expValueBound,expValueBound)
             includeExponent <- QC.elements [True,False]
             let (exponentValue,exponentStr) = if includeExponent
