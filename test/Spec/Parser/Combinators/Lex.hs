@@ -14,6 +14,7 @@ import Data.Char
          , intToDigit
          )
 import Data.Either (isLeft)
+import Data.Functor ((<&>))
 import Data.Maybe (isNothing)
 import Data.Int
          ( Int16
@@ -281,6 +282,7 @@ validBasedLiterals :: TestTree
 validBasedLiterals = testGroup "Valid based literals"
    [ validBasedIntegers
    --, validBasedReals
+   , validBasedZeros
    ]
 
 -- |Tests for based literals that parse to integers
@@ -309,6 +311,32 @@ validBasedIntegers = QC.testProperty "Valid integer-kind based literals" $
                                  * if exponentValue < 0
                                     then 1
                                     else base ^ exponentValue
+            return $ ExpectedOutput input expectedOutput
+
+-- |Tests for valid based literals that evaluate to zero
+validBasedZeros :: TestTree
+validBasedZeros = QC.testProperty "Valid based literals that evaluate to zero" $
+   QC.forAll genBasedZero $ \(ExpectedOutput input expectedOutput) ->
+      QC.label ("literal is type " ++ case expectedOutput of
+                                       UniversalInteger _ -> "integer"
+                                       UniversalReal _ -> "real"
+               )
+      $ parse abstractLiteral "TEST" input == Right expectedOutput
+   where genBasedZero :: QC.Gen (ParserExpectedOutput AbstractLiteral)
+         genBasedZero = do
+            container <- QC.elements ['#',':']
+            base <- QC.choose (2,16) :: QC.Gen Int
+            expChar <- QC.elements "Ee"
+            let printZeros = QC.suchThat QC.arbitrary (>0) <&> \num -> replicate num '0'
+            expectedOutput <- QC.elements [UniversalInteger 0,UniversalReal 0.0]
+            unwrappedVal <- case expectedOutput of
+                              UniversalReal _ -> (++)
+                                                 <$> printZeros
+                                                 <*> ( ('.':)
+                                                   <$> printZeros
+                                                     )
+                              UniversalInteger _ -> printZeros
+            let input = show base ++ [container] ++ unwrappedVal ++ [container]
             return $ ExpectedOutput input expectedOutput
 
 -- |Tests for abstract literals with invalid formatting
