@@ -17,7 +17,8 @@ import Control.Exception
 import Control.Monad (replicateM)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char
-         ( toLower
+         ( isLatin1
+         , toLower
          , toUpper
          )
 import Data.Functor ((<&>))
@@ -152,7 +153,7 @@ internalTypes = testGroup "Internal types"
 upperStringInternalTests :: TestTree
 upperStringInternalTests = testGroup "UpperString type class tests"
    [ upperStringEqTests
-   --, upperStringShowTests
+   , upperStringShowTests
    ]
 
 -- |Tests for the derived 'Eq' type class for 'UpperString' type
@@ -180,3 +181,14 @@ upperStringEqTests = testGroup "Eq type class tests"
                   | otherwise = change rest (index-1) (fst:newA) (fst:newB)
                 change [] index newA newB = return (newA,newB)
             change rawString index [] []
+
+-- |Tests for the explicit 'Show' type class for 'UpperString' type
+upperStringShowTests :: TestTree
+upperStringShowTests = QC.testProperty "Show type class test" $
+   QC.forAll genString $ \(ExpectedOutput input expectedOutput) -> show input == expectedOutput
+   where genString :: QC.Gen (ExpectedOutput UpperString String)
+         genString = do
+            inputStr <- QC.suchThat QC.arbitrary $ all isLatin1
+            let input = mkUpperString inputStr
+                expectedOutput = map toUpper inputStr
+            return $ ExpectedOutput input expectedOutput
