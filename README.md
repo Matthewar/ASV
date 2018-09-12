@@ -58,6 +58,8 @@ Installing and using the tool is done through the `stack` tool.
 ## Documentation
 Documentation [here](docs/README.md)
 
+See also the [Haddock documentation](matthewar.github.io/ASV).
+
 ## Similar Projects
 Most VHDL simulators are closed source products, this project aims to provide an open source tool that anyone can use.
 

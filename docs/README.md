@@ -19,6 +19,7 @@ Much of the code has been commented in order to automatically generate documenta
 This is done using the [Haddock](https://github.com/haskell/haddock) tool and may be useful when contributing to the code.
 
 To generate this automated documentation, run the command `stack haddock`.
+Alternatively, this is automatically run and published for the master branch, and the generated documentation can be found [here](matthewar.github.io/ASV).
 
 ## Tool
 - [Errors](haskell/Errors.md)
