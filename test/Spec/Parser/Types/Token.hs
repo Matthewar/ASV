@@ -144,14 +144,14 @@ invalidBitStrings = QC.testProperty "Invalid bit strings" $
 -- "Parser.Types.Token.Internal"
 internalTypes :: TestTree
 internalTypes = testGroup "Internal types"
-   [ upperStringInternalTests
-   --, bitStringTests
+   [ internalUpperStringTests
+   , internalBitStringTests
    ]
 
 -- |Tests for 'UpperString' type classes
--- Derived Eq class and explicit Show class
-upperStringInternalTests :: TestTree
-upperStringInternalTests = testGroup "UpperString type class tests"
+-- Derived 'Eq' class and explicit 'Show' class
+internalUpperStringTests :: TestTree
+internalUpperStringTests = testGroup "UpperString type class tests"
    [ upperStringEqTests
    , upperStringShowTests
    ]
@@ -192,3 +192,37 @@ upperStringShowTests = QC.testProperty "Show type class test" $
             let input = mkUpperString inputStr
                 expectedOutput = map toUpper inputStr
             return $ ExpectedOutput input expectedOutput
+
+-- |Tests for 'UpperString' type classes
+-- Derived 'Eq' class and explicit 'Show' class
+internalBitStringTests :: TestTree
+internalBitStringTests = testGroup "BitString type class tests"
+   [ bitStringEqTests
+   , bitStringShowTests
+   ]
+
+-- |Tests for the derived 'Eq' type class for 'BitString' type
+bitStringEqTests :: TestTree
+bitStringEqTests = testGroup "Eq type class tests"
+   [ QC.testProperty "(==) test" $ baseTest (==) genSameStrings
+   , QC.testProperty "(/=) test" $ baseTest (/=) genDiffStrings
+   ]
+   where baseTest compare genStrings = QC.forAll genStrings $ \(a,b) -> mkBitString a `compare` mkBitString b
+         genBitStr = let bit = QC.elements "01"
+                         makeStr length = replicateM length bit
+                         length = abs <$> QC.arbitrary
+                     in makeStr =<< length
+         genSameStrings = genBitStr <&> \a -> (a,a)
+         genDiffStrings = QC.suchThat ((,) <$> genBitStr <*> genBitStr) (\(a,b) -> a /= b)
+
+-- |Tests for the explicit 'Show' type class for 'BitString' type
+bitStringShowTests :: TestTree
+bitStringShowTests = QC.testProperty "Show type class test" $
+   QC.forAll genString $ \(ExpectedOutput input expectedOutput) -> show input == expectedOutput
+   where genString :: QC.Gen (ExpectedOutput BitString String)
+         genString = do
+            length <- abs <$> QC.arbitrary
+            inputStr <- replicateM length $ QC.elements "01"
+            let bitStr = mkBitString inputStr
+                expectedOutput = "\"" ++ inputStr ++ "\""
+            return $ ExpectedOutput bitStr expectedOutput
