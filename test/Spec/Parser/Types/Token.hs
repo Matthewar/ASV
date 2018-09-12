@@ -9,9 +9,15 @@ module Spec.Parser.Types.Token (tests) where
 import Test.Tasty
 import qualified Test.Tasty.QuickCheck as QC
 
+import Control.Exception
+         ( catch
+         , evaluate
+         , ErrorCall
+         )
 import Control.Monad (replicateM)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (toUpper)
+import Data.List (isPrefixOf)
 
 import Parser.Types.Token
 import Parser.Types.Token.Internal
@@ -53,7 +59,7 @@ validUpperStrings = QC.testProperty "Valid upper case strings" $
 bitStringTests :: TestTree
 bitStringTests = testGroup "Bit string constructor"
    [ validBitStrings
-   --, invalidBitStrings
+   , invalidBitStrings
    ]
 
 -- |Valid bit string tests
@@ -67,3 +73,20 @@ validBitStrings = QC.testProperty "Valid bit strings" $
             input <- replicateM stringLength binaryChar
             let expectedOutput = BitString $ B.pack input
             return $ ExpectedOutput input expectedOutput
+
+-- |Invalid bit string tests
+invalidBitStrings :: TestTree
+invalidBitStrings = QC.testProperty "Invalid bit strings" $
+   QC.forAll genInvalid $ \(ExpectedOutput input expectedOutput) -> QC.ioProperty $
+      catch ((evaluate $ mkBitString input) *> return False) (return . checkError expectedOutput)
+   where genInvalid = do
+            let checkInvalid ('1':rest) = checkInvalid rest
+                checkInvalid ('0':rest) = checkInvalid rest
+                checkInvalid _ = True
+            str <- QC.suchThat QC.arbitrary (\s -> not (null s) && checkInvalid s)
+            let findInvalid ('1':rest) = findInvalid rest
+                findInvalid ('0':rest) = findInvalid rest
+                findInvalid (chr:_) = chr
+            return $ ExpectedOutput str $ "Invalid character in bit string '" ++ [findInvalid str] ++ "'"
+         checkError :: String -> ErrorCall -> Bool
+         checkError expected actual = isPrefixOf expected $ show actual
