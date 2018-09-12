@@ -125,6 +125,7 @@ invalidBitStrings = QC.testProperty "Invalid bit strings" $
    where genInvalid = do
             let checkInvalid ('1':rest) = checkInvalid rest
                 checkInvalid ('0':rest) = checkInvalid rest
+                checkInvalid [] = False
                 checkInvalid _ = True
             str <- QC.suchThat QC.arbitrary (\s -> not (null s) && checkInvalid s)
             let findInvalid ('1':rest) = findInvalid rest
