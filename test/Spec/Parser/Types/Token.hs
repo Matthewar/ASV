@@ -16,7 +16,10 @@ import Control.Exception
          )
 import Control.Monad (replicateM)
 import qualified Data.ByteString.Lazy.Char8 as B
-import Data.Char (toUpper)
+import Data.Char
+         ( toLower
+         , toUpper
+         )
 import Data.Functor ((<&>))
 import Data.List (isPrefixOf)
 
@@ -35,6 +38,7 @@ tests = testGroup "Parser token types constructors"
    [ upperStringTests
    , abstractLiteralTests
    , bitStringTests
+   , internalTypes
    ]
 
 -- |Tests for constructor function of 'UpperString'
@@ -134,3 +138,45 @@ invalidBitStrings = QC.testProperty "Invalid bit strings" $
             return $ ExpectedOutput str $ "Invalid character in bit string '" ++ [findInvalid str] ++ "'"
          checkError :: String -> ErrorCall -> Bool
          checkError expected actual = isPrefixOf expected $ show actual
+
+-- |Tests for internal token types
+-- "Parser.Types.Token.Internal"
+internalTypes :: TestTree
+internalTypes = testGroup "Internal types"
+   [ upperStringInternalTests
+   --, bitStringTests
+   ]
+
+-- |Tests for 'UpperString' type classes
+-- Derived Eq class and explicit Show class
+upperStringInternalTests :: TestTree
+upperStringInternalTests = testGroup "UpperString type class tests"
+   [ upperStringEqTests
+   --, upperStringShowTests
+   ]
+
+-- |Tests for the derived 'Eq' type class for 'UpperString' type
+upperStringEqTests :: TestTree
+upperStringEqTests = testGroup "Eq type class tests"
+   [ QC.testProperty "(==) test" $ baseTest (==) genSameStrings
+   , QC.testProperty "(/=) test" $ baseTest (/=) genDiffStrings
+   ]
+   where baseTest compare genStrings = QC.forAll genStrings $ \(a,b) -> mkUpperString a `compare` mkUpperString b
+         genSameStrings = do
+            rawString <- QC.arbitrary
+            let lowerUpper chr = QC.elements [toUpper,toLower] <*> return chr
+                caseString = mapM lowerUpper rawString
+            (,) <$> caseString <*> caseString
+         genDiffStrings = QC.oneof [genCompletelyDiffStrings,genSlightlyDiffStrings]
+         genCompletelyDiffStrings = let rawString = QC.arbitrary
+                                        dualStrings = (,) <$> rawString <*> rawString
+                                    in QC.suchThat dualStrings $ \(a,b) -> B.pack a /= B.pack b
+         genSlightlyDiffStrings = do
+            rawString <- QC.suchThat QC.arbitrary (not . null)
+            index <- QC.choose (0,length rawString - 1)
+            let change :: String -> Int -> String -> String -> QC.Gen (String,String)
+                change (fst:rest) index newA newB
+                  | index == 0 = QC.suchThat QC.arbitrary (\fstB -> B.singleton fstB /= B.singleton fst) >>= \fstB -> change rest (index-1) (fst:newA) (fstB:newB)
+                  | otherwise = change rest (index-1) (fst:newA) (fst:newB)
+                change [] index newA newB = return (newA,newB)
+            change rawString index [] []
