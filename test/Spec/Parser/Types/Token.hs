@@ -17,6 +17,7 @@ import Control.Exception
 import Control.Monad (replicateM)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.Char (toUpper)
+import Data.Functor ((<&>))
 import Data.List (isPrefixOf)
 
 import Parser.Types.Token
@@ -32,6 +33,7 @@ import Types
 tests :: TestTree
 tests = testGroup "Parser token types constructors"
    [ upperStringTests
+   , abstractLiteralTests
    , bitStringTests
    ]
 
@@ -53,6 +55,30 @@ validUpperStrings = QC.testProperty "Valid upper case strings" $
             input <- replicateM stringLength QC.arbitrary
             let expectedOutput = UpperString $ B.pack $ map toUpper $ input
             return $ ExpectedOutput input expectedOutput
+
+-- |Tests for the derived classes for 'AbstractLiteral'
+-- Both classes 'Eq' and 'Show' are derived for this type.
+abstractLiteralTests :: TestTree
+abstractLiteralTests = testGroup "Abstract literal class tests"
+   [ abstractLiteralEqTests
+   --, abstractLiteralShowTests
+   ]
+
+-- |Tests for the derived 'Eq' type class for 'AbstractLiteral' type
+abstractLiteralEqTests :: TestTree
+abstractLiteralEqTests = testGroup "Eq type class tests"
+   [ abstractLiteralEqualsOperatorTests
+   --, abstractLiteralNotEqualsOperatorTests
+   ]
+
+-- |Tests for '(==)' operator in the 'Eq' type class for 'AbstractLiteral' type
+abstractLiteralEqualsOperatorTests :: TestTree
+abstractLiteralEqualsOperatorTests = QC.testProperty "(==) test" $
+   QC.forAll (QC.oneof [genInteger,genReal] :: QC.Gen (AbstractLiteral,AbstractLiteral)) $ \(value1,value2) -> value1 == value2
+   where genInteger = genValue <&> \(a,b) -> (UniversalInteger a,UniversalInteger b)
+         genReal = genValue <&> \(a,b) -> (UniversalReal a,UniversalReal b)
+         genValue :: (QC.Arbitrary a,Eq a,Num a) => QC.Gen (a,a)
+         genValue = QC.arbitrary <&> \a -> (a,a)
 
 -- |Tests for constructor function of 'BitString'
 -- Uses constructor function 'mkBitString'
