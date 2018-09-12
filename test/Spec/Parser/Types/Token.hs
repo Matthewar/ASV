@@ -61,7 +61,7 @@ validUpperStrings = QC.testProperty "Valid upper case strings" $
 abstractLiteralTests :: TestTree
 abstractLiteralTests = testGroup "Abstract literal class tests"
    [ abstractLiteralEqTests
-   --, abstractLiteralShowTests
+   , abstractLiteralShowTests
    ]
 
 -- |Tests for the derived 'Eq' type class for 'AbstractLiteral' type
@@ -82,6 +82,20 @@ abstractLiteralEqTests = testGroup "Eq type class tests"
             int <- QC.arbitrary
             real <- QC.arbitrary
             QC.elements [(UniversalInteger int,UniversalReal real),(UniversalReal real,UniversalInteger int)]
+
+-- |Tests for the derived 'Show' type class for 'AbstractLiteral' type
+abstractLiteralShowTests :: TestTree
+abstractLiteralShowTests = QC.testProperty "Show type class test" $
+   QC.forAll genShowLiteral $ \(ExpectedOutput input expectedOutput) -> show input == expectedOutput
+   where genShowLiteral = convertShow <$> genLiteral
+         genLiteral = QC.oneof [ UniversalInteger <$> QC.arbitrary
+                               , UniversalReal <$> QC.arbitrary
+                               ]
+         convertShow lit@(UniversalInteger val) = ExpectedOutput lit $ "UniversalInteger " ++ showValue val
+         convertShow lit@(UniversalReal val) = ExpectedOutput lit $ "UniversalReal " ++ showValue val
+         showValue val
+            | val < 0 = "(" ++ show val ++ ")"
+            | otherwise = show val
 
 -- |Tests for constructor function of 'BitString'
 -- Uses constructor function 'mkBitString'
