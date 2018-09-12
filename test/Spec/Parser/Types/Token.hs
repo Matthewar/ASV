@@ -67,18 +67,21 @@ abstractLiteralTests = testGroup "Abstract literal class tests"
 -- |Tests for the derived 'Eq' type class for 'AbstractLiteral' type
 abstractLiteralEqTests :: TestTree
 abstractLiteralEqTests = testGroup "Eq type class tests"
-   [ abstractLiteralEqualsOperatorTests
-   --, abstractLiteralNotEqualsOperatorTests
+   [ QC.testProperty "(==) test" $ baseTest (==) [genSameInteger,genSameReal]
+   , QC.testProperty "(/=) test" $ baseTest (/=) [genPairInteger,genPairReal,genPairDifferent]
    ]
-
--- |Tests for '(==)' operator in the 'Eq' type class for 'AbstractLiteral' type
-abstractLiteralEqualsOperatorTests :: TestTree
-abstractLiteralEqualsOperatorTests = QC.testProperty "(==) test" $
-   QC.forAll (QC.oneof [genInteger,genReal] :: QC.Gen (AbstractLiteral,AbstractLiteral)) $ \(value1,value2) -> value1 == value2
-   where genInteger = genValue <&> \(a,b) -> (UniversalInteger a,UniversalInteger b)
-         genReal = genValue <&> \(a,b) -> (UniversalReal a,UniversalReal b)
-         genValue :: (QC.Arbitrary a,Eq a,Num a) => QC.Gen (a,a)
-         genValue = QC.arbitrary <&> \a -> (a,a)
+   where baseTest :: (AbstractLiteral -> AbstractLiteral -> Bool) -> [QC.Gen (AbstractLiteral,AbstractLiteral)] -> QC.Property
+         baseTest compare genList = QC.forAll (QC.oneof genList) $ \(value1,value2) -> value1 `compare` value2
+         genSameInteger = QC.arbitrary <&> \a -> (UniversalInteger a,UniversalInteger a)
+         genSameReal = QC.arbitrary <&> \a -> (UniversalReal a,UniversalReal a)
+         genPairValues :: (QC.Arbitrary a,Eq a,Num a) => QC.Gen (a,a)
+         genPairValues = QC.suchThat ((,) <$> QC.arbitrary <*> QC.arbitrary) $ \(a,b) -> a /= b
+         genPairInteger = genPairValues <&> \(a,b) -> (UniversalInteger a,UniversalInteger b)
+         genPairReal = genPairValues <&> \(a,b) -> (UniversalReal b,UniversalReal a)
+         genPairDifferent = do
+            int <- QC.arbitrary
+            real <- QC.arbitrary
+            QC.elements [(UniversalInteger int,UniversalReal real),(UniversalReal real,UniversalInteger int)]
 
 -- |Tests for constructor function of 'BitString'
 -- Uses constructor function 'mkBitString'
