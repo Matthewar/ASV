@@ -11,7 +11,10 @@ module Parser.Types.Token
    ) where
 
 import qualified Data.ByteString.Lazy.Char8 as B
-import Data.Char (toUpper)
+import Data.Char
+         ( isLatin1
+         , toUpper
+         )
 import Data.Int (Int64)
 
 import Parser.Types.Token.Internal
@@ -22,7 +25,11 @@ import Parser.Types.Token.Internal
 -- |Upper case string constructor
 -- Converts string to upper case and packs it into a bytestring
 mkUpperString :: String -> UpperString
-mkUpperString = UpperString . B.pack . (map toUpper)
+mkUpperString = UpperString . B.pack . (map mkUpperChar)
+   where mkUpperChar :: Char -> Char
+         mkUpperChar chr
+            | isLatin1 chr = toUpper chr
+            | otherwise = error $ "Invalid character in upper case string '" ++ [chr] ++ "'"
 
 -- |Abstract literal value
 -- @

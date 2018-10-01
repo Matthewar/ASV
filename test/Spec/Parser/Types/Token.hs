@@ -47,7 +47,7 @@ tests = testGroup "Parser token types constructors"
 upperStringTests :: TestTree
 upperStringTests = testGroup "Upper case string constructor"
    [ validUpperStrings
-   --, invalidUpperStrings
+   , invalidUpperStrings
    ]
 
 -- |Valid upper case string tests
@@ -57,9 +57,31 @@ validUpperStrings = QC.testProperty "Valid upper case strings" $
    where genUpperString :: QC.Gen (ParserExpectedOutput UpperString)
          genUpperString = do
             stringLength <- QC.elements [1..200]
-            input <- replicateM stringLength QC.arbitrary
+            input <- replicateM stringLength $ QC.suchThat QC.arbitrary isLatin1
             let expectedOutput = UpperString $ B.pack $ map toUpper $ input
             return $ ExpectedOutput input expectedOutput
+
+-- |Invalid packed type tests
+invalidPackedType :: String -> (String -> a) -> (Char -> Bool) -> TestTree
+invalidPackedType typeName mkPackedType isValid = QC.testProperty ("Invalid " ++ typeName ++ "s") $
+   QC.forAll genInvalid $ \(ExpectedOutput input expectedOutput) -> QC.ioProperty $
+      catch ((evaluate $ mkPackedType input) *> return False) (return . checkError expectedOutput)
+   where genInvalid = do
+            let checkInvalid (chr:rest)
+                  | isValid chr = checkInvalid rest
+                  | otherwise = True
+                checkInvalid [] = False
+            str <- QC.suchThat QC.arbitrary (\s -> not (null s) && checkInvalid s)
+            let findInvalid (chr:rest)
+                  | isValid chr = findInvalid rest
+                  | otherwise = chr
+            return $ ExpectedOutput str $ "Invalid character in " ++ typeName ++ " '" ++ [findInvalid str] ++ "'"
+         checkError :: String -> ErrorCall -> Bool
+         checkError expected actual = isPrefixOf expected $ show actual
+
+-- |Invalid upper case string tests
+invalidUpperStrings :: TestTree
+invalidUpperStrings = invalidPackedType "upper case string" mkUpperString isLatin1
 
 -- |Tests for the derived classes for 'AbstractLiteral'
 -- Both classes 'Eq' and 'Show' are derived for this type.
@@ -124,21 +146,10 @@ validBitStrings = QC.testProperty "Valid bit strings" $
 
 -- |Invalid bit string tests
 invalidBitStrings :: TestTree
-invalidBitStrings = QC.testProperty "Invalid bit strings" $
-   QC.forAll genInvalid $ \(ExpectedOutput input expectedOutput) -> QC.ioProperty $
-      catch ((evaluate $ mkBitString input) *> return False) (return . checkError expectedOutput)
-   where genInvalid = do
-            let checkInvalid ('1':rest) = checkInvalid rest
-                checkInvalid ('0':rest) = checkInvalid rest
-                checkInvalid [] = False
-                checkInvalid _ = True
-            str <- QC.suchThat QC.arbitrary (\s -> not (null s) && checkInvalid s)
-            let findInvalid ('1':rest) = findInvalid rest
-                findInvalid ('0':rest) = findInvalid rest
-                findInvalid (chr:_) = chr
-            return $ ExpectedOutput str $ "Invalid character in bit string '" ++ [findInvalid str] ++ "'"
-         checkError :: String -> ErrorCall -> Bool
-         checkError expected actual = isPrefixOf expected $ show actual
+invalidBitStrings = invalidPackedType "bit string" mkBitString isBitChar
+   where isBitChar '1' = True
+         isBitChar '0' = True
+         isBitChar _ = False
 
 -- |Tests for internal token types
 -- "Parser.Types.Token.Internal"
@@ -163,21 +174,22 @@ upperStringEqTests = testGroup "Eq type class tests"
    , QC.testProperty "(/=) test" $ baseTest (/=) genDiffStrings
    ]
    where baseTest compare genStrings = QC.forAll genStrings $ \(a,b) -> mkUpperString a `compare` mkUpperString b
+         genValidString = QC.suchThat QC.arbitrary $ all isLatin1
          genSameStrings = do
-            rawString <- QC.arbitrary
+            rawString <- genValidString
             let lowerUpper chr = QC.elements [toUpper,toLower] <*> return chr
                 caseString = mapM lowerUpper rawString
             (,) <$> caseString <*> caseString
          genDiffStrings = QC.oneof [genCompletelyDiffStrings,genSlightlyDiffStrings]
-         genCompletelyDiffStrings = let rawString = QC.arbitrary
-                                        dualStrings = (,) <$> rawString <*> rawString
+         genCompletelyDiffStrings = let dualStrings = (,) <$> genValidString <*> genValidString
                                     in QC.suchThat dualStrings $ \(a,b) -> B.pack a /= B.pack b
          genSlightlyDiffStrings = do
-            rawString <- QC.suchThat QC.arbitrary (not . null)
+            rawString <- QC.suchThat genValidString (not . null)
             index <- QC.choose (0,length rawString - 1)
             let change :: String -> Int -> String -> String -> QC.Gen (String,String)
                 change (fst:rest) index newA newB
-                  | index == 0 = QC.suchThat QC.arbitrary (\fstB -> B.singleton fstB /= B.singleton fst) >>= \fstB -> change rest (index-1) (fst:newA) (fstB:newB)
+                  | index == 0 = QC.suchThat QC.arbitrary (\fstB -> isLatin1 fstB && B.singleton fstB /= B.singleton fst)
+                             >>= \fstB -> change rest (index-1) (fst:newA) (fstB:newB)
                   | otherwise = change rest (index-1) (fst:newA) (fst:newB)
                 change [] index newA newB = return (newA,newB)
             change rawString index [] []
