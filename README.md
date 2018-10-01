@@ -14,10 +14,10 @@ For a quick start go to [Running a Simulation](#creating-and-running-a-simulatio
 ## Other Pages
 - [Documentation](docs/README.md)
 - [Haddock Documentation](https://matthewar.github.io/ASV/haddock)
-- [Haddock Coverage Summary](https://matthewar.github.io/ASV/haddock-cov/Report.md)
+- [Haddock Coverage Summary](https://matthewar.github.io/ASV/haddock-cov/Report.html)
 - Code Coverage
-   - [Basic Summary](https://matthewar.github.io/ASV/tests/Coverage.md)
-   - [Test List](https://matthewar.github.io/ASV/tests/List.md)
+   - [Basic Summary](https://matthewar.github.io/ASV/tests/Coverage.html)
+   - [Test List](https://matthewar.github.io/ASV/tests/List.html)
    - [Coveralls](https://coveralls.io/github/Matthewar/ASV)
 
 ## Introduction
@@ -67,7 +67,7 @@ Installing and using the tool is done through the `stack` tool.
 ## Documentation
 Documentation [here](docs/README.md)
 
-See also the [Haddock documentation](matthewar.github.io/ASV/haddock).
+See also the [Haddock documentation](https://matthewar.github.io/ASV/haddock).
 
 ## Similar Projects
 Most VHDL simulators are closed source products, this project aims to provide an open source tool that anyone can use.
