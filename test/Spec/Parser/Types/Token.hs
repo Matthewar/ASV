@@ -182,13 +182,15 @@ upperStringEqTests = testGroup "Eq type class tests"
             (,) <$> caseString <*> caseString
          genDiffStrings = QC.oneof [genCompletelyDiffStrings,genSlightlyDiffStrings]
          genCompletelyDiffStrings = let dualStrings = (,) <$> genValidString <*> genValidString
-                                    in QC.suchThat dualStrings $ \(a,b) -> B.pack a /= B.pack b
+                                        packStr = B.pack . (map toUpper)
+                                    in QC.suchThat dualStrings $ \(a,b) -> packStr a /= packStr b
          genSlightlyDiffStrings = do
             rawString <- QC.suchThat genValidString (not . null)
             index <- QC.choose (0,length rawString - 1)
-            let change :: String -> Int -> String -> String -> QC.Gen (String,String)
+            let packChar = B.singleton . toUpper
+                change :: String -> Int -> String -> String -> QC.Gen (String,String)
                 change (fst:rest) index newA newB
-                  | index == 0 = QC.suchThat QC.arbitrary (\fstB -> isLatin1 fstB && B.singleton fstB /= B.singleton fst)
+                  | index == 0 = QC.suchThat QC.arbitrary (\fstB -> isLatin1 fstB && packChar fstB /= packChar fst)
                              >>= \fstB -> change rest (index-1) (fst:newA) (fstB:newB)
                   | otherwise = change rest (index-1) (fst:newA) (fst:newB)
                 change [] index newA newB = return (newA,newB)
