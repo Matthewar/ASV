@@ -49,4 +49,4 @@ deploy:
    github-token: $GITHUB_TOKEN
    local-dir: $(./scripts/deploy.py)
    on:
-      branch: feature/parser/refactor
+      branch: master
