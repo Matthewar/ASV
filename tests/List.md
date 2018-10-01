@@ -1,0 +1,219 @@
+# Test List
+- Top level test group
+   - Parser tests
+      - Parser token types constructors
+         - Upper case string constructor
+            - Valid upper case strings
+               - Invalid upper case strings
+               - (==) test
+                  - (/=) test
+               - Show type class test
+               - Valid bit strings
+               - Invalid bit strings
+               - Eq type class tests
+                  - (==) test
+                     - (/=) test
+                  - Show type class test
+                  - (==) test
+                     - (/=) test
+                  - Show type class test
+               - Valid reserved word abs
+               - Valid reserved word access
+               - Valid reserved word after
+               - Valid reserved word alias
+               - Valid reserved word all
+               - Valid reserved word and
+               - Valid reserved word architecture
+               - Valid reserved word array
+               - Valid reserved word assert
+               - Valid reserved word attribute
+               - Valid reserved word begin
+               - Valid reserved word block
+               - Valid reserved word body
+               - Valid reserved word buffer
+               - Valid reserved word bus
+               - Valid reserved word case
+               - Valid reserved word component
+               - Valid reserved word configuration
+               - Valid reserved word constant
+               - Valid reserved word disconnect
+               - Valid reserved word downto
+               - Valid reserved word else
+               - Valid reserved word elsif
+               - Valid reserved word end
+               - Valid reserved word entity
+               - Valid reserved word exit
+               - Valid reserved word file
+               - Valid reserved word for
+               - Valid reserved word function
+               - Valid reserved word generate
+               - Valid reserved word generic
+               - Valid reserved word guarded
+               - Valid reserved word if
+               - Valid reserved word in
+               - Valid reserved word inout
+               - Valid reserved word is
+               - Valid reserved word label
+               - Valid reserved word library
+               - Valid reserved word linkage
+               - Valid reserved word loop
+               - Valid reserved word map
+               - Valid reserved word mod
+               - Valid reserved word nand
+               - Valid reserved word new
+               - Valid reserved word next
+               - Valid reserved word nor
+               - Valid reserved word not
+               - Valid reserved word null
+               - Valid reserved word of
+               - Valid reserved word on
+               - Valid reserved word open
+               - Valid reserved word or
+               - Valid reserved word others
+               - Valid reserved word out
+               - Valid reserved word package
+               - Valid reserved word port
+               - Valid reserved word procedure
+               - Valid reserved word process
+               - Valid reserved word range
+               - Valid reserved word record
+               - Valid reserved word register
+               - Valid reserved word rem
+               - Valid reserved word report
+               - Valid reserved word return
+               - Valid reserved word select
+               - Valid reserved word severity
+               - Valid reserved word signal
+               - Valid reserved word subtype
+               - Valid reserved word then
+               - Valid reserved word to
+               - Valid reserved word transport
+               - Valid reserved word type
+               - Valid reserved word units
+               - Valid reserved word until
+               - Valid reserved word use
+               - Valid reserved word variable
+               - Valid reserved word wait
+               - Valid reserved word when
+               - Valid reserved word while
+               - Valid reserved word with
+               - Valid reserved word xor
+               - Invalid reserved word abs
+               - Invalid reserved word access
+               - Invalid reserved word after
+               - Invalid reserved word alias
+               - Invalid reserved word all
+               - Invalid reserved word and
+               - Invalid reserved word architecture
+               - Invalid reserved word array
+               - Invalid reserved word assert
+               - Invalid reserved word attribute
+               - Invalid reserved word begin
+               - Invalid reserved word block
+               - Invalid reserved word body
+               - Invalid reserved word buffer
+               - Invalid reserved word bus
+               - Invalid reserved word case
+               - Invalid reserved word component
+               - Invalid reserved word configuration
+               - Invalid reserved word constant
+               - Invalid reserved word disconnect
+               - Invalid reserved word downto
+               - Invalid reserved word else
+               - Invalid reserved word elsif
+               - Invalid reserved word end
+               - Invalid reserved word entity
+               - Invalid reserved word exit
+               - Invalid reserved word file
+               - Invalid reserved word for
+               - Invalid reserved word function
+               - Invalid reserved word generate
+               - Invalid reserved word generic
+               - Invalid reserved word guarded
+               - Invalid reserved word if
+               - Invalid reserved word in
+               - Invalid reserved word inout
+               - Invalid reserved word is
+               - Invalid reserved word label
+               - Invalid reserved word library
+               - Invalid reserved word linkage
+               - Invalid reserved word loop
+               - Invalid reserved word map
+               - Invalid reserved word mod
+               - Invalid reserved word nand
+               - Invalid reserved word new
+               - Invalid reserved word next
+               - Invalid reserved word nor
+               - Invalid reserved word not
+               - Invalid reserved word null
+               - Invalid reserved word of
+               - Invalid reserved word on
+               - Invalid reserved word open
+               - Invalid reserved word or
+               - Invalid reserved word others
+               - Invalid reserved word out
+               - Invalid reserved word package
+               - Invalid reserved word port
+               - Invalid reserved word procedure
+               - Invalid reserved word process
+               - Invalid reserved word range
+               - Invalid reserved word record
+               - Invalid reserved word register
+               - Invalid reserved word rem
+               - Invalid reserved word report
+               - Invalid reserved word return
+               - Invalid reserved word select
+               - Invalid reserved word severity
+               - Invalid reserved word signal
+               - Invalid reserved word subtype
+               - Invalid reserved word then
+               - Invalid reserved word to
+               - Invalid reserved word transport
+               - Invalid reserved word type
+               - Invalid reserved word units
+               - Invalid reserved word until
+               - Invalid reserved word use
+               - Invalid reserved word variable
+               - Invalid reserved word wait
+               - Invalid reserved word when
+               - Invalid reserved word while
+               - Invalid reserved word with
+               - Invalid reserved word xor
+               - Case insensitive characters with valid input
+               - Case insensitive characters with incorrect input
+               - Test keyword parser for valid inputs
+               - Test keyword parser for invalid inputs
+               - Valid identifiers
+               - Invalid identifiers
+               - Valid decimal literals
+                  - Valid integer-kind decimal literals
+                     - Valid real-kind decimal literals
+                     - Non-accurate decimal (real-kind) literal (double rounding)
+                     - Decimal literal out of bounds
+                     - Valid integer-kind based literals
+                     - Valid based literals that evaluate to zero
+                     - Integer based literals that evaluate to reals
+               - Invalid abstract literal formatting
+               - Valid character literals
+               - Invalid character literals
+               - Valid string literals
+               - Invalid string literals
+               - Valid bit string literals
+               - Invalid bit string literals
+               - Valid comments
+               - Invalid comments
+               - Graphic characters
+               - Basic graphic characters
+               - Basic characters
+               - Upper case letters
+               - Special characters
+               - Space character
+               - Format effectors
+               - Lower case letters
+               - Other special characters
+               - Letters or digits
+               - Letters
+               - Valid integers
+                  - Invalid integers
+                  - Valid exponents
+                  - Invalid exponents

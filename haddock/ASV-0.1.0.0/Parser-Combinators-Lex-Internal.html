@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Parser.Combinators.Lex.Internal</title><link href="ocean.css" rel="stylesheet" type="text/css" title="Ocean" /><link rel="stylesheet" type="text/css" href="quick-jump.css" /><script src="haddock-bundle.min.js" async="async" type="text/javascript"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></head><body><div id="package-header"><ul class="links" id="page-menu"><li><a href="src/Parser.Combinators.Lex.Internal.html">Source</a></li><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul><p class="caption">ASV-0.1.0.0</p></div><div id="content"><div id="module-header"><table class="info"><tr><th>Safe Haskell</th><td>Safe</td></tr><tr><th>Language</th><td>Haskell2010</td></tr></table><p class="caption">Parser.Combinators.Lex.Internal</p></div><div id="description"><p class="caption">Description</p><div class="doc"><p>|</p></div></div><div id="synopsis"><details id="syn"><summary>Synopsis</summary><ul class="details-toggle" data-details-id="syn"><li class="src short"><a href="#v:graphicCharacter">graphicCharacter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a></li><li class="src short"><a href="#v:basicGraphicCharacter">basicGraphicCharacter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a></li><li class="src short"><a href="#v:basicCharacter">basicCharacter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a></li><li class="src short"><a href="#v:upperCaseLetter">upperCaseLetter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a></li><li class="src short"><a href="#v:specialCharacter">specialCharacter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a></li><li class="src short"><a href="#v:spaceCharacter">spaceCharacter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a></li><li class="src short"><a href="#v:formatEffector">formatEffector</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a></li><li class="src short"><a href="#v:lowerCaseLetter">lowerCaseLetter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a></li><li class="src short"><a href="#v:otherSpecialCharacter">otherSpecialCharacter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a></li><li class="src short"><a href="#v:letterOrDigit">letterOrDigit</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a></li><li class="src short"><a href="#v:letter">letter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a></li><li class="src short"><a href="#v:integer">integer</a> :: Parser <a href="../base-4.11.1.0/Data-String.html#t:String" title="Data.String">String</a></li><li class="src short"><a href="#v:exponent-39-">exponent'</a> :: Parser <a href="../base-4.11.1.0/Prelude.html#t:Integer" title="Prelude">Integer</a></li></ul></details></div><div id="interface"><h1>Documentation</h1><div class="top"><p class="src"><a id="v:graphicCharacter" class="def">graphicCharacter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a> <a href="src/Parser.Combinators.Lex.Internal.html#graphicCharacter" class="link">Source</a> <a href="#v:graphicCharacter" class="selflink">#</a></p><div class="doc"><p>Parse a graphic character
+ Returns parsed character
+ <code>
+    graphic_character ::=
+       basic_graphic_character | lower_case_letter | other_special_character
+ </code></p></div></div><div class="top"><p class="src"><a id="v:basicGraphicCharacter" class="def">basicGraphicCharacter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a> <a href="src/Parser.Combinators.Lex.Internal.html#basicGraphicCharacter" class="link">Source</a> <a href="#v:basicGraphicCharacter" class="selflink">#</a></p><div class="doc"><p>Parse a basic graphic character
+ Returns parsed character
+ <code>
+    basic_graphic_character ::=
+       upper_case_letter | digit | special_character | space_character
+ </code></p></div></div><div class="top"><p class="src"><a id="v:basicCharacter" class="def">basicCharacter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a> <a href="src/Parser.Combinators.Lex.Internal.html#basicCharacter" class="link">Source</a> <a href="#v:basicCharacter" class="selflink">#</a></p><div class="doc"><p>Parse a basic character
+ Returns parsed character
+ <code>
+    basic_character ::=
+       basic_graphic_character | format_effector
+ </code></p></div></div><div class="top"><p class="src"><a id="v:upperCaseLetter" class="def">upperCaseLetter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a> <a href="src/Parser.Combinators.Lex.Internal.html#upperCaseLetter" class="link">Source</a> <a href="#v:upperCaseLetter" class="selflink">#</a></p><div class="doc"><p>Parse an upper case letter
+ Returns parsed character
+ <code>
+    upper case letters
+       A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+ </code></p></div></div><div class="top"><p class="src"><a id="v:specialCharacter" class="def">specialCharacter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a> <a href="src/Parser.Combinators.Lex.Internal.html#specialCharacter" class="link">Source</a> <a href="#v:specialCharacter" class="selflink">#</a></p><div class="doc"><p>Parse a special character
+ Returns parsed character
+ <code>
+    special characters
+       &quot; # &amp; ' ( ) * + , - . / : ; <a href="=">=</a> _ |
+ </code></p></div></div><div class="top"><p class="src"><a id="v:spaceCharacter" class="def">spaceCharacter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a> <a href="src/Parser.Combinators.Lex.Internal.html#spaceCharacter" class="link">Source</a> <a href="#v:spaceCharacter" class="selflink">#</a></p><div class="doc"><p>Parse the space character
+ Returns the space character</p></div></div><div class="top"><p class="src"><a id="v:formatEffector" class="def">formatEffector</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a> <a href="src/Parser.Combinators.Lex.Internal.html#formatEffector" class="link">Source</a> <a href="#v:formatEffector" class="selflink">#</a></p><div class="doc"><p>Parse a format effector
+ Returns parsed character</p></div></div><div class="top"><p class="src"><a id="v:lowerCaseLetter" class="def">lowerCaseLetter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a> <a href="src/Parser.Combinators.Lex.Internal.html#lowerCaseLetter" class="link">Source</a> <a href="#v:lowerCaseLetter" class="selflink">#</a></p><div class="doc"><p>Parse a lower case letter
+ Returns parsed character
+ <code>
+    upper case letters
+       a b c d e f g h i j k l m n o p q r s t u v w x y z
+ </code></p></div></div><div class="top"><p class="src"><a id="v:otherSpecialCharacter" class="def">otherSpecialCharacter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a> <a href="src/Parser.Combinators.Lex.Internal.html#otherSpecialCharacter" class="link">Source</a> <a href="#v:otherSpecialCharacter" class="selflink">#</a></p><div class="doc"><p>Parse an other special character
+ Returns parsed character
+ <code>
+    other special characters
+       ! $ % </code> ? [  ] ^ ` { } ~
+ @</p></div></div><div class="top"><p class="src"><a id="v:letterOrDigit" class="def">letterOrDigit</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a> <a href="src/Parser.Combinators.Lex.Internal.html#letterOrDigit" class="link">Source</a> <a href="#v:letterOrDigit" class="selflink">#</a></p><div class="doc"><p>Parses a letter or digit
+ Returns parsed character
+ <code>
+    letter_or_digit ::= letter | digit
+ </code></p></div></div><div class="top"><p class="src"><a id="v:letter" class="def">letter</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a> <a href="src/Parser.Combinators.Lex.Internal.html#letter" class="link">Source</a> <a href="#v:letter" class="selflink">#</a></p><div class="doc"><p>Parses a letter
+ Returns parsed character
+ <code>
+    letter ::= upper_case_letter | lower_case_letter
+ </code></p></div></div><div class="top"><p class="src"><a id="v:integer" class="def">integer</a> :: Parser <a href="../base-4.11.1.0/Data-String.html#t:String" title="Data.String">String</a> <a href="src/Parser.Combinators.Lex.Internal.html#integer" class="link">Source</a> <a href="#v:integer" class="selflink">#</a></p><div class="doc"><p>Parses an integer
+ Returns the <code><a href="../base-4.11.1.0/Data-String.html#t:String" title="Data.String">String</a></code> of the integer
+ <code>
+    integer ::= digit { [ underline ] digit }
+ </code></p></div></div><div class="top"><p class="src"><a id="v:exponent-39-" class="def">exponent'</a> :: Parser <a href="../base-4.11.1.0/Prelude.html#t:Integer" title="Prelude">Integer</a> <a href="src/Parser.Combinators.Lex.Internal.html#exponent%27" class="link">Source</a> <a href="#v:exponent-39-" class="selflink">#</a></p><div class="doc"><p>Parses an exponent
+ Returns the <code><a href="../base-4.11.1.0/Prelude.html#t:Integer" title="Prelude">Integer</a></code> exponent value
+ <code>
+    exponent ::= E [ + ] integer | E - integer
+ </code>
+ NOTE:
+ - Case insensitive E</p></div></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.20.0</p></div></body></html>

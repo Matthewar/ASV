@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Parser.Combinators.Lex</title><link href="ocean.css" rel="stylesheet" type="text/css" title="Ocean" /><link rel="stylesheet" type="text/css" href="quick-jump.css" /><script src="haddock-bundle.min.js" async="async" type="text/javascript"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></head><body><div id="package-header"><ul class="links" id="page-menu"><li><a href="src/Parser.Combinators.Lex.html">Source</a></li><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul><p class="caption">ASV-0.1.0.0</p></div><div id="content"><div id="module-header"><table class="info"><tr><th>Safe Haskell</th><td>Safe</td></tr><tr><th>Language</th><td>Haskell2010</td></tr></table><p class="caption">Parser.Combinators.Lex</p></div><div id="description"><p class="caption">Description</p><div class="doc"><p>|</p></div></div><div id="synopsis"><details id="syn"><summary>Synopsis</summary><ul class="details-toggle" data-details-id="syn"><li class="src short"><a href="#v:identifier">identifier</a> :: Parser <a href="Parser-Types-Token-Internal.html#t:UpperString" title="Parser.Types.Token.Internal">UpperString</a></li><li class="src short"><a href="#v:abstractLiteral">abstractLiteral</a> :: Parser <a href="Parser-Types-Token.html#t:AbstractLiteral" title="Parser.Types.Token">AbstractLiteral</a></li><li class="src short"><a href="#v:characterLiteral">characterLiteral</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a></li><li class="src short"><a href="#v:stringLiteral">stringLiteral</a> :: Parser <a href="../base-4.11.1.0/Data-String.html#t:String" title="Data.String">String</a></li><li class="src short"><a href="#v:bitStringLiteral">bitStringLiteral</a> :: Parser <a href="Parser-Types-Token-Internal.html#t:BitString" title="Parser.Types.Token.Internal">BitString</a></li><li class="src short"><a href="#v:comment">comment</a> :: Parser ()</li></ul></details></div><div id="interface"><h1>Documentation</h1><div class="top"><p class="src"><a id="v:identifier" class="def">identifier</a> :: Parser <a href="Parser-Types-Token-Internal.html#t:UpperString" title="Parser.Types.Token.Internal">UpperString</a> <a href="src/Parser.Combinators.Lex.html#identifier" class="link">Source</a> <a href="#v:identifier" class="selflink">#</a></p><div class="doc"><p>Parses an identifier
+ Returns upper case string form of the identifier (<code><a href="Parser-Types-Token-Internal.html#t:UpperString" title="Parser.Types.Token.Internal">UpperString</a></code>)
+ <code>
+    identifier ::=
+       letter { [ underliner ] letter_or_digit }
+ </code></p></div></div><div class="top"><p class="src"><a id="v:abstractLiteral" class="def">abstractLiteral</a> :: Parser <a href="Parser-Types-Token.html#t:AbstractLiteral" title="Parser.Types.Token">AbstractLiteral</a> <a href="src/Parser.Combinators.Lex.html#abstractLiteral" class="link">Source</a> <a href="#v:abstractLiteral" class="selflink">#</a></p><div class="doc"><p>Parses an abstract literal
+ Returns the parsed <code><a href="Parser-Types-Token.html#t:AbstractLiteral" title="Parser.Types.Token">AbstractLiteral</a></code> value
+ <code>
+    abstract_literal ::= decimal_literal | based_literal
+    decimal_literal ::= integer [ . integer ] [ exponent ]
+    based_literal ::= base <a id=" based_integer [ . based_integer ] "></a> [ exponent ]
+    base ::= integer
+    based_integer ::= extended_digit { [ underline ] extended_digit }
+    extended_digit ::= digit | letter
+ </code>
+ NOTE:
+ - Underline is ignored
+ - Base determines valid extended_digit set
+ - extended_digit is case insensitive</p></div></div><div class="top"><p class="src"><a id="v:characterLiteral" class="def">characterLiteral</a> :: Parser <a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a> <a href="src/Parser.Combinators.Lex.html#characterLiteral" class="link">Source</a> <a href="#v:characterLiteral" class="selflink">#</a></p><div class="doc"><p>Parses a character literal
+ Returns the <code><a href="../base-4.11.1.0/Data-Char.html#t:Char" title="Data.Char">Char</a></code> literal (without the containing ''' characters)
+ <code>
+    character_literal ::= ' graphic_character '
+ </code></p></div></div><div class="top"><p class="src"><a id="v:stringLiteral" class="def">stringLiteral</a> :: Parser <a href="../base-4.11.1.0/Data-String.html#t:String" title="Data.String">String</a> <a href="src/Parser.Combinators.Lex.html#stringLiteral" class="link">Source</a> <a href="#v:stringLiteral" class="selflink">#</a></p><div class="doc"><p>Parses a string literal
+ Returns the <code><a href="../base-4.11.1.0/Data-String.html#t:String" title="Data.String">String</a></code> literal (without the containing '&quot;' characters)
+ <code>
+    string_literal ::= &quot; { graphic_character } &quot;
+ </code>
+ NOTE:
+ - Can use character <code>%</code> instead of '&quot;'
+ - To use the container character within the string, must repeat the character</p></div></div><div class="top"><p class="src"><a id="v:bitStringLiteral" class="def">bitStringLiteral</a> :: Parser <a href="Parser-Types-Token-Internal.html#t:BitString" title="Parser.Types.Token.Internal">BitString</a> <a href="src/Parser.Combinators.Lex.html#bitStringLiteral" class="link">Source</a> <a href="#v:bitStringLiteral" class="selflink">#</a></p><div class="doc"><p>Parses a bit string literal
+ Returns the parsed bit string literal
+ <code>
+    bit_string_literal ::= base_specifier &quot; bit_value &quot;
+    bit_value ::= extended_digit { [ underline ] extended_digit }
+    base_specifier ::= B | O | X
+ </code>
+ NOTE:
+ - Base specifier is case insensitive
+ - Can use character <code>%</code> instead of '&quot;'
+ - Extended digit depends on base specifier</p><p>If base specifier == B:
+ <code>
+    extended_digit ::= 0 | 1
+ </code>
+ If base specifier == O:
+ <code>
+    extended_digit ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
+ </code>
+ If base specifier == X:
+ <code>
+    extended_digit ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | A | B | C | D | E | F
+ </code>
+ NOTE:
+ - Extended digit is case insensitive</p></div></div><div class="top"><p class="src"><a id="v:comment" class="def">comment</a> :: Parser () <a href="src/Parser.Combinators.Lex.html#comment" class="link">Source</a> <a href="#v:comment" class="selflink">#</a></p><div class="doc"><p>Parses a comment
+ Returns '()'
+ - Comments start with the string &quot;--&quot;
+ - Comments continue to the end of a line</p></div></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.20.0</p></div></body></html>

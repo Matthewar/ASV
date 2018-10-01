@@ -1,0 +1,497 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">{-|
+   Module      : Parser.Combinators.ReservedWords
+   Description : Combinators for the &quot;reserved word&quot; lexical elements of VHDL.
+|-}</span><span>
+</span><a name="line-5"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Parser.Combinators.ReservedWords</span><span>
+</span><a name="line-6"></a><span>   </span><span class="hs-special">(</span><span> </span><a href="Parser.Combinators.ReservedWords.html#absKeyword"><span class="hs-identifier hs-var">absKeyword</span></a><span>
+</span><a name="line-7"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#accessKeyword"><span class="hs-identifier hs-var">accessKeyword</span></a><span>
+</span><a name="line-8"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#afterKeyword"><span class="hs-identifier hs-var">afterKeyword</span></a><span>
+</span><a name="line-9"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#aliasKeyword"><span class="hs-identifier hs-var">aliasKeyword</span></a><span>
+</span><a name="line-10"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#allKeyword"><span class="hs-identifier hs-var">allKeyword</span></a><span>
+</span><a name="line-11"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#andKeyword"><span class="hs-identifier hs-var">andKeyword</span></a><span>
+</span><a name="line-12"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#architectureKeyword"><span class="hs-identifier hs-var">architectureKeyword</span></a><span>
+</span><a name="line-13"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#arrayKeyword"><span class="hs-identifier hs-var">arrayKeyword</span></a><span>
+</span><a name="line-14"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#assertKeyword"><span class="hs-identifier hs-var">assertKeyword</span></a><span>
+</span><a name="line-15"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#attributeKeyword"><span class="hs-identifier hs-var">attributeKeyword</span></a><span>
+</span><a name="line-16"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#beginKeyword"><span class="hs-identifier hs-var">beginKeyword</span></a><span>
+</span><a name="line-17"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#blockKeyword"><span class="hs-identifier hs-var">blockKeyword</span></a><span>
+</span><a name="line-18"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#bodyKeyword"><span class="hs-identifier hs-var">bodyKeyword</span></a><span>
+</span><a name="line-19"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#bufferKeyword"><span class="hs-identifier hs-var">bufferKeyword</span></a><span>
+</span><a name="line-20"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#busKeyword"><span class="hs-identifier hs-var">busKeyword</span></a><span>
+</span><a name="line-21"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#caseKeyword"><span class="hs-identifier hs-var">caseKeyword</span></a><span>
+</span><a name="line-22"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#componentKeyword"><span class="hs-identifier hs-var">componentKeyword</span></a><span>
+</span><a name="line-23"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#configurationKeyword"><span class="hs-identifier hs-var">configurationKeyword</span></a><span>
+</span><a name="line-24"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#constantKeyword"><span class="hs-identifier hs-var">constantKeyword</span></a><span>
+</span><a name="line-25"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#disconnectKeyword"><span class="hs-identifier hs-var">disconnectKeyword</span></a><span>
+</span><a name="line-26"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#downtoKeyword"><span class="hs-identifier hs-var">downtoKeyword</span></a><span>
+</span><a name="line-27"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#elseKeyword"><span class="hs-identifier hs-var">elseKeyword</span></a><span>
+</span><a name="line-28"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#elsifKeyword"><span class="hs-identifier hs-var">elsifKeyword</span></a><span>
+</span><a name="line-29"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#endKeyword"><span class="hs-identifier hs-var">endKeyword</span></a><span>
+</span><a name="line-30"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#entityKeyword"><span class="hs-identifier hs-var">entityKeyword</span></a><span>
+</span><a name="line-31"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#exitKeyword"><span class="hs-identifier hs-var">exitKeyword</span></a><span>
+</span><a name="line-32"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#fileKeyword"><span class="hs-identifier hs-var">fileKeyword</span></a><span>
+</span><a name="line-33"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#forKeyword"><span class="hs-identifier hs-var">forKeyword</span></a><span>
+</span><a name="line-34"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#functionKeyword"><span class="hs-identifier hs-var">functionKeyword</span></a><span>
+</span><a name="line-35"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#generateKeyword"><span class="hs-identifier hs-var">generateKeyword</span></a><span>
+</span><a name="line-36"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#genericKeyword"><span class="hs-identifier hs-var">genericKeyword</span></a><span>
+</span><a name="line-37"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#guardedKeyword"><span class="hs-identifier hs-var">guardedKeyword</span></a><span>
+</span><a name="line-38"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#ifKeyword"><span class="hs-identifier hs-var">ifKeyword</span></a><span>
+</span><a name="line-39"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#inKeyword"><span class="hs-identifier hs-var">inKeyword</span></a><span>
+</span><a name="line-40"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#inoutKeyword"><span class="hs-identifier hs-var">inoutKeyword</span></a><span>
+</span><a name="line-41"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#isKeyword"><span class="hs-identifier hs-var">isKeyword</span></a><span>
+</span><a name="line-42"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#labelKeyword"><span class="hs-identifier hs-var">labelKeyword</span></a><span>
+</span><a name="line-43"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#libraryKeyword"><span class="hs-identifier hs-var">libraryKeyword</span></a><span>
+</span><a name="line-44"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#linkageKeyword"><span class="hs-identifier hs-var">linkageKeyword</span></a><span>
+</span><a name="line-45"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#loopKeyword"><span class="hs-identifier hs-var">loopKeyword</span></a><span>
+</span><a name="line-46"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#mapKeyword"><span class="hs-identifier hs-var">mapKeyword</span></a><span>
+</span><a name="line-47"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#modKeyword"><span class="hs-identifier hs-var">modKeyword</span></a><span>
+</span><a name="line-48"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#nandKeyword"><span class="hs-identifier hs-var">nandKeyword</span></a><span>
+</span><a name="line-49"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#newKeyword"><span class="hs-identifier hs-var">newKeyword</span></a><span>
+</span><a name="line-50"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#nextKeyword"><span class="hs-identifier hs-var">nextKeyword</span></a><span>
+</span><a name="line-51"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#norKeyword"><span class="hs-identifier hs-var">norKeyword</span></a><span>
+</span><a name="line-52"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#notKeyword"><span class="hs-identifier hs-var">notKeyword</span></a><span>
+</span><a name="line-53"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#nullKeyword"><span class="hs-identifier hs-var">nullKeyword</span></a><span>
+</span><a name="line-54"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#ofKeyword"><span class="hs-identifier hs-var">ofKeyword</span></a><span>
+</span><a name="line-55"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#onKeyword"><span class="hs-identifier hs-var">onKeyword</span></a><span>
+</span><a name="line-56"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#openKeyword"><span class="hs-identifier hs-var">openKeyword</span></a><span>
+</span><a name="line-57"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#orKeyword"><span class="hs-identifier hs-var">orKeyword</span></a><span>
+</span><a name="line-58"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#othersKeyword"><span class="hs-identifier hs-var">othersKeyword</span></a><span>
+</span><a name="line-59"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#outKeyword"><span class="hs-identifier hs-var">outKeyword</span></a><span>
+</span><a name="line-60"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#packageKeyword"><span class="hs-identifier hs-var">packageKeyword</span></a><span>
+</span><a name="line-61"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#portKeyword"><span class="hs-identifier hs-var">portKeyword</span></a><span>
+</span><a name="line-62"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#procedureKeyword"><span class="hs-identifier hs-var">procedureKeyword</span></a><span>
+</span><a name="line-63"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#processKeyword"><span class="hs-identifier hs-var">processKeyword</span></a><span>
+</span><a name="line-64"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#rangeKeyword"><span class="hs-identifier hs-var">rangeKeyword</span></a><span>
+</span><a name="line-65"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#recordKeyword"><span class="hs-identifier hs-var">recordKeyword</span></a><span>
+</span><a name="line-66"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#registerKeyword"><span class="hs-identifier hs-var">registerKeyword</span></a><span>
+</span><a name="line-67"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#remKeyword"><span class="hs-identifier hs-var">remKeyword</span></a><span>
+</span><a name="line-68"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#reportKeyword"><span class="hs-identifier hs-var">reportKeyword</span></a><span>
+</span><a name="line-69"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#returnKeyword"><span class="hs-identifier hs-var">returnKeyword</span></a><span>
+</span><a name="line-70"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#selectKeyword"><span class="hs-identifier hs-var">selectKeyword</span></a><span>
+</span><a name="line-71"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#severityKeyword"><span class="hs-identifier hs-var">severityKeyword</span></a><span>
+</span><a name="line-72"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#signalKeyword"><span class="hs-identifier hs-var">signalKeyword</span></a><span>
+</span><a name="line-73"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#subtypeKeyword"><span class="hs-identifier hs-var">subtypeKeyword</span></a><span>
+</span><a name="line-74"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#thenKeyword"><span class="hs-identifier hs-var">thenKeyword</span></a><span>
+</span><a name="line-75"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#toKeyword"><span class="hs-identifier hs-var">toKeyword</span></a><span>
+</span><a name="line-76"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#transportKeyword"><span class="hs-identifier hs-var">transportKeyword</span></a><span>
+</span><a name="line-77"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#typeKeyword"><span class="hs-identifier hs-var">typeKeyword</span></a><span>
+</span><a name="line-78"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#unitsKeyword"><span class="hs-identifier hs-var">unitsKeyword</span></a><span>
+</span><a name="line-79"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#untilKeyword"><span class="hs-identifier hs-var">untilKeyword</span></a><span>
+</span><a name="line-80"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#useKeyword"><span class="hs-identifier hs-var">useKeyword</span></a><span>
+</span><a name="line-81"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#variableKeyword"><span class="hs-identifier hs-var">variableKeyword</span></a><span>
+</span><a name="line-82"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#waitKeyword"><span class="hs-identifier hs-var">waitKeyword</span></a><span>
+</span><a name="line-83"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#whenKeyword"><span class="hs-identifier hs-var">whenKeyword</span></a><span>
+</span><a name="line-84"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#whileKeyword"><span class="hs-identifier hs-var">whileKeyword</span></a><span>
+</span><a name="line-85"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#withKeyword"><span class="hs-identifier hs-var">withKeyword</span></a><span>
+</span><a name="line-86"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.ReservedWords.html#xorKeyword"><span class="hs-identifier hs-var">xorKeyword</span></a><span>
+</span><a name="line-87"></a><span>   </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-88"></a><span>
+</span><a name="line-89"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Text.Parsec.String</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Parser</span><span class="hs-special">)</span><span>
+</span><a name="line-90"></a><span>
+</span><a name="line-91"></a><span class="hs-keyword">import</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html"><span class="hs-identifier">Parser.Combinators.ReservedWords.Internal</span></a><span>
+</span><a name="line-92"></a><span>
+</span><a name="line-93"></a><span class="hs-comment">-- |Parses the keyword &quot;abs&quot;, ignoring case</span><span>
+</span><a name="line-94"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-95"></a><span class="hs-identifier">absKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-96"></a><a name="absKeyword"><a href="Parser.Combinators.ReservedWords.html#absKeyword"><span class="hs-identifier">absKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;abs&quot;</span><span>
+</span><a name="line-97"></a><span>
+</span><a name="line-98"></a><span class="hs-comment">-- |Parses the keyword &quot;access&quot;, ignoring case</span><span>
+</span><a name="line-99"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-100"></a><span class="hs-identifier">accessKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-101"></a><a name="accessKeyword"><a href="Parser.Combinators.ReservedWords.html#accessKeyword"><span class="hs-identifier">accessKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;access&quot;</span><span>
+</span><a name="line-102"></a><span>
+</span><a name="line-103"></a><span class="hs-comment">-- |Parses the keyword &quot;after&quot;, ignoring case</span><span>
+</span><a name="line-104"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-105"></a><span class="hs-identifier">afterKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-106"></a><a name="afterKeyword"><a href="Parser.Combinators.ReservedWords.html#afterKeyword"><span class="hs-identifier">afterKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;after&quot;</span><span>
+</span><a name="line-107"></a><span>
+</span><a name="line-108"></a><span class="hs-comment">-- |Parses the keyword &quot;alias&quot;, ignoring case</span><span>
+</span><a name="line-109"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-110"></a><span class="hs-identifier">aliasKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-111"></a><a name="aliasKeyword"><a href="Parser.Combinators.ReservedWords.html#aliasKeyword"><span class="hs-identifier">aliasKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;alias&quot;</span><span>
+</span><a name="line-112"></a><span>
+</span><a name="line-113"></a><span class="hs-comment">-- |Parses the keyword &quot;all&quot;, ignoring case</span><span>
+</span><a name="line-114"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-115"></a><span class="hs-identifier">allKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-116"></a><a name="allKeyword"><a href="Parser.Combinators.ReservedWords.html#allKeyword"><span class="hs-identifier">allKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;all&quot;</span><span>
+</span><a name="line-117"></a><span>
+</span><a name="line-118"></a><span class="hs-comment">-- |Parses the keyword &quot;and&quot;, ignoring case</span><span>
+</span><a name="line-119"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-120"></a><span class="hs-identifier">andKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-121"></a><a name="andKeyword"><a href="Parser.Combinators.ReservedWords.html#andKeyword"><span class="hs-identifier">andKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;and&quot;</span><span>
+</span><a name="line-122"></a><span>
+</span><a name="line-123"></a><span class="hs-comment">-- |Parses the keyword &quot;architecture&quot;, ignoring case</span><span>
+</span><a name="line-124"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-125"></a><span class="hs-identifier">architectureKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-126"></a><a name="architectureKeyword"><a href="Parser.Combinators.ReservedWords.html#architectureKeyword"><span class="hs-identifier">architectureKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;architecture&quot;</span><span>
+</span><a name="line-127"></a><span>
+</span><a name="line-128"></a><span class="hs-comment">-- |Parses the keyword &quot;array&quot;, ignoring case</span><span>
+</span><a name="line-129"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-130"></a><span class="hs-identifier">arrayKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-131"></a><a name="arrayKeyword"><a href="Parser.Combinators.ReservedWords.html#arrayKeyword"><span class="hs-identifier">arrayKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;array&quot;</span><span>
+</span><a name="line-132"></a><span>
+</span><a name="line-133"></a><span class="hs-comment">-- |Parses the keyword &quot;assert&quot;, ignoring case</span><span>
+</span><a name="line-134"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-135"></a><span class="hs-identifier">assertKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-136"></a><a name="assertKeyword"><a href="Parser.Combinators.ReservedWords.html#assertKeyword"><span class="hs-identifier">assertKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;assert&quot;</span><span>
+</span><a name="line-137"></a><span>
+</span><a name="line-138"></a><span class="hs-comment">-- |Parses the keyword &quot;attribute&quot;, ignoring case</span><span>
+</span><a name="line-139"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-140"></a><span class="hs-identifier">attributeKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-141"></a><a name="attributeKeyword"><a href="Parser.Combinators.ReservedWords.html#attributeKeyword"><span class="hs-identifier">attributeKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;attribute&quot;</span><span>
+</span><a name="line-142"></a><span>
+</span><a name="line-143"></a><span class="hs-comment">-- |Parses the keyword &quot;begin&quot;, ignoring case</span><span>
+</span><a name="line-144"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-145"></a><span class="hs-identifier">beginKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-146"></a><a name="beginKeyword"><a href="Parser.Combinators.ReservedWords.html#beginKeyword"><span class="hs-identifier">beginKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;begin&quot;</span><span>
+</span><a name="line-147"></a><span>
+</span><a name="line-148"></a><span class="hs-comment">-- |Parses the keyword &quot;block&quot;, ignoring case</span><span>
+</span><a name="line-149"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-150"></a><span class="hs-identifier">blockKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-151"></a><a name="blockKeyword"><a href="Parser.Combinators.ReservedWords.html#blockKeyword"><span class="hs-identifier">blockKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;block&quot;</span><span>
+</span><a name="line-152"></a><span>
+</span><a name="line-153"></a><span class="hs-comment">-- |Parses the keyword &quot;body&quot;, ignoring case</span><span>
+</span><a name="line-154"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-155"></a><span class="hs-identifier">bodyKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-156"></a><a name="bodyKeyword"><a href="Parser.Combinators.ReservedWords.html#bodyKeyword"><span class="hs-identifier">bodyKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;body&quot;</span><span>
+</span><a name="line-157"></a><span>
+</span><a name="line-158"></a><span class="hs-comment">-- |Parses the keyword &quot;buffer&quot;, ignoring case</span><span>
+</span><a name="line-159"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-160"></a><span class="hs-identifier">bufferKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-161"></a><a name="bufferKeyword"><a href="Parser.Combinators.ReservedWords.html#bufferKeyword"><span class="hs-identifier">bufferKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;buffer&quot;</span><span>
+</span><a name="line-162"></a><span>
+</span><a name="line-163"></a><span class="hs-comment">-- |Parses the keyword &quot;bus&quot;, ignoring case</span><span>
+</span><a name="line-164"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-165"></a><span class="hs-identifier">busKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-166"></a><a name="busKeyword"><a href="Parser.Combinators.ReservedWords.html#busKeyword"><span class="hs-identifier">busKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;bus&quot;</span><span>
+</span><a name="line-167"></a><span>
+</span><a name="line-168"></a><span class="hs-comment">-- |Parses the keyword &quot;case&quot;, ignoring case</span><span>
+</span><a name="line-169"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-170"></a><span class="hs-identifier">caseKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-171"></a><a name="caseKeyword"><a href="Parser.Combinators.ReservedWords.html#caseKeyword"><span class="hs-identifier">caseKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;case&quot;</span><span>
+</span><a name="line-172"></a><span>
+</span><a name="line-173"></a><span class="hs-comment">-- |Parses the keyword &quot;component&quot;, ignoring case</span><span>
+</span><a name="line-174"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-175"></a><span class="hs-identifier">componentKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-176"></a><a name="componentKeyword"><a href="Parser.Combinators.ReservedWords.html#componentKeyword"><span class="hs-identifier">componentKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;component&quot;</span><span>
+</span><a name="line-177"></a><span>
+</span><a name="line-178"></a><span class="hs-comment">-- |Parses the keyword &quot;configuration&quot;, ignoring case</span><span>
+</span><a name="line-179"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-180"></a><span class="hs-identifier">configurationKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-181"></a><a name="configurationKeyword"><a href="Parser.Combinators.ReservedWords.html#configurationKeyword"><span class="hs-identifier">configurationKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;configuration&quot;</span><span>
+</span><a name="line-182"></a><span>
+</span><a name="line-183"></a><span class="hs-comment">-- |Parses the keyword &quot;constant&quot;, ignoring case</span><span>
+</span><a name="line-184"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-185"></a><span class="hs-identifier">constantKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-186"></a><a name="constantKeyword"><a href="Parser.Combinators.ReservedWords.html#constantKeyword"><span class="hs-identifier">constantKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;constant&quot;</span><span>
+</span><a name="line-187"></a><span>
+</span><a name="line-188"></a><span class="hs-comment">-- |Parses the keyword &quot;disconnect&quot;, ignoring case</span><span>
+</span><a name="line-189"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-190"></a><span class="hs-identifier">disconnectKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-191"></a><a name="disconnectKeyword"><a href="Parser.Combinators.ReservedWords.html#disconnectKeyword"><span class="hs-identifier">disconnectKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;disconnect&quot;</span><span>
+</span><a name="line-192"></a><span>
+</span><a name="line-193"></a><span class="hs-comment">-- |Parses the keyword &quot;downto&quot;, ignoring case</span><span>
+</span><a name="line-194"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-195"></a><span class="hs-identifier">downtoKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-196"></a><a name="downtoKeyword"><a href="Parser.Combinators.ReservedWords.html#downtoKeyword"><span class="hs-identifier">downtoKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;downto&quot;</span><span>
+</span><a name="line-197"></a><span>
+</span><a name="line-198"></a><span class="hs-comment">-- |Parses the keyword &quot;else&quot;, ignoring case</span><span>
+</span><a name="line-199"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-200"></a><span class="hs-identifier">elseKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-201"></a><a name="elseKeyword"><a href="Parser.Combinators.ReservedWords.html#elseKeyword"><span class="hs-identifier">elseKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;else&quot;</span><span>
+</span><a name="line-202"></a><span>
+</span><a name="line-203"></a><span class="hs-comment">-- |Parses the keyword &quot;elsif&quot;, ignoring case</span><span>
+</span><a name="line-204"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-205"></a><span class="hs-identifier">elsifKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-206"></a><a name="elsifKeyword"><a href="Parser.Combinators.ReservedWords.html#elsifKeyword"><span class="hs-identifier">elsifKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;elsif&quot;</span><span>
+</span><a name="line-207"></a><span>
+</span><a name="line-208"></a><span class="hs-comment">-- |Parses the keyword &quot;end&quot;, ignoring case</span><span>
+</span><a name="line-209"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-210"></a><span class="hs-identifier">endKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-211"></a><a name="endKeyword"><a href="Parser.Combinators.ReservedWords.html#endKeyword"><span class="hs-identifier">endKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;end&quot;</span><span>
+</span><a name="line-212"></a><span>
+</span><a name="line-213"></a><span class="hs-comment">-- |Parses the keyword &quot;entity&quot;, ignoring case</span><span>
+</span><a name="line-214"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-215"></a><span class="hs-identifier">entityKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-216"></a><a name="entityKeyword"><a href="Parser.Combinators.ReservedWords.html#entityKeyword"><span class="hs-identifier">entityKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;entity&quot;</span><span>
+</span><a name="line-217"></a><span>
+</span><a name="line-218"></a><span class="hs-comment">-- |Parses the keyword &quot;exit&quot;, ignoring case</span><span>
+</span><a name="line-219"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-220"></a><span class="hs-identifier">exitKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-221"></a><a name="exitKeyword"><a href="Parser.Combinators.ReservedWords.html#exitKeyword"><span class="hs-identifier">exitKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;exit&quot;</span><span>
+</span><a name="line-222"></a><span>
+</span><a name="line-223"></a><span class="hs-comment">-- |Parses the keyword &quot;file&quot;, ignoring case</span><span>
+</span><a name="line-224"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-225"></a><span class="hs-identifier">fileKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-226"></a><a name="fileKeyword"><a href="Parser.Combinators.ReservedWords.html#fileKeyword"><span class="hs-identifier">fileKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;file&quot;</span><span>
+</span><a name="line-227"></a><span>
+</span><a name="line-228"></a><span class="hs-comment">-- |Parses the keyword &quot;for&quot;, ignoring case</span><span>
+</span><a name="line-229"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-230"></a><span class="hs-identifier">forKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-231"></a><a name="forKeyword"><a href="Parser.Combinators.ReservedWords.html#forKeyword"><span class="hs-identifier">forKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;for&quot;</span><span>
+</span><a name="line-232"></a><span>
+</span><a name="line-233"></a><span class="hs-comment">-- |Parses the keyword &quot;function&quot;, ignoring case</span><span>
+</span><a name="line-234"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-235"></a><span class="hs-identifier">functionKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-236"></a><a name="functionKeyword"><a href="Parser.Combinators.ReservedWords.html#functionKeyword"><span class="hs-identifier">functionKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;function&quot;</span><span>
+</span><a name="line-237"></a><span>
+</span><a name="line-238"></a><span class="hs-comment">-- |Parses the keyword &quot;generate&quot;, ignoring case</span><span>
+</span><a name="line-239"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-240"></a><span class="hs-identifier">generateKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-241"></a><a name="generateKeyword"><a href="Parser.Combinators.ReservedWords.html#generateKeyword"><span class="hs-identifier">generateKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;generate&quot;</span><span>
+</span><a name="line-242"></a><span>
+</span><a name="line-243"></a><span class="hs-comment">-- |Parses the keyword &quot;generic&quot;, ignoring case</span><span>
+</span><a name="line-244"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-245"></a><span class="hs-identifier">genericKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-246"></a><a name="genericKeyword"><a href="Parser.Combinators.ReservedWords.html#genericKeyword"><span class="hs-identifier">genericKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;generic&quot;</span><span>
+</span><a name="line-247"></a><span>
+</span><a name="line-248"></a><span class="hs-comment">-- |Parses the keyword &quot;guarded&quot;, ignoring case</span><span>
+</span><a name="line-249"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-250"></a><span class="hs-identifier">guardedKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-251"></a><a name="guardedKeyword"><a href="Parser.Combinators.ReservedWords.html#guardedKeyword"><span class="hs-identifier">guardedKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;guarded&quot;</span><span>
+</span><a name="line-252"></a><span>
+</span><a name="line-253"></a><span class="hs-comment">-- |Parses the keyword &quot;if&quot;, ignoring case</span><span>
+</span><a name="line-254"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-255"></a><span class="hs-identifier">ifKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-256"></a><a name="ifKeyword"><a href="Parser.Combinators.ReservedWords.html#ifKeyword"><span class="hs-identifier">ifKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;if&quot;</span><span>
+</span><a name="line-257"></a><span>
+</span><a name="line-258"></a><span class="hs-comment">-- |Parses the keyword &quot;in&quot;, ignoring case</span><span>
+</span><a name="line-259"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-260"></a><span class="hs-identifier">inKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-261"></a><a name="inKeyword"><a href="Parser.Combinators.ReservedWords.html#inKeyword"><span class="hs-identifier">inKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;in&quot;</span><span>
+</span><a name="line-262"></a><span>
+</span><a name="line-263"></a><span class="hs-comment">-- |Parses the keyword &quot;inout&quot;, ignoring case</span><span>
+</span><a name="line-264"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-265"></a><span class="hs-identifier">inoutKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-266"></a><a name="inoutKeyword"><a href="Parser.Combinators.ReservedWords.html#inoutKeyword"><span class="hs-identifier">inoutKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;inout&quot;</span><span>
+</span><a name="line-267"></a><span>
+</span><a name="line-268"></a><span class="hs-comment">-- |Parses the keyword &quot;is&quot;, ignoring case</span><span>
+</span><a name="line-269"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-270"></a><span class="hs-identifier">isKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-271"></a><a name="isKeyword"><a href="Parser.Combinators.ReservedWords.html#isKeyword"><span class="hs-identifier">isKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;is&quot;</span><span>
+</span><a name="line-272"></a><span>
+</span><a name="line-273"></a><span class="hs-comment">-- |Parses the keyword &quot;label&quot;, ignoring case</span><span>
+</span><a name="line-274"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-275"></a><span class="hs-identifier">labelKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-276"></a><a name="labelKeyword"><a href="Parser.Combinators.ReservedWords.html#labelKeyword"><span class="hs-identifier">labelKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;label&quot;</span><span>
+</span><a name="line-277"></a><span>
+</span><a name="line-278"></a><span class="hs-comment">-- |Parses the keyword &quot;library&quot;, ignoring case</span><span>
+</span><a name="line-279"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-280"></a><span class="hs-identifier">libraryKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-281"></a><a name="libraryKeyword"><a href="Parser.Combinators.ReservedWords.html#libraryKeyword"><span class="hs-identifier">libraryKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;library&quot;</span><span>
+</span><a name="line-282"></a><span>
+</span><a name="line-283"></a><span class="hs-comment">-- |Parses the keyword &quot;linkage&quot;, ignoring case</span><span>
+</span><a name="line-284"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-285"></a><span class="hs-identifier">linkageKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-286"></a><a name="linkageKeyword"><a href="Parser.Combinators.ReservedWords.html#linkageKeyword"><span class="hs-identifier">linkageKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;linkage&quot;</span><span>
+</span><a name="line-287"></a><span>
+</span><a name="line-288"></a><span class="hs-comment">-- |Parses the keyword &quot;loop&quot;, ignoring case</span><span>
+</span><a name="line-289"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-290"></a><span class="hs-identifier">loopKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-291"></a><a name="loopKeyword"><a href="Parser.Combinators.ReservedWords.html#loopKeyword"><span class="hs-identifier">loopKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;loop&quot;</span><span>
+</span><a name="line-292"></a><span>
+</span><a name="line-293"></a><span class="hs-comment">-- |Parses the keyword &quot;map&quot;, ignoring case</span><span>
+</span><a name="line-294"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-295"></a><span class="hs-identifier">mapKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-296"></a><a name="mapKeyword"><a href="Parser.Combinators.ReservedWords.html#mapKeyword"><span class="hs-identifier">mapKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;map&quot;</span><span>
+</span><a name="line-297"></a><span>
+</span><a name="line-298"></a><span class="hs-comment">-- |Parses the keyword &quot;mod&quot;, ignoring case</span><span>
+</span><a name="line-299"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-300"></a><span class="hs-identifier">modKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-301"></a><a name="modKeyword"><a href="Parser.Combinators.ReservedWords.html#modKeyword"><span class="hs-identifier">modKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;mod&quot;</span><span>
+</span><a name="line-302"></a><span>
+</span><a name="line-303"></a><span class="hs-comment">-- |Parses the keyword &quot;nand&quot;, ignoring case</span><span>
+</span><a name="line-304"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-305"></a><span class="hs-identifier">nandKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-306"></a><a name="nandKeyword"><a href="Parser.Combinators.ReservedWords.html#nandKeyword"><span class="hs-identifier">nandKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;nand&quot;</span><span>
+</span><a name="line-307"></a><span>
+</span><a name="line-308"></a><span class="hs-comment">-- |Parses the keyword &quot;new&quot;, ignoring case</span><span>
+</span><a name="line-309"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-310"></a><span class="hs-identifier">newKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-311"></a><a name="newKeyword"><a href="Parser.Combinators.ReservedWords.html#newKeyword"><span class="hs-identifier">newKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;new&quot;</span><span>
+</span><a name="line-312"></a><span>
+</span><a name="line-313"></a><span class="hs-comment">-- |Parses the keyword &quot;next&quot;, ignoring case</span><span>
+</span><a name="line-314"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-315"></a><span class="hs-identifier">nextKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-316"></a><a name="nextKeyword"><a href="Parser.Combinators.ReservedWords.html#nextKeyword"><span class="hs-identifier">nextKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;next&quot;</span><span>
+</span><a name="line-317"></a><span>
+</span><a name="line-318"></a><span class="hs-comment">-- |Parses the keyword &quot;nor&quot;, ignoring case</span><span>
+</span><a name="line-319"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-320"></a><span class="hs-identifier">norKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-321"></a><a name="norKeyword"><a href="Parser.Combinators.ReservedWords.html#norKeyword"><span class="hs-identifier">norKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;nor&quot;</span><span>
+</span><a name="line-322"></a><span>
+</span><a name="line-323"></a><span class="hs-comment">-- |Parses the keyword &quot;not&quot;, ignoring case</span><span>
+</span><a name="line-324"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-325"></a><span class="hs-identifier">notKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-326"></a><a name="notKeyword"><a href="Parser.Combinators.ReservedWords.html#notKeyword"><span class="hs-identifier">notKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;not&quot;</span><span>
+</span><a name="line-327"></a><span>
+</span><a name="line-328"></a><span class="hs-comment">-- |Parses the keyword &quot;null&quot;, ignoring case</span><span>
+</span><a name="line-329"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-330"></a><span class="hs-identifier">nullKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-331"></a><a name="nullKeyword"><a href="Parser.Combinators.ReservedWords.html#nullKeyword"><span class="hs-identifier">nullKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;null&quot;</span><span>
+</span><a name="line-332"></a><span>
+</span><a name="line-333"></a><span class="hs-comment">-- |Parses the keyword &quot;of&quot;, ignoring case</span><span>
+</span><a name="line-334"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-335"></a><span class="hs-identifier">ofKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-336"></a><a name="ofKeyword"><a href="Parser.Combinators.ReservedWords.html#ofKeyword"><span class="hs-identifier">ofKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;of&quot;</span><span>
+</span><a name="line-337"></a><span>
+</span><a name="line-338"></a><span class="hs-comment">-- |Parses the keyword &quot;on&quot;, ignoring case</span><span>
+</span><a name="line-339"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-340"></a><span class="hs-identifier">onKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-341"></a><a name="onKeyword"><a href="Parser.Combinators.ReservedWords.html#onKeyword"><span class="hs-identifier">onKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;on&quot;</span><span>
+</span><a name="line-342"></a><span>
+</span><a name="line-343"></a><span class="hs-comment">-- |Parses the keyword &quot;open&quot;, ignoring case</span><span>
+</span><a name="line-344"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-345"></a><span class="hs-identifier">openKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-346"></a><a name="openKeyword"><a href="Parser.Combinators.ReservedWords.html#openKeyword"><span class="hs-identifier">openKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;open&quot;</span><span>
+</span><a name="line-347"></a><span>
+</span><a name="line-348"></a><span class="hs-comment">-- |Parses the keyword &quot;or&quot;, ignoring case</span><span>
+</span><a name="line-349"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-350"></a><span class="hs-identifier">orKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-351"></a><a name="orKeyword"><a href="Parser.Combinators.ReservedWords.html#orKeyword"><span class="hs-identifier">orKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;or&quot;</span><span>
+</span><a name="line-352"></a><span>
+</span><a name="line-353"></a><span class="hs-comment">-- |Parses the keyword &quot;others&quot;, ignoring case</span><span>
+</span><a name="line-354"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-355"></a><span class="hs-identifier">othersKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-356"></a><a name="othersKeyword"><a href="Parser.Combinators.ReservedWords.html#othersKeyword"><span class="hs-identifier">othersKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;others&quot;</span><span>
+</span><a name="line-357"></a><span>
+</span><a name="line-358"></a><span class="hs-comment">-- |Parses the keyword &quot;out&quot;, ignoring case</span><span>
+</span><a name="line-359"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-360"></a><span class="hs-identifier">outKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-361"></a><a name="outKeyword"><a href="Parser.Combinators.ReservedWords.html#outKeyword"><span class="hs-identifier">outKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;out&quot;</span><span>
+</span><a name="line-362"></a><span>
+</span><a name="line-363"></a><span class="hs-comment">-- |Parses the keyword &quot;package&quot;, ignoring case</span><span>
+</span><a name="line-364"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-365"></a><span class="hs-identifier">packageKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-366"></a><a name="packageKeyword"><a href="Parser.Combinators.ReservedWords.html#packageKeyword"><span class="hs-identifier">packageKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;package&quot;</span><span>
+</span><a name="line-367"></a><span>
+</span><a name="line-368"></a><span class="hs-comment">-- |Parses the keyword &quot;port&quot;, ignoring case</span><span>
+</span><a name="line-369"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-370"></a><span class="hs-identifier">portKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-371"></a><a name="portKeyword"><a href="Parser.Combinators.ReservedWords.html#portKeyword"><span class="hs-identifier">portKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;port&quot;</span><span>
+</span><a name="line-372"></a><span>
+</span><a name="line-373"></a><span class="hs-comment">-- |Parses the keyword &quot;procedure&quot;, ignoring case</span><span>
+</span><a name="line-374"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-375"></a><span class="hs-identifier">procedureKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-376"></a><a name="procedureKeyword"><a href="Parser.Combinators.ReservedWords.html#procedureKeyword"><span class="hs-identifier">procedureKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;procedure&quot;</span><span>
+</span><a name="line-377"></a><span>
+</span><a name="line-378"></a><span class="hs-comment">-- |Parses the keyword &quot;process&quot;, ignoring case</span><span>
+</span><a name="line-379"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-380"></a><span class="hs-identifier">processKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-381"></a><a name="processKeyword"><a href="Parser.Combinators.ReservedWords.html#processKeyword"><span class="hs-identifier">processKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;process&quot;</span><span>
+</span><a name="line-382"></a><span>
+</span><a name="line-383"></a><span class="hs-comment">-- |Parses the keyword &quot;range&quot;, ignoring case</span><span>
+</span><a name="line-384"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-385"></a><span class="hs-identifier">rangeKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-386"></a><a name="rangeKeyword"><a href="Parser.Combinators.ReservedWords.html#rangeKeyword"><span class="hs-identifier">rangeKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;range&quot;</span><span>
+</span><a name="line-387"></a><span>
+</span><a name="line-388"></a><span class="hs-comment">-- |Parses the keyword &quot;record&quot;, ignoring case</span><span>
+</span><a name="line-389"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-390"></a><span class="hs-identifier">recordKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-391"></a><a name="recordKeyword"><a href="Parser.Combinators.ReservedWords.html#recordKeyword"><span class="hs-identifier">recordKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;record&quot;</span><span>
+</span><a name="line-392"></a><span>
+</span><a name="line-393"></a><span class="hs-comment">-- |Parses the keyword &quot;register&quot;, ignoring case</span><span>
+</span><a name="line-394"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-395"></a><span class="hs-identifier">registerKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-396"></a><a name="registerKeyword"><a href="Parser.Combinators.ReservedWords.html#registerKeyword"><span class="hs-identifier">registerKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;register&quot;</span><span>
+</span><a name="line-397"></a><span>
+</span><a name="line-398"></a><span class="hs-comment">-- |Parses the keyword &quot;rem&quot;, ignoring case</span><span>
+</span><a name="line-399"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-400"></a><span class="hs-identifier">remKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-401"></a><a name="remKeyword"><a href="Parser.Combinators.ReservedWords.html#remKeyword"><span class="hs-identifier">remKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;rem&quot;</span><span>
+</span><a name="line-402"></a><span>
+</span><a name="line-403"></a><span class="hs-comment">-- |Parses the keyword &quot;report&quot;, ignoring case</span><span>
+</span><a name="line-404"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-405"></a><span class="hs-identifier">reportKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-406"></a><a name="reportKeyword"><a href="Parser.Combinators.ReservedWords.html#reportKeyword"><span class="hs-identifier">reportKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;report&quot;</span><span>
+</span><a name="line-407"></a><span>
+</span><a name="line-408"></a><span class="hs-comment">-- |Parses the keyword &quot;return&quot;, ignoring case</span><span>
+</span><a name="line-409"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-410"></a><span class="hs-identifier">returnKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-411"></a><a name="returnKeyword"><a href="Parser.Combinators.ReservedWords.html#returnKeyword"><span class="hs-identifier">returnKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;return&quot;</span><span>
+</span><a name="line-412"></a><span>
+</span><a name="line-413"></a><span class="hs-comment">-- |Parses the keyword &quot;select&quot;, ignoring case</span><span>
+</span><a name="line-414"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-415"></a><span class="hs-identifier">selectKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-416"></a><a name="selectKeyword"><a href="Parser.Combinators.ReservedWords.html#selectKeyword"><span class="hs-identifier">selectKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;select&quot;</span><span>
+</span><a name="line-417"></a><span>
+</span><a name="line-418"></a><span class="hs-comment">-- |Parses the keyword &quot;severity&quot;, ignoring case</span><span>
+</span><a name="line-419"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-420"></a><span class="hs-identifier">severityKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-421"></a><a name="severityKeyword"><a href="Parser.Combinators.ReservedWords.html#severityKeyword"><span class="hs-identifier">severityKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;severity&quot;</span><span>
+</span><a name="line-422"></a><span>
+</span><a name="line-423"></a><span class="hs-comment">-- |Parses the keyword &quot;signal&quot;, ignoring case</span><span>
+</span><a name="line-424"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-425"></a><span class="hs-identifier">signalKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-426"></a><a name="signalKeyword"><a href="Parser.Combinators.ReservedWords.html#signalKeyword"><span class="hs-identifier">signalKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;signal&quot;</span><span>
+</span><a name="line-427"></a><span>
+</span><a name="line-428"></a><span class="hs-comment">-- |Parses the keyword &quot;subtype&quot;, ignoring case</span><span>
+</span><a name="line-429"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-430"></a><span class="hs-identifier">subtypeKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-431"></a><a name="subtypeKeyword"><a href="Parser.Combinators.ReservedWords.html#subtypeKeyword"><span class="hs-identifier">subtypeKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;subtype&quot;</span><span>
+</span><a name="line-432"></a><span>
+</span><a name="line-433"></a><span class="hs-comment">-- |Parses the keyword &quot;then&quot;, ignoring case</span><span>
+</span><a name="line-434"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-435"></a><span class="hs-identifier">thenKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-436"></a><a name="thenKeyword"><a href="Parser.Combinators.ReservedWords.html#thenKeyword"><span class="hs-identifier">thenKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;then&quot;</span><span>
+</span><a name="line-437"></a><span>
+</span><a name="line-438"></a><span class="hs-comment">-- |Parses the keyword &quot;to&quot;, ignoring case</span><span>
+</span><a name="line-439"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-440"></a><span class="hs-identifier">toKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-441"></a><a name="toKeyword"><a href="Parser.Combinators.ReservedWords.html#toKeyword"><span class="hs-identifier">toKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;to&quot;</span><span>
+</span><a name="line-442"></a><span>
+</span><a name="line-443"></a><span class="hs-comment">-- |Parses the keyword &quot;transport&quot;, ignoring case</span><span>
+</span><a name="line-444"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-445"></a><span class="hs-identifier">transportKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-446"></a><a name="transportKeyword"><a href="Parser.Combinators.ReservedWords.html#transportKeyword"><span class="hs-identifier">transportKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;transport&quot;</span><span>
+</span><a name="line-447"></a><span>
+</span><a name="line-448"></a><span class="hs-comment">-- |Parses the keyword &quot;type&quot;, ignoring case</span><span>
+</span><a name="line-449"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-450"></a><span class="hs-identifier">typeKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-451"></a><a name="typeKeyword"><a href="Parser.Combinators.ReservedWords.html#typeKeyword"><span class="hs-identifier">typeKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;type&quot;</span><span>
+</span><a name="line-452"></a><span>
+</span><a name="line-453"></a><span class="hs-comment">-- |Parses the keyword &quot;units&quot;, ignoring case</span><span>
+</span><a name="line-454"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-455"></a><span class="hs-identifier">unitsKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-456"></a><a name="unitsKeyword"><a href="Parser.Combinators.ReservedWords.html#unitsKeyword"><span class="hs-identifier">unitsKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;units&quot;</span><span>
+</span><a name="line-457"></a><span>
+</span><a name="line-458"></a><span class="hs-comment">-- |Parses the keyword &quot;until&quot;, ignoring case</span><span>
+</span><a name="line-459"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-460"></a><span class="hs-identifier">untilKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-461"></a><a name="untilKeyword"><a href="Parser.Combinators.ReservedWords.html#untilKeyword"><span class="hs-identifier">untilKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;until&quot;</span><span>
+</span><a name="line-462"></a><span>
+</span><a name="line-463"></a><span class="hs-comment">-- |Parses the keyword &quot;use&quot;, ignoring case</span><span>
+</span><a name="line-464"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-465"></a><span class="hs-identifier">useKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-466"></a><a name="useKeyword"><a href="Parser.Combinators.ReservedWords.html#useKeyword"><span class="hs-identifier">useKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;use&quot;</span><span>
+</span><a name="line-467"></a><span>
+</span><a name="line-468"></a><span class="hs-comment">-- |Parses the keyword &quot;variable&quot;, ignoring case</span><span>
+</span><a name="line-469"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-470"></a><span class="hs-identifier">variableKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-471"></a><a name="variableKeyword"><a href="Parser.Combinators.ReservedWords.html#variableKeyword"><span class="hs-identifier">variableKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;variable&quot;</span><span>
+</span><a name="line-472"></a><span>
+</span><a name="line-473"></a><span class="hs-comment">-- |Parses the keyword &quot;wait&quot;, ignoring case</span><span>
+</span><a name="line-474"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-475"></a><span class="hs-identifier">waitKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-476"></a><a name="waitKeyword"><a href="Parser.Combinators.ReservedWords.html#waitKeyword"><span class="hs-identifier">waitKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;wait&quot;</span><span>
+</span><a name="line-477"></a><span>
+</span><a name="line-478"></a><span class="hs-comment">-- |Parses the keyword &quot;when&quot;, ignoring case</span><span>
+</span><a name="line-479"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-480"></a><span class="hs-identifier">whenKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-481"></a><a name="whenKeyword"><a href="Parser.Combinators.ReservedWords.html#whenKeyword"><span class="hs-identifier">whenKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;when&quot;</span><span>
+</span><a name="line-482"></a><span>
+</span><a name="line-483"></a><span class="hs-comment">-- |Parses the keyword &quot;while&quot;, ignoring case</span><span>
+</span><a name="line-484"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-485"></a><span class="hs-identifier">whileKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-486"></a><a name="whileKeyword"><a href="Parser.Combinators.ReservedWords.html#whileKeyword"><span class="hs-identifier">whileKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;while&quot;</span><span>
+</span><a name="line-487"></a><span>
+</span><a name="line-488"></a><span class="hs-comment">-- |Parses the keyword &quot;with&quot;, ignoring case</span><span>
+</span><a name="line-489"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-490"></a><span class="hs-identifier">withKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-491"></a><a name="withKeyword"><a href="Parser.Combinators.ReservedWords.html#withKeyword"><span class="hs-identifier">withKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;with&quot;</span><span>
+</span><a name="line-492"></a><span>
+</span><a name="line-493"></a><span class="hs-comment">-- |Parses the keyword &quot;xor&quot;, ignoring case</span><span>
+</span><a name="line-494"></a><span class="hs-comment">-- Returns '()'</span><span>
+</span><a name="line-495"></a><span class="hs-identifier">xorKeyword</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-496"></a><a name="xorKeyword"><a href="Parser.Combinators.ReservedWords.html#xorKeyword"><span class="hs-identifier">xorKeyword</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Parser.Combinators.ReservedWords.Internal.html#keywordParser"><span class="hs-identifier hs-var">keywordParser</span></a><span> </span><span class="hs-string">&quot;xor&quot;</span><span>
+</span><a name="line-497"></a></pre></body></html>

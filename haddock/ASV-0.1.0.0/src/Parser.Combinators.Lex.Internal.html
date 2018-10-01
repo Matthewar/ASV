@@ -1,0 +1,196 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">{-|
+   Module      : Parser.Combinators.Lex.Internal
+   Description : Internal combinators for the lexical elements of VHDL.
+|-}</span><span>
+</span><a name="line-5"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Parser.Combinators.Lex.Internal</span><span>
+</span><a name="line-6"></a><span>   </span><span class="hs-special">(</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#graphicCharacter"><span class="hs-identifier hs-var">graphicCharacter</span></a><span>
+</span><a name="line-7"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#basicGraphicCharacter"><span class="hs-identifier hs-var">basicGraphicCharacter</span></a><span>
+</span><a name="line-8"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#basicCharacter"><span class="hs-identifier hs-var">basicCharacter</span></a><span>
+</span><a name="line-9"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#upperCaseLetter"><span class="hs-identifier hs-var">upperCaseLetter</span></a><span>
+</span><a name="line-10"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#specialCharacter"><span class="hs-identifier hs-var">specialCharacter</span></a><span>
+</span><a name="line-11"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#spaceCharacter"><span class="hs-identifier hs-var">spaceCharacter</span></a><span>
+</span><a name="line-12"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#formatEffector"><span class="hs-identifier hs-var">formatEffector</span></a><span>
+</span><a name="line-13"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#lowerCaseLetter"><span class="hs-identifier hs-var">lowerCaseLetter</span></a><span>
+</span><a name="line-14"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#otherSpecialCharacter"><span class="hs-identifier hs-var">otherSpecialCharacter</span></a><span>
+</span><a name="line-15"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#letterOrDigit"><span class="hs-identifier hs-var">letterOrDigit</span></a><span>
+</span><a name="line-16"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#letter"><span class="hs-identifier hs-var">letter</span></a><span>
+</span><a name="line-17"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#integer"><span class="hs-identifier hs-var">integer</span></a><span>
+</span><a name="line-18"></a><span>   </span><span class="hs-special">,</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#exponent%27"><span class="hs-identifier hs-var">exponent'</span></a><span>
+</span><a name="line-19"></a><span>   </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-20"></a><span>
+</span><a name="line-21"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Control.Applicative</span><span>
+</span><a name="line-22"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Text.Parsec.String</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Parser</span><span class="hs-special">)</span><span>
+</span><a name="line-23"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Text.Parsec.Char</span><span>
+</span><a name="line-24"></a><span>         </span><span class="hs-special">(</span><span> </span><span class="hs-identifier hs-var">digit</span><span>
+</span><a name="line-25"></a><span>         </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">oneOf</span><span>
+</span><a name="line-26"></a><span>         </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">char</span><span>
+</span><a name="line-27"></a><span>         </span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">space</span><span>
+</span><a name="line-28"></a><span>         </span><span class="hs-special">)</span><span>
+</span><a name="line-29"></a><span>
+</span><a name="line-30"></a><span class="hs-comment">-- |Parse a graphic character</span><span>
+</span><a name="line-31"></a><span class="hs-comment">-- Returns parsed character</span><span>
+</span><a name="line-32"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-33"></a><span class="hs-comment">--    graphic_character ::=</span><span>
+</span><a name="line-34"></a><span class="hs-comment">--       basic_graphic_character | lower_case_letter | other_special_character</span><span>
+</span><a name="line-35"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-36"></a><span class="hs-identifier">graphicCharacter</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-identifier hs-type">Char</span><span>
+</span><a name="line-37"></a><a name="graphicCharacter"><a href="Parser.Combinators.Lex.Internal.html#graphicCharacter"><span class="hs-identifier">graphicCharacter</span></a></a><span> </span><span class="hs-glyph">=</span><span>
+</span><a name="line-38"></a><span>   </span><a href="Parser.Combinators.Lex.Internal.html#basicGraphicCharacter"><span class="hs-identifier hs-var">basicGraphicCharacter</span></a><span>
+</span><a name="line-39"></a><span>   </span><span class="hs-operator hs-var">&lt;|&gt;</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#lowerCaseLetter"><span class="hs-identifier hs-var">lowerCaseLetter</span></a><span>
+</span><a name="line-40"></a><span>   </span><span class="hs-operator hs-var">&lt;|&gt;</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#otherSpecialCharacter"><span class="hs-identifier hs-var">otherSpecialCharacter</span></a><span>
+</span><a name="line-41"></a><span>
+</span><a name="line-42"></a><span class="hs-comment">-- |Parse a basic graphic character</span><span>
+</span><a name="line-43"></a><span class="hs-comment">-- Returns parsed character</span><span>
+</span><a name="line-44"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-45"></a><span class="hs-comment">--    basic_graphic_character ::=</span><span>
+</span><a name="line-46"></a><span class="hs-comment">--       upper_case_letter | digit | special_character | space_character</span><span>
+</span><a name="line-47"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-48"></a><span class="hs-identifier">basicGraphicCharacter</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-identifier hs-type">Char</span><span>
+</span><a name="line-49"></a><a name="basicGraphicCharacter"><a href="Parser.Combinators.Lex.Internal.html#basicGraphicCharacter"><span class="hs-identifier">basicGraphicCharacter</span></a></a><span> </span><span class="hs-glyph">=</span><span>
+</span><a name="line-50"></a><span>   </span><a href="Parser.Combinators.Lex.Internal.html#upperCaseLetter"><span class="hs-identifier hs-var">upperCaseLetter</span></a><span>
+</span><a name="line-51"></a><span>   </span><span class="hs-operator hs-var">&lt;|&gt;</span><span> </span><span class="hs-identifier hs-var">digit</span><span>
+</span><a name="line-52"></a><span>   </span><span class="hs-operator hs-var">&lt;|&gt;</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#specialCharacter"><span class="hs-identifier hs-var">specialCharacter</span></a><span>
+</span><a name="line-53"></a><span>   </span><span class="hs-operator hs-var">&lt;|&gt;</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#spaceCharacter"><span class="hs-identifier hs-var">spaceCharacter</span></a><span>
+</span><a name="line-54"></a><span>
+</span><a name="line-55"></a><span class="hs-comment">-- |Parse a basic character</span><span>
+</span><a name="line-56"></a><span class="hs-comment">-- Returns parsed character</span><span>
+</span><a name="line-57"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-58"></a><span class="hs-comment">--    basic_character ::=</span><span>
+</span><a name="line-59"></a><span class="hs-comment">--       basic_graphic_character | format_effector</span><span>
+</span><a name="line-60"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-61"></a><span class="hs-identifier">basicCharacter</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-identifier hs-type">Char</span><span>
+</span><a name="line-62"></a><a name="basicCharacter"><a href="Parser.Combinators.Lex.Internal.html#basicCharacter"><span class="hs-identifier">basicCharacter</span></a></a><span> </span><span class="hs-glyph">=</span><span>
+</span><a name="line-63"></a><span>   </span><a href="Parser.Combinators.Lex.Internal.html#basicGraphicCharacter"><span class="hs-identifier hs-var">basicGraphicCharacter</span></a><span>
+</span><a name="line-64"></a><span>   </span><span class="hs-operator hs-var">&lt;|&gt;</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#formatEffector"><span class="hs-identifier hs-var">formatEffector</span></a><span>
+</span><a name="line-65"></a><span>
+</span><a name="line-66"></a><span class="hs-comment">-- |Parse an upper case letter</span><span>
+</span><a name="line-67"></a><span class="hs-comment">-- Returns parsed character</span><span>
+</span><a name="line-68"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-69"></a><span class="hs-comment">--    upper case letters</span><span>
+</span><a name="line-70"></a><span class="hs-comment">--       A B C D E F G H I J K L M N O P Q R S T U V W X Y Z</span><span>
+</span><a name="line-71"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-72"></a><span class="hs-identifier">upperCaseLetter</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-identifier hs-type">Char</span><span>
+</span><a name="line-73"></a><a name="upperCaseLetter"><a href="Parser.Combinators.Lex.Internal.html#upperCaseLetter"><span class="hs-identifier">upperCaseLetter</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">oneOf</span><span> </span><span class="hs-special">[</span><span class="hs-char">'A'</span><span class="hs-glyph">..</span><span class="hs-char">'Z'</span><span class="hs-special">]</span><span>
+</span><a name="line-74"></a><span>
+</span><a name="line-75"></a><span class="hs-comment">-- |Parse a special character</span><span>
+</span><a name="line-76"></a><span class="hs-comment">-- Returns parsed character</span><span>
+</span><a name="line-77"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-78"></a><span class="hs-comment">--    special characters</span><span>
+</span><a name="line-79"></a><span class="hs-comment">--       &quot; # &amp; ' ( ) * + , - . / : ; &lt; = &gt; _ |</span><span>
+</span><a name="line-80"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-81"></a><span class="hs-identifier">specialCharacter</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-identifier hs-type">Char</span><span>
+</span><a name="line-82"></a><a name="specialCharacter"><a href="Parser.Combinators.Lex.Internal.html#specialCharacter"><span class="hs-identifier">specialCharacter</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">oneOf</span><span>
+</span><a name="line-83"></a><span>   </span><span class="hs-special">[</span><span> </span><span class="hs-char">'&quot;'</span><span>
+</span><a name="line-84"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'#'</span><span>
+</span><a name="line-85"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'&amp;'</span><span>
+</span><a name="line-86"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'\''</span><span>
+</span><a name="line-87"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'('</span><span>
+</span><a name="line-88"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">')'</span><span>
+</span><a name="line-89"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'*'</span><span>
+</span><a name="line-90"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'+'</span><span>
+</span><a name="line-91"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">','</span><span>
+</span><a name="line-92"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'-'</span><span>
+</span><a name="line-93"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'.'</span><span>
+</span><a name="line-94"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'/'</span><span>
+</span><a name="line-95"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">':'</span><span>
+</span><a name="line-96"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">';'</span><span>
+</span><a name="line-97"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'&lt;'</span><span>
+</span><a name="line-98"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'='</span><span>
+</span><a name="line-99"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'&gt;'</span><span>
+</span><a name="line-100"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'_'</span><span>
+</span><a name="line-101"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'|'</span><span>
+</span><a name="line-102"></a><span>   </span><span class="hs-special">]</span><span>
+</span><a name="line-103"></a><span>
+</span><a name="line-104"></a><span class="hs-comment">-- |Parse the space character</span><span>
+</span><a name="line-105"></a><span class="hs-comment">-- Returns the space character</span><span>
+</span><a name="line-106"></a><span class="hs-identifier">spaceCharacter</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-identifier hs-type">Char</span><span>
+</span><a name="line-107"></a><a name="spaceCharacter"><a href="Parser.Combinators.Lex.Internal.html#spaceCharacter"><span class="hs-identifier">spaceCharacter</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">char</span><span> </span><span class="hs-char">' '</span><span>
+</span><a name="line-108"></a><span>
+</span><a name="line-109"></a><span class="hs-comment">-- |Parse a format effector</span><span>
+</span><a name="line-110"></a><span class="hs-comment">-- Returns parsed character</span><span>
+</span><a name="line-111"></a><span class="hs-identifier">formatEffector</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-identifier hs-type">Char</span><span>
+</span><a name="line-112"></a><a name="formatEffector"><a href="Parser.Combinators.Lex.Internal.html#formatEffector"><span class="hs-identifier">formatEffector</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">oneOf</span><span> </span><span class="hs-special">[</span><span class="hs-char">'\t'</span><span class="hs-special">,</span><span class="hs-char">'\v'</span><span class="hs-special">,</span><span class="hs-char">'\r'</span><span class="hs-special">,</span><span class="hs-char">'\n'</span><span class="hs-special">,</span><span class="hs-char">'\f'</span><span class="hs-special">]</span><span>
+</span><a name="line-113"></a><span>
+</span><a name="line-114"></a><span class="hs-comment">-- |Parse a lower case letter</span><span>
+</span><a name="line-115"></a><span class="hs-comment">-- Returns parsed character</span><span>
+</span><a name="line-116"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-117"></a><span class="hs-comment">--    upper case letters</span><span>
+</span><a name="line-118"></a><span class="hs-comment">--       a b c d e f g h i j k l m n o p q r s t u v w x y z</span><span>
+</span><a name="line-119"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-120"></a><span class="hs-identifier">lowerCaseLetter</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-identifier hs-type">Char</span><span>
+</span><a name="line-121"></a><a name="lowerCaseLetter"><a href="Parser.Combinators.Lex.Internal.html#lowerCaseLetter"><span class="hs-identifier">lowerCaseLetter</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">oneOf</span><span> </span><span class="hs-special">[</span><span class="hs-char">'a'</span><span class="hs-glyph">..</span><span class="hs-char">'z'</span><span class="hs-special">]</span><span>
+</span><a name="line-122"></a><span>
+</span><a name="line-123"></a><span class="hs-comment">-- |Parse an other special character</span><span>
+</span><a name="line-124"></a><span class="hs-comment">-- Returns parsed character</span><span>
+</span><a name="line-125"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-126"></a><span class="hs-comment">--    other special characters</span><span>
+</span><a name="line-127"></a><span class="hs-comment">--       ! $ % @ ? [ \ ] ^ ` { } ~</span><span>
+</span><a name="line-128"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-129"></a><span class="hs-identifier">otherSpecialCharacter</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-identifier hs-type">Char</span><span>
+</span><a name="line-130"></a><a name="otherSpecialCharacter"><a href="Parser.Combinators.Lex.Internal.html#otherSpecialCharacter"><span class="hs-identifier">otherSpecialCharacter</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">oneOf</span><span>
+</span><a name="line-131"></a><span>   </span><span class="hs-special">[</span><span> </span><span class="hs-char">'!'</span><span>
+</span><a name="line-132"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'$'</span><span>
+</span><a name="line-133"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'%'</span><span>
+</span><a name="line-134"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'@'</span><span>
+</span><a name="line-135"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'?'</span><span>
+</span><a name="line-136"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'['</span><span>
+</span><a name="line-137"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'\\'</span><span>
+</span><a name="line-138"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">']'</span><span>
+</span><a name="line-139"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'^'</span><span>
+</span><a name="line-140"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'`'</span><span>
+</span><a name="line-141"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'{'</span><span>
+</span><a name="line-142"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'}'</span><span>
+</span><a name="line-143"></a><span>   </span><span class="hs-special">,</span><span> </span><span class="hs-char">'~'</span><span>
+</span><a name="line-144"></a><span>   </span><span class="hs-special">]</span><span>
+</span><a name="line-145"></a><span>
+</span><a name="line-146"></a><span class="hs-comment">-- |Parses a letter or digit</span><span>
+</span><a name="line-147"></a><span class="hs-comment">-- Returns parsed character</span><span>
+</span><a name="line-148"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-149"></a><span class="hs-comment">--    letter_or_digit ::= letter | digit</span><span>
+</span><a name="line-150"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-151"></a><span class="hs-identifier">letterOrDigit</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-identifier hs-type">Char</span><span>
+</span><a name="line-152"></a><a name="letterOrDigit"><a href="Parser.Combinators.Lex.Internal.html#letterOrDigit"><span class="hs-identifier">letterOrDigit</span></a></a><span> </span><span class="hs-glyph">=</span><span>
+</span><a name="line-153"></a><span>   </span><a href="Parser.Combinators.Lex.Internal.html#letter"><span class="hs-identifier hs-var">letter</span></a><span>
+</span><a name="line-154"></a><span>   </span><span class="hs-operator hs-var">&lt;|&gt;</span><span> </span><span class="hs-identifier hs-var">digit</span><span>
+</span><a name="line-155"></a><span>
+</span><a name="line-156"></a><span class="hs-comment">-- |Parses a letter</span><span>
+</span><a name="line-157"></a><span class="hs-comment">-- Returns parsed character</span><span>
+</span><a name="line-158"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-159"></a><span class="hs-comment">--    letter ::= upper_case_letter | lower_case_letter</span><span>
+</span><a name="line-160"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-161"></a><span class="hs-identifier">letter</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-identifier hs-type">Char</span><span>
+</span><a name="line-162"></a><a name="letter"><a href="Parser.Combinators.Lex.Internal.html#letter"><span class="hs-identifier">letter</span></a></a><span> </span><span class="hs-glyph">=</span><span>
+</span><a name="line-163"></a><span>   </span><a href="Parser.Combinators.Lex.Internal.html#upperCaseLetter"><span class="hs-identifier hs-var">upperCaseLetter</span></a><span>
+</span><a name="line-164"></a><span>   </span><span class="hs-operator hs-var">&lt;|&gt;</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#lowerCaseLetter"><span class="hs-identifier hs-var">lowerCaseLetter</span></a><span>
+</span><a name="line-165"></a><span>
+</span><a name="line-166"></a><span class="hs-comment">-- |Parses an integer</span><span>
+</span><a name="line-167"></a><span class="hs-comment">-- Returns the 'String' of the integer</span><span>
+</span><a name="line-168"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-169"></a><span class="hs-comment">--    integer ::= digit { [ underline ] digit }</span><span>
+</span><a name="line-170"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-171"></a><span class="hs-identifier">integer</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-identifier hs-type">String</span><span>
+</span><a name="line-172"></a><a name="integer"><a href="Parser.Combinators.Lex.Internal.html#integer"><span class="hs-identifier">integer</span></a></a><span> </span><span class="hs-glyph">=</span><span>
+</span><a name="line-173"></a><span>   </span><span class="hs-special">(</span><span class="hs-glyph">:</span><span class="hs-special">)</span><span>
+</span><a name="line-174"></a><span>   </span><span class="hs-operator hs-var">&lt;$&gt;</span><span> </span><span class="hs-identifier hs-var">digit</span><span>
+</span><a name="line-175"></a><span>   </span><span class="hs-operator hs-var">&lt;*&gt;</span><span> </span><span class="hs-identifier hs-var">many</span><span>
+</span><a name="line-176"></a><span>       </span><span class="hs-special">(</span><span> </span><span class="hs-identifier hs-var">optional</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">char</span><span> </span><span class="hs-char">'_'</span><span class="hs-special">)</span><span>
+</span><a name="line-177"></a><span>      </span><span class="hs-operator hs-var">*&gt;</span><span> </span><span class="hs-identifier hs-var">digit</span><span>
+</span><a name="line-178"></a><span>       </span><span class="hs-special">)</span><span>
+</span><a name="line-179"></a><span>
+</span><a name="line-180"></a><span class="hs-comment">-- |Parses an exponent</span><span>
+</span><a name="line-181"></a><span class="hs-comment">-- Returns the 'Integer' exponent value</span><span>
+</span><a name="line-182"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-183"></a><span class="hs-comment">--    exponent ::= E [ + ] integer | E - integer</span><span>
+</span><a name="line-184"></a><span class="hs-comment">-- @</span><span>
+</span><a name="line-185"></a><span class="hs-comment">-- NOTE:</span><span>
+</span><a name="line-186"></a><span class="hs-comment">-- - Case insensitive E</span><span>
+</span><a name="line-187"></a><span class="hs-identifier">exponent'</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Parser</span><span> </span><span class="hs-identifier hs-type">Integer</span><span>
+</span><a name="line-188"></a><a name="exponent%27"><a href="Parser.Combinators.Lex.Internal.html#exponent%27"><span class="hs-identifier">exponent'</span></a></a><span> </span><span class="hs-glyph">=</span><span>
+</span><a name="line-189"></a><span>   </span><a href="#local-6989586621679030721"><span class="hs-identifier hs-var">makeExponent</span></a><span>
+</span><a name="line-190"></a><span>   </span><span class="hs-operator hs-var">&lt;$&gt;</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">oneOf</span><span> </span><span class="hs-string">&quot;Ee&quot;</span><span> </span><span class="hs-operator hs-var">*&gt;</span><span> </span><span class="hs-identifier hs-var">optional</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">char</span><span> </span><span class="hs-char">'+'</span><span> </span><span class="hs-operator hs-var">&lt;|&gt;</span><span> </span><span class="hs-identifier hs-var">char</span><span> </span><span class="hs-char">'-'</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a name="line-191"></a><span>   </span><span class="hs-operator hs-var">&lt;*&gt;</span><span> </span><a href="Parser.Combinators.Lex.Internal.html#integer"><span class="hs-identifier hs-var">integer</span></a><span>
+</span><a name="line-192"></a><span>   </span><span class="hs-keyword">where</span><span> </span><span class="hs-identifier">makeExponent</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Maybe</span><span> </span><span class="hs-identifier hs-type">Char</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">String</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Integer</span><span>
+</span><a name="line-193"></a><span>         </span><a name="local-6989586621679030721"><a href="#local-6989586621679030721"><span class="hs-identifier">makeExponent</span></a></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">Just</span><span> </span><span class="hs-char">'+'</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">read</span><span>
+</span><a name="line-194"></a><span>         </span><span class="hs-identifier">makeExponent</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">Just</span><span> </span><span class="hs-char">'-'</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-number">0</span><span class="hs-glyph">-</span><span class="hs-special">)</span><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">read</span><span>
+</span><a name="line-195"></a><span>         </span><span class="hs-identifier">makeExponent</span><span> </span><span class="hs-identifier hs-var">Nothing</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">read</span><span>
+</span><a name="line-196"></a></pre></body></html>
