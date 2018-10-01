@@ -11,6 +11,15 @@ If you want to report a bug, please see the [bug reporting section](#reporting-b
 
 For a quick start go to [Running a Simulation](#creating-and-running-a-simulation).
 
+## Other Pages
+- [Documentation](docs/README.md)
+- [Haddock Documentation](https://matthewar.github.io/ASV/haddock)
+- [Haddock Coverage Summary](https://matthewar.github.io/ASV/haddock-cov/Report.md)
+- Code Coverage
+   - [Basic Summary](https://matthewar.github.io/ASV/tests/Coverage.md)
+   - [Test List](https://matthewar.github.io/ASV/tests/List.md)
+   - [Coveralls](https://coveralls.io/github/Matthewar/ASV)
+
 ## Introduction
 This project is a VHDL simulator, whose initial aim is to implement the entirety of the 1076-1987 VHDL specification.
 Currently a subset of the language has been implemented, see the documentation for details on features.
@@ -58,7 +67,7 @@ Installing and using the tool is done through the `stack` tool.
 ## Documentation
 Documentation [here](docs/README.md)
 
-See also the [Haddock documentation](matthewar.github.io/ASV).
+See also the [Haddock documentation](matthewar.github.io/ASV/haddock).
 
 ## Similar Projects
 Most VHDL simulators are closed source products, this project aims to provide an open source tool that anyone can use.
