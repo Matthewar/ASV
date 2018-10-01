@@ -48,5 +48,5 @@ deploy:
    skip-cleanup: true
    github-token: $GITHUB_TOKEN
    local-dir: $(./scripts/deploy.py)
-   #   on:
-   #      branch: master
+   on:
+      branch: feature/parser/refactor
